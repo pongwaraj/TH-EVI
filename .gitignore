@@ -8,3 +8,18 @@ build/
 venv/
 *.log
 .DS_Store
+
+# Large data files (not committed)
+data/raw/
+data/processed/
+*.h5
+*.hdf5
+*.parquet
+*.feather
+
+# Notebook outputs
+*.html
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
