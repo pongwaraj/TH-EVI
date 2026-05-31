@@ -200,6 +200,7 @@ class StationDemandModel:
         stalls: int = 12,
         station_capture_rate: float = None,
         sessions_per_stall_per_day_peak: float = None,
+        calibration_factor: float = 1.0,
     ) -> dict:
         """Estimate daily sessions and energy for a charging station.
 
@@ -263,7 +264,11 @@ class StationDemandModel:
         )
 
         # Total normal and peak
-        total_daily = resident_daily + ride_hail_daily + tourist_daily + transit_daily
+        # calibration_factor is a single free multiplier fitted to observed
+        # ground-truth station-days (see th_evi/validation.py). It absorbs
+        # structural bias so that scenario params keep their physical meaning
+        # instead of being silently over/under-tuned to compensate.
+        total_daily = (resident_daily + ride_hail_daily + tourist_daily + transit_daily) * calibration_factor
         total_daily_peak = total_daily * params["peak_uplift"]
 
         # Capacity constraint

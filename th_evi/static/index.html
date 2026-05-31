@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TH-EVI — Chiang Mai EV Demand</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: 'Segoe UI', Tahoma, sans-serif; }
+#map { height: 100%; width: 100%; }
+#sidebar {
+  position: absolute; top: 10px; right: 10px; width: 360px; max-height: 90vh;
+  background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 2px 20px rgba(0,0,0,0.2);
+  z-index: 1000; overflow-y: auto; padding: 16px; font-size: 13px;
+}
+#sidebar h2 { font-size: 18px; margin-bottom: 4px; }
+#sidebar h2 small { font-weight: normal; font-size: 12px; color: #666; }
+#sidebar .controls { display: flex; gap: 8px; margin: 8px 0; align-items: center; }
+#sidebar input[type=range] { flex: 1; }
+#sidebar #year-label { font-weight: bold; min-width: 40px; }
+#sidebar .legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 6px 0; font-size: 11px; }
+#sidebar .legend span { display: flex; align-items: center; gap: 4px; }
+#sidebar .legend i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+#summary-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+#summary-table th { text-align: left; border-bottom: 2px solid #ddd; padding: 4px 2px; }
+#summary-table td { padding: 3px 2px; border-bottom: 1px solid #eee; }
+#summary-table .num { text-align: right; }
+#click-result { margin-top: 8px; padding: 8px; background: #e8f5e9; border-radius: 4px; display: none; }
+#click-result h3 { font-size: 13px; margin-bottom: 4px; }
+#click-result .row { display: flex; justify-content: space-between; }
+.loading { text-align: center; padding: 20px; color: #999; }
+.danger { background: #ffebee !important; }
+.safe { background: #e8f5e9 !important; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <h2>TH-EVI <small>Chiang Mai EV Demand</small></h2>
+  <div class="controls">
+    <span>Year:</span>
+    <input type="range" id="year-slider" min="2025" max="2040" value="2030" step="1">
+    <span id="year-label">2030</span>
+  </div>
+  <div class="legend">
+    <span><i style="background:#e74c3c"></i> Highway</span>
+    <span><i style="background:#f39c12"></i> City Center</span>
+    <span><i style="background:#2ecc71"></i> Destination</span>
+    <span><i style="background:#9b59b6"></i> Charger</span>
+  </div>
+  <table id="summary-table">
+    <thead><tr><th>Location</th><th class="num">EV/day</th><th class="num">kWh/day</th></tr></thead>
+    <tbody id="summary-body"><tr><td colspan="3" class="loading">Loading...</td></tr></tbody>
+  </table>
+  <div id="click-result">
+    <h3>📍 Clicked Location</h3>
+    <div id="click-details"></div>
+  </div>
+</div>
+<div id="map"></div>
+
+<script>
+const map = L.map('map').setView([18.79, 98.98], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const landmarkLayer = L.layerGroup().addTo(map);
+const chargerLayer = L.layerGroup();
+const highwayLayer = L.layerGroup();
+const clickMarkerLayer = L.layerGroup().addTo(map);
+
+let clickMarker = null;
+let allLandmarks = [];
+let allHighways = [];
+let allChargers = [];
+
+// Color by type
+function typeColor(t) {
+  return { highway: '#e74c3c', city_center: '#f39c12', destination: '#2ecc71' }[t] || '#3498db';
+}
+
+function formatNum(n) { return n.toLocaleString(); }
+
+async function loadData() {
+  const [landmarks, highways, chargers] = await Promise.all([
+    fetch('/api/landmarks').then(r => r.json()),
+    fetch('/api/highways').then(r => r.json()),
+    fetch('/api/chargers').then(r => r.json()),
+  ]);
+  allLandmarks = landmarks;
+  allHighways = highways.segments || [];
+  allChargers = chargers.stations || [];
+  drawHighways();
+  drawChargers();
+  updateYear();
+}
+
+function drawHighways() {
+  const routeAadt = {};
+  allHighways.forEach(s => {
+    if (!routeAadt[s.route] || s.aadt > routeAadt[s.route].aadt) {
+      routeAadt[s.route] = s;
+    }
+  });
+  Object.values(routeAadt).forEach(s => {
+    const w = Math.max(2, Math.min(12, s.aadt / 10000));
+    // approximate line from route data — just show as circle marker for now
+    L.circleMarker([18.79, 98.98], {
+      radius: w, color: '#e74c3c', fillOpacity: 0.7
+    }).bindPopup(`<b>Hwy ${s.route}</b><br>AADT: ${formatNum(s.aadt)}<br>${s.name}`).addTo(highwayLayer);
+  });
+}
+
+function drawChargers() {
+  allChargers.forEach(st => {
+    if (!st.lat || !st.lon) return;
+    const op = st.operator || 'Unknown';
+    const cap = st.capacity || '?';
+    L.circleMarker([st.lat, st.lon], {
+      radius: 6, color: '#9b59b6', fillOpacity: 0.8
+    }).bindPopup(`<b>${op}</b><br>Capacity: ${cap}<br>${(st.connectors || []).join(', ')}`).addTo(chargerLayer);
+  });
+}
+
+async function updateYear() {
+  const year = parseInt(document.getElementById('year-slider').value);
+  document.getElementById('year-label').textContent = year;
+
+  // Fetch all landmarks with scenario endpoint
+  const resp = await fetch(`/api/scenario?year=${year}`);
+  const data = await resp.json();
+
+  landmarkLayer.clearLayers();
+  const tbody = document.getElementById('summary-body');
+  tbody.innerHTML = '';
+
+  data.landmarks.forEach(r => {
+    const name = r.name || 'Unknown';
+    const loc = allLandmarks.find(l => l.name === name);
+    const lat = loc ? loc.lat : 18.79;
+    const lon = loc ? loc.lon : 98.98;
+    const color = typeColor(r.location_type);
+
+    // Marker
+    const marker = L.circleMarker([lat, lon], {
+      radius: Math.max(5, Math.min(20, r.daily_ev_visits / 30)),
+      color: color, fillOpacity: 0.8
+    }).bindPopup(`
+      <b>${name}</b><br>
+      AADT: ${formatNum(r.aadt_used)}<br>
+      EV share: ${r.ev_share_pct}%<br>
+      <b>${formatNum(r.daily_ev_visits)} EVs/day</b><br>
+      <b>${formatNum(r.daily_kwh)} kWh/day</b>
+    `);
+    marker.addTo(landmarkLayer);
+
+    // Table row
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${name}</td>
+      <td class="num">${formatNum(r.daily_ev_visits)}</td>
+      <td class="num">${formatNum(r.daily_kwh)}</td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  // Summary row
+  const totalRow = document.createElement('tr');
+  totalRow.style.fontWeight = 'bold';
+  totalRow.style.borderTop = '2px solid #333';
+  totalRow.innerHTML = `
+    <td>Total</td>
+    <td class="num">${formatNum(data.summary.total_ev_visits)}</td>
+    <td class="num">${formatNum(data.summary.total_daily_kwh)}</td>
+  `;
+  tbody.appendChild(totalRow);
+}
+
+// Year slider
+document.getElementById('year-slider').addEventListener('input', updateYear);
+
+// Click on map to estimate
+map.on('click', async function(e) {
+  const year = parseInt(document.getElementById('year-slider').value);
+  clickMarkerLayer.clearLayers();
+
+  const resp = await fetch('/api/estimate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat: e.latlng.lat, lon: e.latlng.lng, year })
+  });
+  const result = await resp.json();
+
+  L.circleMarker([e.latlng.lat, e.latlng.lng], {
+    radius: 10, color: '#e74c3c', fillOpacity: 0.5
+  }).bindPopup(`
+    <b>Clicked Location</b><br>
+    AADT: ${formatNum(result.aadt_used)}<br>
+    EV share: ${result.ev_share_pct}%<br>
+    <b>${formatNum(result.daily_ev_visits)} EVs/day</b><br>
+    <b>${formatNum(result.daily_kwh)} kWh/day</b>
+  `).openPopup().addTo(clickMarkerLayer);
+
+  const div = document.getElementById('click-result');
+  div.style.display = 'block';
+  document.getElementById('click-details').innerHTML = `
+    <div class="row"><span>Lat/Lon</span><span>${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}</span></div>
+    <div class="row"><span>Location type</span><span>${result.location_type}</span></div>
+    <div class="row"><span>AADT</span><span>${formatNum(result.aadt_used)}</span></div>
+    <div class="row"><span>EV share</span><span>${result.ev_share_pct}%</span></div>
+    <div class="row"><span>Charge prob.</span><span>${result.charge_probability_pct}%</span></div>
+    <div class="row"><b>EVs/day</b><b>${formatNum(result.daily_ev_visits)}</b></div>
+    <div class="row"><b>kWh/day</b><b>${formatNum(result.daily_kwh)}</b></div>
+  `;
+});
+
+// Layer control
+L.control.layers(null, {
+  'Landmarks': landmarkLayer,
+  'Highways': highwayLayer,
+  'Charging Stations': chargerLayer,
+}).addTo(map);
+
+loadData();
+</script>
+</body>
+</html>

@@ -22,6 +22,8 @@ data/processed/
 
 # Notebook outputs
 *.html
+!th_evi/static/
+!th_evi/static/index.html
 .ipynb_checkpoints/
 
 # OS

@@ -2,9 +2,11 @@
 
 # --- BEV Market Share (New Passenger Cars, ร.1) ---
 # Source: Federation of Thai Industries (FTI), Autolife Thailand
-# 2023: ~15%   (76,500 BEV / ~510,000 passenger cars)
-# 2024: ~14%   (70,137 BEV / ~500,000 — subsidy transition dip)
-# 2025: 23.9%  (122,128 BEV / 510,062 passenger cars)
+# 2023: ~15.0%  (76,500 BEV / ~510,000 passenger cars)
+# 2024: ~14.0%  (70,137 BEV / ~500,000 — subsidy transition dip)
+# 2025: 19.4%   (120,301 BEV / ~620,000 passenger cars) — FTI FULL-YEAR actual
+#   NOTE: prior calibration used 23.9% (a peak-month figure); corrected to the
+#   full-year annual share, which is the right basis for a yearly S-curve.
 # DLT Fuel_NewCar data: see data.py for parser (currently not used for calibration)
 
 # --- 30@30 Policy Targets ---
@@ -15,13 +17,15 @@ THAILAND_TOTAL_VEHICLES_2023 = 44_000_000
 CHIANG_MAI_VEHICLES_2023 = 1_800_000
 
 # --- S-Curve Adoption Parameters ---
-# Calibrated to FTI/Autolife data points:
-#   2023=15%, 2025=24%, long-term ceiling=85%
-# Fitted: logistic(2025) ≈ 24%, midpoint=2028, rate=0.30
+# RE-CALIBRATED (May 2026) via scipy logistic least-squares to FTI ANNUAL points:
+#   2023=15.0%, 2024=14.0% (subsidy dip), 2025=19.4%  | ceiling fixed at 85%
+# Fitted result: growth_rate=0.179, midpoint_year=2032
+#   -> logistic(2025)=19.1%, logistic(2030)=35.4% (consistent with 30@30 policy),
+#      logistic(2035)=54%. Previous (0.30 / 2028) overshot: it implied 2030=55%.
 S_CURVE = {
     "carrying_capacity": 0.85,   # 85% BEV share at saturation
-    "growth_rate": 0.30,         # Moderate steepness
-    "midpoint_year": 2028,       # 50% adoption year
+    "growth_rate": 0.179,        # Re-fitted to FTI annual data
+    "midpoint_year": 2032,       # 50% adoption year (was 2028 — too aggressive)
 }
 
 # --- EV Efficiency (Thailand context) ---
@@ -41,11 +45,15 @@ DCFC_MAX_RANGE_KM = 300
 # Computed from DLT April 2026: Province_BEV_share(all types) / National_BEV_share(all types)
 # Bayesian-smoothed with prior_weight=500, default=0.60.
 #
-# NOTE: These factors use ALL-vehicle-type BEV share (including motorcycles in denominator).
-# For passenger-car-only (ร.1) analysis, the national S-curve should be used directly
-# (set province factor to 1.0). These factors are best-effort estimates pending ร.1-specific data.
+# RESOLVED (May 2026): The 0.40 factor mixed denominators — it divided province
+# all-type BEV share (incl. motorcycles) by national all-type share, which is NOT
+# comparable to the ร.1 (passenger-car) national S-curve. For ร.1 analysis the
+# national new-car BEV share applies directly, so the factor is set to 1.0.
+# This also reconciles the two demand pathways: LocationDemandModel (fleet_ev_share)
+# and StationDemandModel (absolute EV population) now both derive from the SAME
+# national new-car share accumulated into the provincial fleet.
 PROVINCE_EV_FACTOR = {
-    "เชียงใหม่": 0.40,
+    "เชียงใหม่": 1.00,   # ร.1 basis — use national S-curve directly (was 0.40, mixed-denominator)
     "default": 1.00,
 }
 

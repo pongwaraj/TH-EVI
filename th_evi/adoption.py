@@ -1,6 +1,6 @@
 """
 EV Adoption Model — S-curve forecast for Thailand
-Calibrated to FTI/Autolife data: 2025 BEV share = 23.9% of new passenger cars.
+Calibrated to FTI/Autolife annual data: 2025 BEV share = 19.4% of new passenger cars.
 """
 
 import numpy as np
