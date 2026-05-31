@@ -1,0 +1,10 @@
+rank,station_id,name,operator,network,distance_km,power_summary,threat_level,notes
+1,reversharger_sankamphaeng_near,ReverSharger near San Kamphaeng New Rd,ReverSharger,ReverSharger,2.29,"Google Maps result; exact power to verify",high,"Closest Google Maps EV charging result to Punn Suk; must field/app verify"
+2,chargeplus_outer_ring,Charge+ near outer ring / San Kamphaeng side,Charge+,Charge+,4.24,"Google Maps result; exact power to verify",medium_high,"New competitor found by Google Maps; likely relevant to city-bound traffic"
+3,ea_anywhere_outer_ring,EA Anywhere near outer ring / San Kamphaeng side,EA Anywhere,EA Anywhere,4.29,"Google Maps result; exact power to verify",medium_high,"Potentially close enough to compete for local residents and city-bound flow"
+4,mg_supercharge_chiangmai_lamphun,MG Super Charge Chiang Mai-Lamphun Rd,MG,MG Super Charge,7.96,"50 kW total 2 shown in nearby MG result",medium,"Brand-specific / lower power competitor"
+5,pea_volta_hub_chiangmai_gmaps,PEA Volta Hub Chiangmai EV Charging Station,PEA,PEA VOLTA,8.45,"900 kW total; 5x180 kW cabinets",high,"Strong but farther; city-side hub"
+6,ea_anywhere_my_hip_condo,EA Anywhere Charging Station My Hip Condo 2,EA Anywhere,EA Anywhere,8.76,"CCS 150/75/50 kW + Type 2 shown",medium_high,"Strong multi-gun but farther and city/Fa Ham oriented"
+7,tesla_supercharger_big_c_extra,Tesla Supercharger Big C Extra,Tesla,Tesla Supercharger,8.77,"250 kW; 6 stalls shown",medium,"Tesla-only but strengthens city-side charging cluster"
+8,fair_super_charge_greenbus,Fair Super Charge,Greenbus / Fair,Fair Super Charge,9.37,"720 kW total reported",medium_high,"Strong but farther; Route 118 / Greenbus catchment"
+9,elexa_route_118_sansai,EleXA Charging Station Route 118,EGAT,EleXA,11.08,"150 kW; total 2 shown",medium,"Route 118 competitor; less direct to San Kamphaeng-Mae On road"

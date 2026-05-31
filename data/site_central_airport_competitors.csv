@@ -1,0 +1,13 @@
+rank,station_id,name,operator,network,distance_km,power_summary,threat_level,notes
+1,elexa_pt_chiangmai8,EleXA Charging Station PT Chiang Mai 8,EGAT,EleXA,0.18,"CCS 125 kW; 2/2 shown",high,"Very close competitor across/near Central Airport area; 24 hours"
+2,evolt_central_airport,Evolt at Central Chiang Mai Airport,Evolt,Evolt,0.19,"Type 2 7 kW; 3 AC bays shown",low,"Inside/adjacent mall AC charging; not direct DC competitor but occupies EV charging mindshare"
+3,reversharger_mahidol_95,ReverSharger 95 Mahidol Rd,ReverSharger,ReverSharger,0.62,"CCS 120 kW x1/2 plus Type 2 22 kW x2/2 shown",high,"Close DC competitor; review mentions convenient before Central Airport"
+4,reversharger_mahidol_227,ReverSharger 227 Mahidol Rd,ReverSharger,ReverSharger,0.63,"CCS 120 kW 4/4 shown",high,"Close strong DC competitor on Mahidol Rd"
+5,ea_anywhere_near_airport,EA Anywhere near Airport / Mahidol,EA Anywhere,EA Anywhere,0.82,"Google Maps result; exact power to verify",medium,"Close competitor; may be lower power depending site"
+6,mg_supercharge_city_osm,MG Super Charge city area,MG,MG Super Charge,0.46,"OSM listed CCS; Google Maps nearby MG 50 kW x2 in city",medium,"Brand-specific; close but lower direct threat than multi-network DC"
+7,byd_city_osm,BYD charger city area,BYD,BYD,0.63,"capacity 4 in OSM; power to verify",medium,"Brand-specific / dealer charging competitor"
+8,ev_station_pluz_city_osm,EV Station PluZ city area,PTTOR,EV Station PluZ,0.76,"power to verify",medium_high,"PTT network competitor close to target"
+9,super_ev_hub_cultural_center,Super EV Hub Chiang Mai Cultural Center,Unknown,Super EV Hub,0.77,"Field explore: about 130 sessions/day typical; up to about 300 sessions/day in peak high season; power to verify",very_high,"Ground-truth anchor competitor for Airport-Central zone demand; very close and proven high-throughput hub"
+10,pea_volta_hub_chiangmai_gmaps,PEA Volta Hub Chiangmai EV Charging Station,PEA,PEA VOLTA,3.31,"900 kW total; 5x180 kW cabinets",high,"Major city hub competitor; farther but strong"
+11,shell_recharge_montfort,Shell Recharge Montfort,Shell,Shell Recharge,5.25,"CCS 180 kW x2; CCS 50 kW x2 shown",medium,"Not near mall but high-power south-east city competitor"
+12,tesla_supercharger_big_c_extra,Tesla Supercharger Big C Extra,Tesla,Tesla Supercharger,5.81,"250 kW; 6 stalls shown",medium,"Tesla-only but reinforces city north/east charging supply"

@@ -25,6 +25,7 @@ Then open `http://localhost:8000`.
 th_evi/
   adoption.py      EV adoption S-curve and fleet accumulation
   location.py      Location and station demand models
+  site.py          Site readiness, competitor capture, ramp-up, power sharing
   temporal.py      Hourly arrivals and Erlang-C queue sizing
   validation.py    Adoption and station validation report
   constants.py     Thailand and Chiang Mai model assumptions
@@ -80,6 +81,13 @@ EV visits/day = AADT * fleet EV share(year) * charge probability
 
 The station model estimates daily sessions from resident, ride-hail, tourist,
 and transit components, then optionally applies a single calibrated multiplier.
+
+The site layer converts raw area demand into site-captured sessions using:
+
+- site readiness: visibility, access, parking capacity, signage, tenant strength
+- competitive capture: nearby charger distance, guns, power, brand/access quality
+- ramp-up: early-opening demand vs mature demand
+- power sharing: effective kW per active gun for distributed systems
 
 The temporal layer converts daily sessions into hourly arrivals and uses
 Erlang-C queueing to size plugs against explicit service levels such as

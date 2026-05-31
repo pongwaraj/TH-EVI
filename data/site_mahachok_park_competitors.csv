@@ -1,0 +1,9 @@
+rank,station_id,name,operator,network,distance_km,power_summary,threat_level,notes
+1,tce_ev_meta_mall,TCE EV STATION @META MALL,TCE,TCE,4.55,"6 guns, 240 kW user supplied",high,"Nearest high-power public DC cluster known from Google Maps; same north/east Chiang Mai catchment"
+2,ea_anywhere_my_hip_condo,EA Anywhere Charging Station My Hip Condo 2,EA Anywhere,EA Anywhere,4.83,"CCS 150 kW x1; 75 kW x1; 50 kW x2; Type 2 22 kW x2",high,"Multi-gun incumbent close to Route 118 / Fa Ham catchment"
+3,tesla_supercharger_big_c_extra,Tesla Supercharger Big C Extra,Tesla,Tesla Supercharger,5.05,"250 kW; 6 stalls shown",medium_high,"Tesla-only demand sink; strengthens Big C/Fa Ham charging cluster"
+4,fair_super_charge_greenbus,Fair Super Charge,Greenbus / Fair,Fair Super Charge,5.14,"720 kW total reported",high,"Strong direct competitor for Route 118 / Greenbus / Green Park catchment"
+5,elexa_route_118_sansai,EleXA Charging Station Route 118,EGAT,EleXA,5.68,"150 kW; total 2 shown",medium_high,"Direct Route 118 corridor competitor east/north-east of site"
+6,pea_volta_hub_chiangmai_gmaps,PEA Volta Hub Chiangmai EV Charging Station,PEA,PEA VOLTA,6.74,"900 kW total; 5x180 kW cabinets",high,"Very strong brand/power competitor but farther and more city/106 oriented"
+7,evolt_parking_area_sansai,Evolt Parking Area,Evolt,Evolt,7.36,"150 kW; 2/2 shown",medium,"North-east competitor; affects San Sai/Doi Saket side demand"
+8,pea_volta_doi_saket,PEA Volta Doi Saket side,PEA,PEA VOLTA,11.56,"CHAdeMO 50 kW shown",medium,"Corridor competitor beyond the site toward Doi Saket"
