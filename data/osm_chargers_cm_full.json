@@ -1,0 +1,387 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-05-31T13:10:15Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "node",
+      "id": 7113413785,
+      "lat": 18.669836,
+      "lon": 99.0522683,
+      "tags": {
+        "amenity": "charging_station"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8661975878,
+      "lat": 18.6037511,
+      "lon": 99.0223529,
+      "tags": {
+        "access": "private",
+        "amenity": "charging_station",
+        "fee": "no",
+        "motorcar": "yes",
+        "socket:type2_combo": "1",
+        "socket:type2_combo:output": "50 kW"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8661975879,
+      "lat": 18.6035738,
+      "lon": 99.0219679,
+      "tags": {
+        "access": "private",
+        "amenity": "charging_station",
+        "fee": "no",
+        "motorcar": "yes",
+        "socket:type2_cable": "1",
+        "socket:type2_cable:current": "32A",
+        "socket:type2_cable:output": "7 kW",
+        "socket:type2_cable:voltage": "230"
+      }
+    },
+    {
+      "type": "node",
+      "id": 8751862946,
+      "lat": 18.6662398,
+      "lon": 99.0511014,
+      "tags": {
+        "amenity": "charging_station"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9161401594,
+      "lat": 18.7572397,
+      "lon": 98.9399798,
+      "tags": {
+        "amenity": "charging_station",
+        "capacity": "2",
+        "network": "EleXA",
+        "operator": "EGAT",
+        "socket:chademo": "1",
+        "socket:chademo:output": "50 kW",
+        "socket:type2": "1",
+        "socket:type2:output": "7 kW",
+        "socket:type2_combo": "1",
+        "socket:type2_combo:output": "50 kW"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9164049507,
+      "lat": 18.7677113,
+      "lon": 98.9806218,
+      "tags": {
+        "amenity": "charging_station",
+        "fee": "yes",
+        "network": "MG Supercharge",
+        "note": "KeyWatt WalboxG2+_CCS2",
+        "operator": "MG",
+        "socket:type2_combo": "1",
+        "socket:type2_combo:current": "62",
+        "socket:type2_combo:output": "34100",
+        "socket:type2_combo:voltage": "550"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9164222040,
+      "lat": 18.7441994,
+      "lon": 98.9770037,
+      "tags": {
+        "amenity": "charging_station",
+        "network": "MG Supercharge",
+        "note": "KeyWatt60_CCS2",
+        "operator": "MG",
+        "socket:type2_combo": "1",
+        "socket:type2_combo:current": "125",
+        "socket:type2_combo:output": "62500",
+        "socket:type2_combo:voltage": "500"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9704922032,
+      "lat": 18.7515049,
+      "lon": 99.0630832,
+      "tags": {
+        "amenity": "charging_station"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10654292133,
+      "lat": 18.2340376,
+      "lon": 99.4340587,
+      "tags": {
+        "amenity": "charging_station",
+        "fee": "yes",
+        "operator": "E Anywhere",
+        "payment:contactless": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 10738503047,
+      "lat": 18.3178473,
+      "lon": 99.3546408,
+      "tags": {
+        "amenity": "charging_station",
+        "name": "EV Charging"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11347643104,
+      "lat": 18.7337617,
+      "lon": 99.0888058,
+      "tags": {
+        "amenity": "charging_station"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11509788273,
+      "lat": 18.7206858,
+      "lon": 98.9743767,
+      "tags": {
+        "amenity": "charging_station",
+        "operator": "PTT"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11556030590,
+      "lat": 18.8733985,
+      "lon": 99.1338296,
+      "tags": {
+        "amenity": "charging_station",
+        "capacity": "2",
+        "motorcar": "yes",
+        "name": "PEA Volta",
+        "operator": "Provincial Electricity Authority"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11626388161,
+      "lat": 18.6551934,
+      "lon": 99.0349127,
+      "tags": {
+        "access": "yes",
+        "amenity": "charging_station",
+        "capacity": "6",
+        "fee": "yes",
+        "voltage": "240"
+      }
+    },
+    {
+      "type": "node",
+      "id": 11626388162,
+      "lat": 18.6552071,
+      "lon": 99.0349026,
+      "tags": {
+        "access": "yes",
+        "amenity": "charging_station",
+        "amperage": "32",
+        "authentication:none": "yes",
+        "brand": "Toyota",
+        "capacity": "1",
+        "fee": "no",
+        "indoor": "yes",
+        "opening_hours": "24/7",
+        "socket:type2": "1",
+        "voltage": "250"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12254133790,
+      "lat": 18.5458103,
+      "lon": 99.0595311,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "Elex",
+        "capacity": "2",
+        "charging_station:output": "150",
+        "covered": "yes",
+        "fee": "yes",
+        "network": "EGAT",
+        "operator": "EGAT"
+      }
+    },
+    {
+      "type": "node",
+      "id": 12521844302,
+      "lat": 18.8750449,
+      "lon": 99.0148822,
+      "tags": {
+        "amenity": "charging_station",
+        "name": "EV Station"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13208222895,
+      "lat": 18.841466,
+      "lon": 99.0231022,
+      "tags": {
+        "amenity": "charging_station",
+        "name": "EV Charging"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13395111052,
+      "lat": 18.5536081,
+      "lon": 98.8485032,
+      "tags": {
+        "amenity": "charging_station",
+        "bicycle": "no",
+        "capacity:motorcar": "2"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13439276934,
+      "lat": 18.7681545,
+      "lon": 98.9821756,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "BYD",
+        "capacity": "4"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13439299033,
+      "lat": 18.7682401,
+      "lon": 98.9834262,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "PTT"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13439449077,
+      "lat": 18.4508693,
+      "lon": 98.7403076,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "Evolt",
+        "capacity": "2"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13444838492,
+      "lat": 19.348462,
+      "lon": 98.442079,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "Elex",
+        "capacity": "2",
+        "opening_hours": "24/7",
+        "socket:type2_combo": "2",
+        "socket:type2_combo:output": "125"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13451758840,
+      "lat": 18.7663173,
+      "lon": 99.0052193,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "Centara",
+        "capacity": "2",
+        "opening_hours": "24/7",
+        "socket:schuko": "2"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13688399402,
+      "lat": 18.2826641,
+      "lon": 99.4939314,
+      "tags": {
+        "access": "yes",
+        "amenity": "charging_station",
+        "brand:en": "Tesla Supercharger",
+        "brand:website": "https://www.tesla.com/supercharger",
+        "brand:wikidata": "Q17089620",
+        "fee": "yes",
+        "frequency": "0",
+        "motorcar": "designated",
+        "name:en": "Central Lampang Supercharger",
+        "network:en": "Supercharger",
+        "network:website": "https://www.tesla.com/supercharger",
+        "network:wikidata": "Q17089620",
+        "opening_hours": "24/7",
+        "operator:en": "Tesla",
+        "operator:wikidata": "Q478214",
+        "ref:tesla": "lampangsuperchargers",
+        "website": "https://www.tesla.com/findus/location/supercharger/lampangsuperchargers"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13688408001,
+      "lat": 18.7976275,
+      "lon": 99.021405,
+      "tags": {
+        "access": "yes",
+        "amenity": "charging_station",
+        "brand:en": "Tesla Supercharger",
+        "brand:website": "https://www.tesla.com/supercharger",
+        "brand:wikidata": "Q17089620",
+        "fee": "yes",
+        "frequency": "0",
+        "motorcar": "designated",
+        "name:en": "Chiang Mai Supercharger",
+        "network:en": "Supercharger",
+        "network:website": "https://www.tesla.com/supercharger",
+        "network:wikidata": "Q17089620",
+        "opening_hours": "24/7",
+        "operator:en": "Tesla",
+        "operator:wikidata": "Q478214",
+        "ref:tesla": "chiangmaisuperchargers",
+        "website": "https://www.tesla.com/findus/location/supercharger/chiangmaisuperchargers"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13695896478,
+      "lat": 18.7663756,
+      "lon": 99.0053438,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "Centara",
+        "capacity": "2",
+        "opening_hours": "24/7",
+        "socket:schuko": "2"
+      }
+    },
+    {
+      "type": "node",
+      "id": 13695896479,
+      "lat": 18.7603749,
+      "lon": 99.0068497,
+      "tags": {
+        "amenity": "charging_station",
+        "brand": "PTT",
+        "capacity": "2",
+        "opening_hours": "24/7",
+        "socket:type2": "2",
+        "socket:type2:output": "120"
+      }
+    }
+  ]
+}

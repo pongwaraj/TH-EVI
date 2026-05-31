@@ -17,6 +17,9 @@ data/processed/
 *.parquet
 *.feather
 
+# Notebook checkpoints
+.ipynb_checkpoints/
+
 # Notebook outputs
 *.html
 .ipynb_checkpoints/
