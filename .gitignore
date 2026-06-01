@@ -16,6 +16,8 @@ data/processed/
 *.hdf5
 *.parquet
 *.feather
+*.sqlite
+*.sqlite3
 
 # Notebook checkpoints
 .ipynb_checkpoints/

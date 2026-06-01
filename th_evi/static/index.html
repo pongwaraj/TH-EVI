@@ -3,227 +3,371 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TH-EVI — Chiang Mai EV Demand</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<title>TH-EVI Site Analysis</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { height: 100%; font-family: 'Segoe UI', Tahoma, sans-serif; }
-#map { height: 100%; width: 100%; }
-#sidebar {
-  position: absolute; top: 10px; right: 10px; width: 360px; max-height: 90vh;
-  background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 2px 20px rgba(0,0,0,0.2);
-  z-index: 1000; overflow-y: auto; padding: 16px; font-size: 13px;
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #17202a; background: #f4f6f8; }
+body { display: grid; grid-template-columns: minmax(420px, 520px) 1fr; }
+button, input, select, textarea { font: inherit; }
+#panel { height: 100vh; overflow-y: auto; border-right: 1px solid #d9e2ec; background: #fff; }
+#map { height: 100vh; min-width: 0; }
+.section { padding: 16px 18px; border-bottom: 1px solid #e6ebf0; }
+h1 { margin: 0; font-size: 22px; }
+h2 { margin: 0 0 12px; font-size: 15px; }
+.muted { color: #66788a; font-size: 12px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+label { display: grid; gap: 4px; font-size: 12px; color: #34495e; }
+input, select, textarea {
+  width: 100%; border: 1px solid #cdd6df; border-radius: 6px; padding: 8px;
+  background: white; color: #17202a; min-height: 36px;
 }
-#sidebar h2 { font-size: 18px; margin-bottom: 4px; }
-#sidebar h2 small { font-weight: normal; font-size: 12px; color: #666; }
-#sidebar .controls { display: flex; gap: 8px; margin: 8px 0; align-items: center; }
-#sidebar input[type=range] { flex: 1; }
-#sidebar #year-label { font-weight: bold; min-width: 40px; }
-#sidebar .legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 6px 0; font-size: 11px; }
-#sidebar .legend span { display: flex; align-items: center; gap: 4px; }
-#sidebar .legend i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-#summary-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-#summary-table th { text-align: left; border-bottom: 2px solid #ddd; padding: 4px 2px; }
-#summary-table td { padding: 3px 2px; border-bottom: 1px solid #eee; }
-#summary-table .num { text-align: right; }
-#click-result { margin-top: 8px; padding: 8px; background: #e8f5e9; border-radius: 4px; display: none; }
-#click-result h3 { font-size: 13px; margin-bottom: 4px; }
-#click-result .row { display: flex; justify-content: space-between; }
-.loading { text-align: center; padding: 20px; color: #999; }
-.danger { background: #ffebee !important; }
-.safe { background: #e8f5e9 !important; }
+textarea { min-height: 64px; resize: vertical; }
+.inline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.check input { width: auto; min-height: auto; }
+.btn {
+  border: 1px solid #12395b; background: #12395b; color: white; border-radius: 6px;
+  padding: 9px 12px; cursor: pointer; min-height: 38px;
+}
+.btn.secondary { background: white; color: #12395b; }
+.btn:disabled { opacity: .55; cursor: wait; }
+.metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.metric { border: 1px solid #dde3ea; border-radius: 8px; padding: 12px; background: #fbfcfd; }
+.metric span { color: #66788a; font-size: 12px; }
+.metric b { display: block; font-size: 22px; margin-top: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #edf1f5; vertical-align: top; }
+th { color: #526577; font-weight: 600; }
+a { color: #0b65c2; text-decoration: none; }
+.status { margin-top: 10px; font-size: 13px; color: #526577; min-height: 18px; }
+.danger { color: #b42318; }
+.leaflet-popup-content { font-size: 13px; }
+@media (max-width: 980px) {
+  body { grid-template-columns: 1fr; grid-template-rows: 58vh auto; }
+  #map { height: 58vh; order: 1; }
+  #panel { height: auto; order: 2; border-right: 0; }
+}
 </style>
 </head>
 <body>
-<div id="sidebar">
-  <h2>TH-EVI <small>Chiang Mai EV Demand</small></h2>
-  <div class="controls">
-    <span>Year:</span>
-    <input type="range" id="year-slider" min="2025" max="2040" value="2030" step="1">
-    <span id="year-label">2030</span>
+<aside id="panel">
+  <div class="section">
+    <h1>TH-EVI Site Analysis</h1>
+    <div class="muted">Chiang Mai candidate charging station demand</div>
   </div>
-  <div class="legend">
-    <span><i style="background:#e74c3c"></i> Highway</span>
-    <span><i style="background:#f39c12"></i> City Center</span>
-    <span><i style="background:#2ecc71"></i> Destination</span>
-    <span><i style="background:#9b59b6"></i> Charger</span>
+
+  <form id="analysis-form">
+    <div class="section">
+      <h2>Candidate Site</h2>
+      <label>Site name <input id="name" required value="New Candidate Site"></label>
+      <div class="grid">
+        <label>Latitude <input id="lat" type="number" step="0.000001" required value="18.766000"></label>
+        <label>Longitude <input id="lon" type="number" step="0.000001" required value="98.962000"></label>
+      </div>
+      <div class="grid">
+        <label>Zone <input id="zone" value="Airport / Central Airport"></label>
+        <label>Year <input id="year" type="number" min="2025" max="2050" value="2030"></label>
+      </div>
+      <label>Notes <textarea id="notes"></textarea></label>
+      <div class="status">Click the map to fill lat/lon, or paste coordinates from Google Maps.</div>
+    </div>
+
+    <div class="section">
+      <h2>Demand Assumptions</h2>
+      <div class="grid">
+        <label>Location type
+          <select id="location_type">
+            <option value="">Auto</option>
+            <option value="highway">Highway</option>
+            <option value="city_center">City center</option>
+            <option value="destination" selected>Destination</option>
+            <option value="suburban">Suburban</option>
+          </select>
+        </label>
+        <label>AADT override <input id="aadt" type="number" min="0" placeholder="Optional"></label>
+      </div>
+      <div class="grid">
+        <label>Scenario
+          <select id="scenario">
+            <option value="conservative">Conservative</option>
+            <option value="base" selected>Base</option>
+            <option value="upside">Upside</option>
+          </select>
+        </label>
+        <label>Station format
+          <select id="station_format">
+            <option value="community_mall">Community mall</option>
+            <option value="mall_surface_lot" selected>Mall surface lot</option>
+            <option value="roadside_destination">Roadside destination</option>
+            <option value="highway_hub">Highway hub</option>
+            <option value="urban_hub">Urban hub</option>
+            <option value="inside_parking">Inside parking</option>
+            <option value="test_launch">Test launch</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Station & Site</h2>
+      <div class="grid-3">
+        <label>Guns <input id="guns" type="number" min="1" value="12"></label>
+        <label>Total kW <input id="total_site_kw" type="number" min="1" value="720"></label>
+        <label>Max kW/gun <input id="max_kw_per_gun" type="number" min="1" value="180"></label>
+      </div>
+      <div class="grid-3">
+        <label>Parking bays <input id="parking_capacity" type="number" min="0" value="50"></label>
+        <label>kWh/session <input id="avg_kwh" type="number" min="1" step="0.1" value="32"></label>
+        <label>THB/kWh <input id="price" type="number" min="0.1" step="0.1" value="6.5"></label>
+      </div>
+      <div class="grid-3">
+        <label>Visibility <input id="visibility" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+        <label>Access <input id="access" type="number" min="0" max="1" step="0.05" value="0.85"></label>
+        <label>Tenant <input id="tenant" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+      </div>
+      <div class="grid">
+        <label>Signage <input id="signage" type="number" min="0" max="1" step="0.05" value="0.8"></label>
+        <label>Opening age days <input id="opening_age_days" type="number" min="0" placeholder="Mature if blank"></label>
+      </div>
+      <div class="inline" style="margin-top:10px">
+        <label class="check"><input id="roadside_frontage" type="checkbox" checked> Roadside frontage</label>
+        <label class="check"><input id="inside_parking" type="checkbox"> Inside parking structure</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Known Competitor</h2>
+      <div class="grid">
+        <label>Name <input id="comp_name" placeholder="Optional"></label>
+        <label>Distance km <input id="comp_distance" type="number" min="0" step="0.1"></label>
+      </div>
+      <div class="grid">
+        <label>Guns <input id="comp_guns" type="number" min="1" value="4"></label>
+        <label>Max kW <input id="comp_kw" type="number" min="1" value="120"></label>
+      </div>
+    </div>
+
+    <div class="section">
+      <button class="btn" id="analyze-btn" type="submit">Analyze & Save</button>
+      <button class="btn secondary" id="refresh-btn" type="button">Refresh Saved Sites</button>
+      <div id="status" class="status"></div>
+    </div>
+  </form>
+
+  <div class="section" id="result-section" style="display:none">
+    <h2>Latest Result</h2>
+    <div class="metrics">
+      <div class="metric"><span>Sessions/day</span><b id="m_sessions">-</b></div>
+      <div class="metric"><span>kWh/day</span><b id="m_kwh">-</b></div>
+      <div class="metric"><span>THB/day</span><b id="m_revenue">-</b></div>
+      <div class="metric"><span>Recommended plugs</span><b id="m_plugs">-</b></div>
+    </div>
+    <div class="status"><a id="report-link" href="#" target="_blank">Open standard report</a></div>
+    <table style="margin-top:12px">
+      <thead><tr><th>Scenario</th><th>Sessions/day</th><th>kWh/day</th><th>Plugs</th></tr></thead>
+      <tbody id="band-body"></tbody>
+    </table>
   </div>
-  <table id="summary-table">
-    <thead><tr><th>Location</th><th class="num">EV/day</th><th class="num">kWh/day</th></tr></thead>
-    <tbody id="summary-body"><tr><td colspan="3" class="loading">Loading...</td></tr></tbody>
-  </table>
-  <div id="click-result">
-    <h3>📍 Clicked Location</h3>
-    <div id="click-details"></div>
+
+  <div class="section">
+    <h2>Saved Candidate Sites</h2>
+    <table>
+      <thead><tr><th>Site</th><th>Sessions</th><th>Report</th></tr></thead>
+      <tbody id="sites-body"><tr><td colspan="3" class="muted">Loading...</td></tr></tbody>
+    </table>
   </div>
-</div>
+</aside>
+
 <div id="map"></div>
 
 <script>
-const map = L.map('map').setView([18.79, 98.98], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors'
+const map = L.map("map").setView([18.79, 98.98], 11);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenStreetMap contributors"
 }).addTo(map);
 
+const candidateLayer = L.layerGroup().addTo(map);
+const chargerLayer = L.layerGroup().addTo(map);
 const landmarkLayer = L.layerGroup().addTo(map);
-const chargerLayer = L.layerGroup();
-const highwayLayer = L.layerGroup();
-const clickMarkerLayer = L.layerGroup().addTo(map);
+let draftMarker = null;
 
-let clickMarker = null;
-let allLandmarks = [];
-let allHighways = [];
-let allChargers = [];
+const $ = id => document.getElementById(id);
+const num = id => {
+  const value = $(id).value;
+  return value === "" ? null : Number(value);
+};
+const bool = id => $(id).checked;
+const fmt = value => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
-// Color by type
-function typeColor(t) {
-  return { highway: '#e74c3c', city_center: '#f39c12', destination: '#2ecc71' }[t] || '#3498db';
+function payload() {
+  const competitors = [];
+  if ($("comp_name").value.trim() && num("comp_distance") !== null) {
+    competitors.push({
+      name: $("comp_name").value.trim(),
+      distance_km: num("comp_distance"),
+      guns: num("comp_guns"),
+      max_kw: num("comp_kw")
+    });
+  }
+  return {
+    site: {
+      name: $("name").value.trim(),
+      lat: num("lat"),
+      lon: num("lon"),
+      province: "เชียงใหม่",
+      zone: $("zone").value.trim() || null,
+      notes: $("notes").value.trim() || null
+    },
+    assumptions: {
+      location_type: $("location_type").value || null,
+      aadt: num("aadt"),
+      station_format: $("station_format").value,
+      guns: num("guns"),
+      total_site_kw: num("total_site_kw"),
+      max_kw_per_gun: num("max_kw_per_gun"),
+      parking_capacity: num("parking_capacity"),
+      visibility_from_road: num("visibility"),
+      access_ease: num("access"),
+      roadside_frontage: bool("roadside_frontage"),
+      signage_quality: num("signage"),
+      tenant_strength: num("tenant"),
+      inside_parking_structure: bool("inside_parking"),
+      opening_age_days: num("opening_age_days"),
+      avg_kwh_per_session: num("avg_kwh"),
+      price_per_kwh: num("price")
+    },
+    competitors,
+    year: num("year"),
+    scenario: $("scenario").value
+  };
 }
 
-function formatNum(n) { return n.toLocaleString(); }
-
-async function loadData() {
-  const [landmarks, highways, chargers] = await Promise.all([
-    fetch('/api/landmarks').then(r => r.json()),
-    fetch('/api/highways').then(r => r.json()),
-    fetch('/api/chargers').then(r => r.json()),
-  ]);
-  allLandmarks = landmarks;
-  allHighways = highways.segments || [];
-  allChargers = chargers.stations || [];
-  drawHighways();
-  drawChargers();
-  updateYear();
-}
-
-function drawHighways() {
-  const routeAadt = {};
-  allHighways.forEach(s => {
-    if (!routeAadt[s.route] || s.aadt > routeAadt[s.route].aadt) {
-      routeAadt[s.route] = s;
-    }
-  });
-  Object.values(routeAadt).forEach(s => {
-    const w = Math.max(2, Math.min(12, s.aadt / 10000));
-    // approximate line from route data — just show as circle marker for now
-    L.circleMarker([18.79, 98.98], {
-      radius: w, color: '#e74c3c', fillOpacity: 0.7
-    }).bindPopup(`<b>Hwy ${s.route}</b><br>AADT: ${formatNum(s.aadt)}<br>${s.name}`).addTo(highwayLayer);
+function setDraftMarker(lat, lon) {
+  if (draftMarker) draftMarker.remove();
+  draftMarker = L.marker([lat, lon], { draggable: true }).addTo(map);
+  draftMarker.bindPopup("Candidate point").openPopup();
+  draftMarker.on("dragend", e => {
+    const p = e.target.getLatLng();
+    $("lat").value = p.lat.toFixed(6);
+    $("lon").value = p.lng.toFixed(6);
   });
 }
 
-function drawChargers() {
-  allChargers.forEach(st => {
-    if (!st.lat || !st.lon) return;
-    const op = st.operator || 'Unknown';
-    const cap = st.capacity || '?';
-    L.circleMarker([st.lat, st.lon], {
-      radius: 6, color: '#9b59b6', fillOpacity: 0.8
-    }).bindPopup(`<b>${op}</b><br>Capacity: ${cap}<br>${(st.connectors || []).join(', ')}`).addTo(chargerLayer);
-  });
-}
-
-async function updateYear() {
-  const year = parseInt(document.getElementById('year-slider').value);
-  document.getElementById('year-label').textContent = year;
-
-  // Fetch all landmarks with scenario endpoint
-  const resp = await fetch(`/api/scenario?year=${year}`);
-  const data = await resp.json();
-
-  landmarkLayer.clearLayers();
-  const tbody = document.getElementById('summary-body');
-  tbody.innerHTML = '';
-
-  data.landmarks.forEach(r => {
-    const name = r.name || 'Unknown';
-    const loc = allLandmarks.find(l => l.name === name);
-    const lat = loc ? loc.lat : 18.79;
-    const lon = loc ? loc.lon : 98.98;
-    const color = typeColor(r.location_type);
-
-    // Marker
-    const marker = L.circleMarker([lat, lon], {
-      radius: Math.max(5, Math.min(20, r.daily_ev_visits / 30)),
-      color: color, fillOpacity: 0.8
-    }).bindPopup(`
-      <b>${name}</b><br>
-      AADT: ${formatNum(r.aadt_used)}<br>
-      EV share: ${r.ev_share_pct}%<br>
-      <b>${formatNum(r.daily_ev_visits)} EVs/day</b><br>
-      <b>${formatNum(r.daily_kwh)} kWh/day</b>
-    `);
-    marker.addTo(landmarkLayer);
-
-    // Table row
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${name}</td>
-      <td class="num">${formatNum(r.daily_ev_visits)}</td>
-      <td class="num">${formatNum(r.daily_kwh)}</td>
-    `;
-    tbody.appendChild(row);
-  });
-
-  // Summary row
-  const totalRow = document.createElement('tr');
-  totalRow.style.fontWeight = 'bold';
-  totalRow.style.borderTop = '2px solid #333';
-  totalRow.innerHTML = `
-    <td>Total</td>
-    <td class="num">${formatNum(data.summary.total_ev_visits)}</td>
-    <td class="num">${formatNum(data.summary.total_daily_kwh)}</td>
-  `;
-  tbody.appendChild(totalRow);
-}
-
-// Year slider
-document.getElementById('year-slider').addEventListener('input', updateYear);
-
-// Click on map to estimate
-map.on('click', async function(e) {
-  const year = parseInt(document.getElementById('year-slider').value);
-  clickMarkerLayer.clearLayers();
-
-  const resp = await fetch('/api/estimate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lat: e.latlng.lat, lon: e.latlng.lng, year })
-  });
-  const result = await resp.json();
-
-  L.circleMarker([e.latlng.lat, e.latlng.lng], {
-    radius: 10, color: '#e74c3c', fillOpacity: 0.5
-  }).bindPopup(`
-    <b>Clicked Location</b><br>
-    AADT: ${formatNum(result.aadt_used)}<br>
-    EV share: ${result.ev_share_pct}%<br>
-    <b>${formatNum(result.daily_ev_visits)} EVs/day</b><br>
-    <b>${formatNum(result.daily_kwh)} kWh/day</b>
-  `).openPopup().addTo(clickMarkerLayer);
-
-  const div = document.getElementById('click-result');
-  div.style.display = 'block';
-  document.getElementById('click-details').innerHTML = `
-    <div class="row"><span>Lat/Lon</span><span>${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}</span></div>
-    <div class="row"><span>Location type</span><span>${result.location_type}</span></div>
-    <div class="row"><span>AADT</span><span>${formatNum(result.aadt_used)}</span></div>
-    <div class="row"><span>EV share</span><span>${result.ev_share_pct}%</span></div>
-    <div class="row"><span>Charge prob.</span><span>${result.charge_probability_pct}%</span></div>
-    <div class="row"><b>EVs/day</b><b>${formatNum(result.daily_ev_visits)}</b></div>
-    <div class="row"><b>kWh/day</b><b>${formatNum(result.daily_kwh)}</b></div>
-  `;
+map.on("click", e => {
+  $("lat").value = e.latlng.lat.toFixed(6);
+  $("lon").value = e.latlng.lng.toFixed(6);
+  setDraftMarker(e.latlng.lat, e.latlng.lng);
 });
 
-// Layer control
+async function analyze(event) {
+  event.preventDefault();
+  $("analyze-btn").disabled = true;
+  $("status").textContent = "Analyzing and saving...";
+  $("status").className = "status";
+  try {
+    const resp = await fetch("/api/site-analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload())
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const result = await resp.json();
+    showResult(result);
+    await loadSavedSites();
+    $("status").textContent = `Saved run #${result.run_id}`;
+  } catch (err) {
+    $("status").textContent = err.message;
+    $("status").className = "status danger";
+  } finally {
+    $("analyze-btn").disabled = false;
+  }
+}
+
+function showResult(result) {
+  $("result-section").style.display = "block";
+  $("m_sessions").textContent = fmt(result.summary.sessions_per_day);
+  $("m_kwh").textContent = fmt(result.summary.daily_kwh);
+  $("m_revenue").textContent = fmt(result.summary.daily_revenue);
+  $("m_plugs").textContent = result.summary.recommended_plugs;
+  $("report-link").href = result.report_url;
+  const rows = Object.entries(result.scenario_band || {}).map(([label, s]) => `
+    <tr><td>${label}</td><td>${fmt(s.sessions_per_day)}</td><td>${fmt(s.daily_kwh)}</td><td>${s.recommended_plugs}</td></tr>
+  `).join("");
+  $("band-body").innerHTML = rows;
+
+  const lat = result.site.lat;
+  const lon = result.site.lon;
+  L.circleMarker([lat, lon], {
+    radius: 10,
+    color: "#12395b",
+    fillColor: "#36a2eb",
+    fillOpacity: 0.85
+  }).bindPopup(`
+    <b>${result.site.name}</b><br>
+    ${fmt(result.summary.sessions_per_day)} sessions/day<br>
+    ${fmt(result.summary.daily_kwh)} kWh/day<br>
+    <a href="${result.report_url}" target="_blank">Report</a>
+  `).addTo(candidateLayer);
+  map.setView([lat, lon], 14);
+}
+
+async function loadSavedSites() {
+  const resp = await fetch("/api/sites");
+  const data = await resp.json();
+  candidateLayer.clearLayers();
+  $("sites-body").innerHTML = data.sites.length ? "" : `<tr><td colspan="3" class="muted">No saved sites yet</td></tr>`;
+  data.sites.forEach(site => {
+    const latest = site.latest;
+    const sessions = latest ? fmt(latest.sessions_per_day) : "-";
+    const report = latest ? `<a href="/reports/${latest.run_id}" target="_blank">Open</a>` : "-";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${site.name}<div class="muted">${site.zone || ""}</div></td><td>${sessions}</td><td>${report}</td>`;
+    $("sites-body").appendChild(tr);
+    L.circleMarker([site.lat, site.lon], {
+      radius: 7,
+      color: "#12395b",
+      fillColor: "#36a2eb",
+      fillOpacity: 0.75
+    }).bindPopup(`<b>${site.name}</b><br>${sessions} sessions/day<br>${report}`).addTo(candidateLayer);
+  });
+}
+
+async function loadReferenceLayers() {
+  const [landmarks, chargers] = await Promise.all([
+    fetch("/api/landmarks").then(r => r.json()),
+    fetch("/api/chargers").then(r => r.json())
+  ]);
+  landmarks.forEach(l => {
+    L.circleMarker([l.lat, l.lon], {
+      radius: 5,
+      color: "#2f855a",
+      fillOpacity: 0.65
+    }).bindPopup(`<b>${l.name}</b><br>${l.type}`).addTo(landmarkLayer);
+  });
+  (chargers.stations || []).forEach(st => {
+    if (!st.lat || !st.lon) return;
+    L.circleMarker([st.lat, st.lon], {
+      radius: 5,
+      color: "#805ad5",
+      fillOpacity: 0.65
+    }).bindPopup(`<b>${st.operator || "Charger"}</b><br>${st.capacity || "?"} bays`).addTo(chargerLayer);
+  });
+}
+
 L.control.layers(null, {
-  'Landmarks': landmarkLayer,
-  'Highways': highwayLayer,
-  'Charging Stations': chargerLayer,
+  "Candidate sites": candidateLayer,
+  "Reference landmarks": landmarkLayer,
+  "Existing chargers": chargerLayer
 }).addTo(map);
 
-loadData();
+$("analysis-form").addEventListener("submit", analyze);
+$("refresh-btn").addEventListener("click", loadSavedSites);
+setDraftMarker(Number($("lat").value), Number($("lon").value));
+loadReferenceLayers();
+loadSavedSites();
 </script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app.py": {
+      "excludeFiles": "{tests/**,notebooks/**,docs/**,.pytest_cache/**,**/__pycache__/**,Fuel_NewCar_Apr69.xls,data/*.xls,data/*.sqlite,data/*.sqlite3}"
+    }
+  }
+}
