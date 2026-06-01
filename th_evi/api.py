@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import html
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 import uvicorn
 
 from .data import (
@@ -24,6 +26,7 @@ from .db import (
     CandidateSite,
     CompetitorRecord,
     SiteAssumption,
+    get_database_url,
     session_scope,
 )
 from .heatmap import generate_chiang_mai_heatmap
@@ -330,6 +333,43 @@ def population():
     """Return Chiang Mai district population data."""
     df = get_chiang_mai_district_population()
     return {"districts": df.to_dict(orient="records")}
+
+
+@app.get("/api/health/db")
+def database_health():
+    """Return database connectivity status without exposing credentials."""
+    configured_env = next(
+        (
+            name
+            for name in ("TH_EVI_DB_URL", "DATABASE_URL", "POSTGRES_URL")
+            if os.environ.get(name)
+        ),
+        None,
+    )
+    db_url = get_database_url()
+    backend = "postgres" if db_url.startswith("postgresql+psycopg://") else "sqlite"
+    try:
+        with session_scope() as session:
+            session.execute(text("SELECT 1"))
+        return {
+            "ok": True,
+            "backend": backend,
+            "configured_env": configured_env,
+            "persistent": backend == "postgres",
+        }
+    except Exception as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "ok": False,
+                "backend": backend,
+                "configured_env": configured_env,
+                "persistent": False,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "hint": "Set TH_EVI_DB_URL, DATABASE_URL, or POSTGRES_URL to a managed Postgres connection string for production.",
+            },
+        )
 
 
 @app.get("/api/scenario")

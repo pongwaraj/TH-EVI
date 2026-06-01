@@ -30,3 +30,4 @@ data/processed/
 
 # OS
 Thumbs.db
+.vercel
