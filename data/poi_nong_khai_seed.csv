@@ -1,0 +1,13 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+nong_khai_city_center,Nong Khai city center,city_center,17.8780,102.7420,public city context + seed coordinate,medium,"City-level coordinate anchor for first-pass screening."
+first_thai_lao_friendship_bridge,First Thai-Lao Friendship Bridge,border_crossing,17.8783,102.7156,public bridge coordinate,high,"Primary Thai-Lao border and Route 2 terminal demand anchor."
+nong_khai_border_checkpoint,Nong Khai border checkpoint / Route 243 axis,border_crossing,17.8755,102.7150,public bridge context + seed coordinate,medium,"Border control and pre/post-crossing demand proxy."
+nong_khai_railway_station,Nong Khai Railway Station,transport,17.8700,102.7250,public railway context + seed coordinate,medium,"Rail demand and cross-border rail/bus connector near the Friendship Bridge."
+nong_khai_bus_terminal,Nong Khai Bus Terminal,transport,17.8790,102.7450,seed_estimate,low_medium,"Intercity/local transport demand proxy; verify exact pin."
+tha_sadet_market,Tha Sadet Market / Mekong riverfront,tourism,17.8830,102.7440,public tourism context + seed coordinate,medium,"Riverfront tourism/retail anchor in city core."
+wat_pho_chai,Wat Pho Chai,tourism,17.8810,102.7530,public tourism context + seed coordinate,medium,"Major city religious/tourism anchor."
+nong_khai_hospital,Nong Khai Hospital,hospital,17.8800,102.7500,seed_estimate,low_medium,"Hospital/government demand proxy; verify exact pin."
+route2_nam_suai_axis,Route 2 Nam Suai - Friendship Bridge axis,transport_corridor,17.8600,102.7000,DOH AADT context + seed coordinate,medium,"High-AADT approach to border and city."
+route212_east_axis,Route 212 Nong Khai - Pak Suai axis,transport_corridor,17.9050,102.8300,DOH AADT context + seed coordinate,medium,"Mekong-side east corridor proxy."
+tha_bo_district,Tha Bo district center,district_center,17.8500,102.5800,seed_estimate,low_medium,"West-side district and Mekong tourism demand proxy."
+phon_phisai_district,Phon Phisai district center,district_center,18.0200,103.0800,seed_estimate,low_medium,"East-side district and Naga fireball tourism proxy; verify exact pin."

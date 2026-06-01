@@ -1,0 +1,11 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,2,Nam Suai - Friendship Bridge Nong Khai Thai-Lao border,498+256,33247,Nong Khai,DOH aadt_2566.csv,"Highest available Nong Khai AADT point in current dataset; high heavy-vehicle share."
+2566,2,Nam Suai - Friendship Bridge Nong Khai Thai-Lao border,487+006,26234,Nong Khai,DOH aadt_2566.csv,"Route 2 border approach / intercity flow."
+2566,243,Nong Khai - Thai-Lao Friendship Bridge border checkpoint,1+000,23177,Nong Khai,DOH aadt_2566.csv,"Direct border checkpoint corridor."
+2566,2,Nam Suai - Friendship Bridge Nong Khai Thai-Lao border,505+850,20791,Nong Khai,DOH aadt_2566.csv,"Route 2 terminal/bridge-side count."
+2566,212,Nong Khai - Pak Suai,5+000,14537,Nong Khai,DOH aadt_2566.csv,"East-side Mekong corridor."
+2566,242,Nong Khai - Nong Bua,1+189,14282,Nong Khai,DOH aadt_2566.csv,"City connector count."
+2566,212,Pak Suai - Nam Pe,43+100,9350,Nong Khai,DOH aadt_2566.csv,"Secondary east-side corridor."
+2566,211,Nong Song Hong - Si Chiang Mai,42+700,9272,Nong Khai,DOH aadt_2566.csv,"West-side Mekong corridor."
+2566,211,Nong Song Hong - Si Chiang Mai,10+000,8527,Nong Khai,DOH aadt_2566.csv,"West-side corridor near Tha Bo/Si Chiang Mai."
+2566,2020,Tha Bo - Ban Wan,2+250,6440,Nong Khai,DOH aadt_2566.csv,"District connector count."
