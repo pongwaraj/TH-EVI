@@ -1,8 +1,8 @@
 # Deploy TH-EVI on Vercel
 
-TH-EVI can run on Vercel as a FastAPI Python app. Vercel uses `app.py` as the
-entrypoint and `vercel.json` to trim development-only files from the function
-bundle.
+TH-EVI can run on Vercel as a FastAPI Python app. Vercel uses `api/index.py` as
+the Python Function entrypoint and `vercel.json` rewrites all routes to the
+FastAPI app.
 
 ## Database
 
