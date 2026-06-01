@@ -26,6 +26,7 @@ from .db import (
     SiteAssumption,
     session_scope,
 )
+from .heatmap import generate_chiang_mai_heatmap
 from .location import LANDMARK_DB, LocationDemandModel, StationDemandModel
 from .site import (
     CompetitiveCaptureModel,
@@ -352,6 +353,20 @@ def scenario(year: int = Query(2035, ge=2025, le=2050)):
             "landmark_count": len(results),
         },
     }
+
+
+@app.get("/api/heatmap/chiang-mai")
+def chiang_mai_heatmap(
+    year: int = Query(2030, ge=2025, le=2050),
+    scenario: str = Query("base", pattern="^(conservative|base|upside)$"),
+    resolution_km: float = Query(1.0, gt=0, le=5),
+):
+    """Return Chiang Mai area-demand heat-map points."""
+    return generate_chiang_mai_heatmap(
+        year=year,
+        scenario=scenario,
+        resolution_km=resolution_km,
+    )
 
 
 @app.get("/api/station")

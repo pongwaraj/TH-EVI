@@ -44,6 +44,8 @@ th { color: #526577; font-weight: 600; }
 a { color: #0b65c2; text-decoration: none; }
 .status { margin-top: 10px; font-size: 13px; color: #526577; min-height: 18px; }
 .danger { color: #b42318; }
+.heat-legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #526577; margin-top: 8px; }
+.heat-ramp { width: 120px; height: 10px; border-radius: 999px; background: linear-gradient(90deg, #2c7bb6, #ffff8c, #fdae61, #d7191c); }
 .leaflet-popup-content { font-size: 13px; }
 @media (max-width: 980px) {
   body { grid-template-columns: 1fr; grid-template-rows: 58vh auto; }
@@ -153,7 +155,9 @@ a { color: #0b65c2; text-decoration: none; }
     <div class="section">
       <button class="btn" id="analyze-btn" type="submit">Analyze & Save</button>
       <button class="btn secondary" id="refresh-btn" type="button">Refresh Saved Sites</button>
+      <button class="btn secondary" id="heatmap-btn" type="button">Load Heat Map</button>
       <div id="status" class="status"></div>
+      <div class="heat-legend"><span>Heat</span><i class="heat-ramp"></i><span id="heatmap-meta">Not loaded</span></div>
     </div>
   </form>
 
@@ -192,6 +196,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 const candidateLayer = L.layerGroup().addTo(map);
 const chargerLayer = L.layerGroup().addTo(map);
 const landmarkLayer = L.layerGroup().addTo(map);
+const heatmapLayer = L.layerGroup().addTo(map);
 let draftMarker = null;
 
 const $ = id => document.getElementById(id);
@@ -201,6 +206,13 @@ const num = id => {
 };
 const bool = id => $(id).checked;
 const fmt = value => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+function heatColor(intensity) {
+  if (intensity >= 0.75) return "#d7191c";
+  if (intensity >= 0.50) return "#fdae61";
+  if (intensity >= 0.25) return "#ffff8c";
+  return "#2c7bb6";
+}
 
 function payload() {
   const competitors = [];
@@ -357,17 +369,56 @@ async function loadReferenceLayers() {
   });
 }
 
+async function loadHeatMap() {
+  $("heatmap-btn").disabled = true;
+  $("status").textContent = "Loading heat map...";
+  $("status").className = "status";
+  try {
+    const year = num("year") || 2030;
+    const scenario = $("scenario").value || "base";
+    const resp = await fetch(`/api/heatmap/chiang-mai?year=${year}&scenario=${scenario}&resolution_km=1.0`);
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    heatmapLayer.clearLayers();
+    data.points.forEach(point => {
+      const color = heatColor(point.intensity);
+      L.circle([point.lat, point.lon], {
+        radius: Math.max(350, 900 * point.intensity),
+        stroke: false,
+        fillColor: color,
+        fillOpacity: Math.max(0.18, 0.62 * point.intensity)
+      }).bindPopup(`
+        <b>Heat score ${fmt(point.heat_score)}</b><br>
+        ${point.location_type}<br>
+        Model sessions: ${fmt(point.model_sessions)}<br>
+        Zone score: ${fmt(point.zone_score)}<br>
+        ${(point.zones || []).join("<br>")}
+      `).addTo(heatmapLayer);
+    });
+    $("heatmap-meta").textContent = `${data.point_count} points, max ${fmt(data.max_heat_score)}, ${data.year} ${data.scenario}`;
+    $("status").textContent = "Heat map loaded";
+  } catch (err) {
+    $("status").textContent = err.message;
+    $("status").className = "status danger";
+  } finally {
+    $("heatmap-btn").disabled = false;
+  }
+}
+
 L.control.layers(null, {
   "Candidate sites": candidateLayer,
+  "Area demand heat": heatmapLayer,
   "Reference landmarks": landmarkLayer,
   "Existing chargers": chargerLayer
 }).addTo(map);
 
 $("analysis-form").addEventListener("submit", analyze);
 $("refresh-btn").addEventListener("click", loadSavedSites);
+$("heatmap-btn").addEventListener("click", loadHeatMap);
 setDraftMarker(Number($("lat").value), Number($("lon").value));
 loadReferenceLayers();
 loadSavedSites();
+loadHeatMap();
 </script>
 </body>
 </html>
