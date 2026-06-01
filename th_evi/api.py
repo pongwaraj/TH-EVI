@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any
@@ -113,6 +114,17 @@ def _dump_model(model_obj: BaseModel) -> dict[str, Any]:
     if hasattr(model_obj, "model_dump"):
         return model_obj.model_dump()
     return model_obj.dict()
+
+
+def _json_safe(value: Any) -> Any:
+    """Convert model output into strict JSON-safe values."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 def _station_type_for_queue(location_type: str | None, station_format: str) -> str:
@@ -230,6 +242,7 @@ def _scenario_band(request: SiteAnalysisRequest) -> dict[str, dict[str, Any]]:
 
 
 def _store_analysis(request: SiteAnalysisRequest, result: dict[str, Any]) -> int:
+    result = _json_safe(result)
     site_data = _dump_model(request.site)
     assumption_data = _dump_model(request.assumptions)
     input_snapshot = {
@@ -253,7 +266,7 @@ def _store_analysis(request: SiteAnalysisRequest, result: dict[str, Any]) -> int
             site_id=site.id,
             year=request.year,
             scenario=request.scenario,
-            inputs_snapshot_json=json.dumps(input_snapshot, ensure_ascii=False),
+            inputs_snapshot_json=json.dumps(input_snapshot, ensure_ascii=False, allow_nan=False),
         )
         session.add(run)
         session.flush()
@@ -262,7 +275,7 @@ def _store_analysis(request: SiteAnalysisRequest, result: dict[str, Any]) -> int
         session.add(
             AnalysisResult(
                 run_id=run.id,
-                result_json=json.dumps(result, ensure_ascii=False),
+                result_json=json.dumps(result, ensure_ascii=False, allow_nan=False),
                 sessions_per_day=summary["sessions_per_day"],
                 daily_kwh=summary["daily_kwh"],
                 daily_revenue=summary["daily_revenue"],
@@ -429,7 +442,7 @@ def create_site_analysis(req: SiteAnalysisRequest):
     run_id = _store_analysis(req, result)
     result["run_id"] = run_id
     result["report_url"] = f"/reports/{run_id}"
-    return result
+    return _json_safe(result)
 
 
 @app.get("/api/sites")
@@ -470,7 +483,7 @@ def list_candidate_sites():
 def get_report_json(run_id: int):
     """Return one saved analysis report as JSON."""
     _, result = _load_report(run_id)
-    return result
+    return _json_safe(result)
 
 
 @app.get("/reports/{run_id}", response_class=HTMLResponse)
