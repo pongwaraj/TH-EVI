@@ -1,0 +1,11 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,231,Ubon Ratchathani ring road,8+150,44325,Ubon Ratchathani,DOH aadt_2566.csv,"Highest available Ubon Ratchathani AADT point in current dataset."
+2566,2050,Ubon Ratchathani - Trakan Phuet Phon,8+600,41822,Ubon Ratchathani,DOH aadt_2566.csv,"High-volume north-side city/district corridor."
+2566,2050,Ubon Ratchathani - Trakan Phuet Phon,45+900,34814,Ubon Ratchathani,DOH aadt_2566.csv,"Secondary high-volume Route 2050 point."
+2566,24,Det Udom - Ubon Ratchathani,418+943,30091,Ubon Ratchathani,DOH aadt_2566.csv,"Route 24 south/southwest gateway into Ubon."
+2566,226,Huai Khayung - Warin Chamrap,331+384,27066,Ubon Ratchathani,DOH aadt_2566.csv,"Warin Chamrap / rail-side approach."
+2566,212,Lue Amnat - Nong Yo,551+733,23095,Ubon Ratchathani,DOH aadt_2566.csv,"North/east Mekong-side corridor."
+2566,212,Nong Yo - Ubon Ratchathani,570+575,22148,Ubon Ratchathani,DOH aadt_2566.csv,"Route 212 city approach."
+2566,2415,Nong Bo - Nong Yo,11+000,18403,Ubon Ratchathani,DOH aadt_2566.csv,"City connector with very low heavy-vehicle share."
+2566,24,Det Udom - Ubon Ratchathani,398+643,17785,Ubon Ratchathani,DOH aadt_2566.csv,"Secondary Route 24 point."
+2566,2382,Khueang Nai - That Noi,2+500,17737,Ubon Ratchathani,DOH aadt_2566.csv,"District connector count."

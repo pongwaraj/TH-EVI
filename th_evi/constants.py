@@ -59,6 +59,7 @@ PROVINCE_EV_FACTOR = {
     "ขอนแก่น": 1.00,      # Pilot assumption: major Northeast hub; keep at national curve until DLT calibration
     "พะเยา": 0.72,        # Pilot assumption: smaller northern province with Route 1 travel demand
     "หนองคาย": 0.78,      # Pilot assumption: smaller province, lifted by Route 2 border gateway demand
+    "อุบลราชธานี": 0.92,  # Pilot assumption: large regional hub with Route 24/231 and Chong Mek demand
     "default": 1.00,
 }
 
@@ -151,6 +152,7 @@ PROVINCE_NEW_CAR_RATE = {
     "ขอนแก่น": 5_000,
     "พะเยา": 900,
     "หนองคาย": 1_100,
+    "อุบลราชธานี": 3_800,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
@@ -160,6 +162,7 @@ PROVINCE_FLEET_SIZE = {
     "ขอนแก่น": 300_000,
     "พะเยา": 65_000,
     "หนองคาย": 75_000,
+    "อุบลราชธานี": 220_000,
 }
 
 # --- National Average Daily Trips per Vehicle ---

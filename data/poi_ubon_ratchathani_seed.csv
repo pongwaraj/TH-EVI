@@ -1,0 +1,13 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+ubon_city_center,Ubon Ratchathani city center,city_center,15.2440,104.8480,public city context + seed coordinate,medium,"City-level coordinate anchor for first-pass screening."
+central_ubon,Central Ubon / Central Plaza Ubon Ratchathani,shopping_mall,15.2450,104.8300,public mall/nearby listing context + seed coordinate,medium,"Primary retail destination and charger audit target in Chae Ramae/ring-road core."
+ubon_ring_road_route231,Route 231 Ubon ring road transport axis,transport_corridor,15.2450,104.8300,DOH AADT context + seed coordinate,medium,"Highest available Ubon AADT point in current dataset."
+ubon_airport,Ubon Ratchathani Airport,airport,15.2510,104.8700,public airport context + seed coordinate,medium,"Airport, hotel, rental/fleet and city travel demand anchor."
+ubon_railway_station,Ubon Ratchathani Railway Station / Warin Chamrap,transport,15.1930,104.8620,public railway context + seed coordinate,medium,"Rail terminal is in Warin Chamrap; important for south-city transport demand."
+warin_chamrap_center,Warin Chamrap city center,district_center,15.1930,104.8600,public district context + seed coordinate,medium,"Large urban district adjacent to Ubon city."
+route2050_north_axis,Route 2050 Ubon - Trakan Phuet Phon axis,transport_corridor,15.2800,104.8800,DOH AADT context + seed coordinate,medium,"High-AADT north-side corridor proxy."
+det_udom_center,Det Udom district center,district_center,14.9000,105.0700,seed_estimate,low_medium,"Large south-side district and Route 24 demand proxy."
+phibun_mangsahan_center,Phibun Mangsahan district center,district_center,15.2450,105.2300,seed_estimate,low_medium,"District/tourism gateway toward Mekong and eastern Ubon."
+chong_mek_border,Chong Mek border crossing,border_crossing,15.1331,105.4669,public border coordinate,medium_high,"Thailand-Laos border gateway in Sirindhorn district; verify charger coverage around border and reservoir."
+sirindhorn_reservoir,Sirindhorn Reservoir / dam tourism zone,tourism,15.2000,105.4200,public tourism context + seed coordinate,medium,"Tourism and route-stop anchor near Chong Mek."
+thung_si_mueang_park,Thung Si Mueang / downtown civic core,recreation,15.2290,104.8570,public city context + seed coordinate,medium,"Downtown civic/tourism anchor."
