@@ -1,0 +1,11 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,1,Ko Kha - Samakkhi,697+942,56026,Lampang,DOH aadt_2566.csv,"Highest available Lampang AADT point in current dataset."
+2566,1039,Dong San Ngoen - Kham Daeng,5+800,36863,Lampang,DOH aadt_2566.csv,"Urban/city-side road count, relevant to Mueang Lampang screening."
+2566,1,Ko Kha - Samakkhi,701+817,32997,Lampang,DOH aadt_2566.csv,"Route 1 corridor."
+2566,1035,Wang Mo Phatthana - Samphao Thong,14+500,31542,Lampang,DOH aadt_2566.csv,"City/provincial connector."
+2566,1,Ko Kha - Samakkhi,708+317,29232,Lampang,DOH aadt_2566.csv,"Route 1 corridor."
+2566,1157,Tha Lo - Mueang Pan,5+400,27561,Lampang,DOH aadt_2566.csv,"Northern/eastern connector."
+2566,127,Lampang Bypass,1+600,26596,Lampang,DOH aadt_2566.csv,"Bypass corridor around Mueang Lampang."
+2566,11,Pang Ma O - Pa Kham,453+219,19116,Lampang,DOH aadt_2566.csv,"Chiang Mai-Lampang direction corridor."
+2566,1,Samakkhi - Ban Huat,720+367,17975,Lampang,DOH aadt_2566.csv,"Route 1 north/south flow."
+2566,11,Northern Junction - Khun Tan,469+099,17312,Lampang,DOH aadt_2566.csv,"Route 11 corridor toward Lamphun/Chiang Mai."

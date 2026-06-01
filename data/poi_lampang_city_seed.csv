@@ -1,0 +1,11 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+lampang_city_center,Lampang city center,city_center,18.29232,99.49277,Geodatos,medium,"City-level coordinate anchor for Mueang Lampang screening."
+central_lampang,Central Plaza / Robinson Lampang,shopping_mall,18.2821697,99.4762164,Tops Central Lampang public listing,high,"Primary retail/lifestyle node; strong candidate anchor for destination charging analysis."
+big_c_lampang,Big C Lampang,shopping_mall,18.275833,99.481389,Wikimapia coordinate converted from 18°16'33N 99°28'53E,medium,"Major retail POI near city core; verify exact Google Maps pin before site-level analysis."
+lampang_bus_terminal,Lampang Bus Terminal,transport,18.2890,99.5030,seed_estimate,low,"Transport node placeholder; verify exact pin and passenger activity."
+nakhon_lampang_railway_station,Nakhon Lampang Railway Station,transport,18.2780,99.5050,ThailandTrains public context + seed coordinate,low_medium,"Rail station is west of town per public travel references; exact coordinate should be verified."
+kad_kong_ta,Kad Kong Ta walking street / old town,tourism,18.2925,99.4910,seed_estimate,medium,"Tourist and old-town activity node; useful for heat map but exact boundary is broad."
+lampang_hospital,Lampang Hospital,hospital,18.2860,99.5000,seed_estimate,low,"Major hospital demand proxy; verify exact pin."
+lampang_airport,Lampang Airport,airport,18.2709,99.5042,public_airport_reference,medium,"Airport/transport activity is modest but relevant for rental/tourism signal."
+lampang_rajabhat_university,Lampang Rajabhat University,education,18.3560,99.5100,seed_estimate,low,"Education/residential demand proxy north of city; verify exact pin."
+wat_phra_that_lampang_luang,Wat Phra That Lampang Luang,tourism,18.216122,99.390398,public tourism coordinate,medium,"Major tourism destination outside the city core near Ko Kha; useful for corridor/tourism demand."
