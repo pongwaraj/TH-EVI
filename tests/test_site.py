@@ -11,6 +11,7 @@ from th_evi.site import (
     SiteDemandCase,
     SiteReadiness,
     StationSpec,
+    recommend_station_spec,
     ramp_up_factor,
 )
 
@@ -110,3 +111,24 @@ def test_site_case_estimate_maps_raw_to_captured_sessions_and_revenue():
     assert result["captured_daily_sessions"] > 80
     assert result["captured_daily_sessions"] < result["raw_daily_sessions"]
     assert result["daily_revenue"] > 15000
+    assert result["charger_recommendation"]["architecture"] == "distributed"
+
+
+def test_recommend_station_spec_matches_known_station_scales():
+    mahachok = recommend_station_spec(28, preferred_ports=4)
+    assert mahachok["recommended_ports"] == 4
+    assert mahachok["architecture"] == "standalone_cabinets"
+    assert mahachok["cabinet_count"] == 2
+    assert mahachok["cabinet_kw"] == 180
+
+    meta = recommend_station_spec(60, preferred_ports=6)
+    assert meta["recommended_ports"] == 6
+    assert meta["architecture"] == "distributed"
+    assert meta["cabinet_count"] == 3
+    assert meta["cabinet_kw"] == 240
+
+    central = recommend_station_spec(140)
+    assert central["recommended_ports"] == 12
+    assert central["architecture"] == "distributed"
+    assert central["cabinet_count"] == 1
+    assert central["cabinet_kw"] == 720

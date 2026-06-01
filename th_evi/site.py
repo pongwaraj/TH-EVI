@@ -131,6 +131,99 @@ class StationSpec:
         return self.effective_kw(active_guns)
 
 
+def recommend_station_spec(
+    sessions_per_day: float,
+    avg_kwh_per_session: float = 32.0,
+    preferred_ports: Optional[int] = None,
+) -> dict:
+    """Recommend a charger hardware configuration for proposal screening.
+
+    The rule reflects current TH-EVI planning assumptions:
+    - 4-port neighborhood sites use two standalone 180 kW cabinets.
+    - 6-port medium sites and larger lean toward distributed architecture.
+    - 100+ sessions/day hot zones should use a 12-port, 720 kW distributed system.
+
+    The recommendation is advisory and can be overridden by customer or EPC
+    requirements.
+    """
+    if not isinstance(sessions_per_day, (int, float)):
+        raise TypeError(f"sessions_per_day must be a number, got {type(sessions_per_day).__name__}")
+    if sessions_per_day < 0:
+        raise ValueError(f"sessions_per_day must be non-negative, got {sessions_per_day}")
+    if not isinstance(avg_kwh_per_session, (int, float)):
+        raise TypeError(f"avg_kwh_per_session must be a number, got {type(avg_kwh_per_session).__name__}")
+    if avg_kwh_per_session <= 0:
+        raise ValueError(f"avg_kwh_per_session must be positive, got {avg_kwh_per_session}")
+    if preferred_ports is not None:
+        if not isinstance(preferred_ports, int):
+            raise TypeError(f"preferred_ports must be an integer or None, got {type(preferred_ports).__name__}")
+        if preferred_ports <= 0:
+            raise ValueError(f"preferred_ports must be positive, got {preferred_ports}")
+
+    daily_kwh = sessions_per_day * avg_kwh_per_session
+
+    if preferred_ports is not None:
+        ports = preferred_ports
+    elif sessions_per_day >= 100:
+        ports = 12
+    elif sessions_per_day >= 45:
+        ports = 6
+    else:
+        ports = 4
+
+    if ports >= 12 or sessions_per_day >= 100:
+        architecture = "distributed"
+        cabinet_kw = 720
+        cabinet_count = 1
+        dispensers = ceil(ports / 2)
+        max_kw_per_port = 180
+        total_site_kw = cabinet_kw
+        reference_format = "Central Airport: 12 ports, 720 kW distributed"
+    elif ports >= 6:
+        architecture = "distributed"
+        cabinet_kw = 240
+        cabinet_count = ceil(ports / 2)
+        dispensers = ceil(ports / 2)
+        max_kw_per_port = 240
+        total_site_kw = cabinet_count * cabinet_kw
+        reference_format = "Meta Mall scale: 6 ports, 3 x 240 kW distributed"
+    else:
+        architecture = "standalone_cabinets"
+        ports = max(4, ports)
+        cabinet_kw = 180
+        cabinet_count = ceil(ports / 2)
+        dispensers = 0
+        max_kw_per_port = 180
+        total_site_kw = cabinet_count * cabinet_kw
+        reference_format = "Mahachok Park scale: 4 ports, 2 x 180 kW cabinets"
+
+    kwh_per_port_day = daily_kwh / ports if ports else 0.0
+    sessions_per_port_day = sessions_per_day / ports if ports else 0.0
+
+    if sessions_per_port_day >= 12:
+        utilization_band = "high"
+    elif sessions_per_port_day >= 7:
+        utilization_band = "medium"
+    else:
+        utilization_band = "low"
+
+    return {
+        "recommended_ports": ports,
+        "architecture": architecture,
+        "cabinet_count": cabinet_count,
+        "cabinet_kw": cabinet_kw,
+        "dispenser_count": dispensers,
+        "guns_per_dispenser": 2 if architecture == "distributed" else None,
+        "total_site_kw": total_site_kw,
+        "max_kw_per_port": max_kw_per_port,
+        "sessions_per_port_day": round(sessions_per_port_day, 1),
+        "kwh_per_port_day": round(kwh_per_port_day, 1),
+        "utilization_band": utilization_band,
+        "reference_format": reference_format,
+        "override_allowed": True,
+    }
+
+
 @dataclass(frozen=True)
 class SiteReadiness:
     """How ready the exact site is to convert local demand into sessions.
@@ -598,6 +691,11 @@ class CompetitiveCaptureModel:
             "daily_revenue": round(captured_sessions * case.avg_kwh_per_session * case.price_per_kwh, 0),
             "effective_kw_at_expected_load": round(effective_kw, 1),
             "competitor_count": len(case.competitors),
+            "charger_recommendation": recommend_station_spec(
+                captured_sessions,
+                avg_kwh_per_session=case.avg_kwh_per_session,
+                preferred_ports=case.station.guns,
+            ),
         }
         
         logger.debug(

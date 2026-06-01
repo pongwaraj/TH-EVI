@@ -89,6 +89,8 @@ The site layer converts raw area demand into site-captured sessions using:
 - competitive capture: nearby charger distance, guns, power, brand/access quality
 - ramp-up: early-opening demand vs mature demand
 - power sharing: effective kW per active gun for distributed systems
+- charger recommendation: standalone cabinets vs distributed systems based on
+  sessions/day, kWh/port/day, and preferred port count
 
 The temporal layer converts daily sessions into hourly arrivals and uses
 Erlang-C queueing to size plugs against explicit service levels such as

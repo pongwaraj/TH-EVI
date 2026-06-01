@@ -38,6 +38,7 @@ from .site import (
     SiteDemandCase,
     SiteReadiness,
     StationSpec,
+    recommend_station_spec,
 )
 from .temporal import analyze_station
 
@@ -209,6 +210,11 @@ def _compute_site_analysis(
     installed = queue_result.get("installed_at_peak", {})
     installed_util = installed.get("utilization", 0)
     utilization_pct = 999.0 if installed_util == float("inf") else round(installed_util * 100, 1)
+    charger_recommendation = recommend_station_spec(
+        capture_result["captured_daily_sessions"],
+        avg_kwh_per_session=assumption.avg_kwh_per_session,
+        preferred_ports=assumption.guns,
+    )
 
     return {
         "scenario": scenario_label or request.scenario,
@@ -216,6 +222,7 @@ def _compute_site_analysis(
         "site": _dump_model(site_in),
         "location_estimate": location_result,
         "site_capture": capture_result,
+        "charger_recommendation": charger_recommendation,
         "queue": queue_result,
         "summary": {
             "sessions_per_day": capture_result["captured_daily_sessions"],
@@ -225,6 +232,12 @@ def _compute_site_analysis(
             "readiness_multiplier": capture_result["readiness_multiplier"],
             "recommended_plugs": queue_result["recommended_plugs"],
             "installed_plugs": assumption.guns,
+            "recommended_architecture": charger_recommendation["architecture"],
+            "recommended_total_site_kw": charger_recommendation["total_site_kw"],
+            "recommended_cabinet_count": charger_recommendation["cabinet_count"],
+            "recommended_cabinet_kw": charger_recommendation["cabinet_kw"],
+            "kwh_per_port_day": charger_recommendation["kwh_per_port_day"],
+            "sessions_per_port_day": charger_recommendation["sessions_per_port_day"],
             "peak_hour": queue_result["peak_hour"],
             "peak_hour_arrivals": queue_result["peak_hour_arrivals"],
             "installed_utilization_pct": utilization_pct,
