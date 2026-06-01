@@ -2,13 +2,28 @@
 Location Demand Model — Given a lat/lon in Thailand, estimate daily EV visits.
 """
 
+from __future__ import annotations
+
+import logging
+from typing import Optional
+
 import numpy as np
+
 from . import constants as C
 from .adoption import EVAdoptionModel, estimate_fleet_ev_share, estimate_fleet_ev_population
 from .data import get_cm_highway_aadt
+from .exceptions import (
+    InvalidCoordinatesError,
+    InvalidLocationTypeError,
+    InvalidYearError,
+    UnknownLocationError,
+)
 
+logger = logging.getLogger(__name__)
 
 CHIANG_MAI_HIGHWAY_AADT = None
+
+VALID_LOCATION_TYPES = {"highway", "city_center", "destination", "suburban"}
 
 LANDMARK_DB = {
     "cm_superhighway": {
@@ -68,6 +83,16 @@ class LocationDemandModel:
     """Estimate daily EV charging demand for general locations using a traffic-based model.
 
     Formula: EVs/day = Traffic_Volume × Fleet_EV_Share(year) × P(charge)
+
+    Attributes:
+        adoption: EVAdoptionModel instance for province
+        province: Province name
+
+    Example:
+        >>> model = LocationDemandModel(province="เชียงใหม่")
+        >>> result = model.estimate(18.795, 99.010, 2035, location_type="highway")
+        >>> print(result["daily_ev_visits"])
+        42
     """
 
     CHARGE_PROB = {
@@ -80,16 +105,85 @@ class LocationDemandModel:
     DIRECTIONAL_FACTOR = 0.50
 
     def __init__(self, province: str = "เชียงใหม่"):
+        """Initialize location demand model for a province.
+
+        Args:
+            province: Province name (default: เชียงใหม่)
+
+        Raises:
+            TypeError: If province is not a string
+        """
+        if not isinstance(province, str):
+            raise TypeError(f"Province must be a string, got {type(province).__name__}")
+        
         self.adoption = EVAdoptionModel(province=province)
         self.province = province
+        logger.debug(f"Initialized LocationDemandModel for {province}")
 
     def estimate(
-        self, lat: float, lon: float, year: int, location_type: str = None, aadt: int = None
+        self,
+        lat: float,
+        lon: float,
+        year: int,
+        location_type: Optional[str] = None,
+        aadt: Optional[int] = None,
     ) -> dict:
-        if location_type is None:
+        """Estimate daily EV charging demand at a specific location.
+
+        Args:
+            lat: Latitude (-90 to 90)
+            lon: Longitude (-180 to 180)
+            year: Forecast year (2018-2050)
+            location_type: One of "highway", "city_center", "destination", "suburban"
+                          If None, auto-classified from coordinates
+            aadt: Annual Average Daily Traffic. If None, estimated from location
+
+        Returns:
+            Dictionary with keys:
+                - location_type: str
+                - aadt_used: int
+                - fleet_ev_share_pct: float
+                - charge_probability_pct: float
+                - daily_ev_visits: int
+                - daily_kwh: float
+                - charging_sessions_per_day: int
+
+        Raises:
+            InvalidCoordinatesError: If lat/lon out of valid range
+            InvalidYearError: If year out of valid range [2018, 2050]
+            InvalidLocationTypeError: If location_type is invalid
+            TypeError: If parameters have wrong types
+        """
+        if not isinstance(lat, (int, float)):
+            raise TypeError(f"lat must be a number, got {type(lat).__name__}")
+        if not isinstance(lon, (int, float)):
+            raise TypeError(f"lon must be a number, got {type(lon).__name__}")
+        if not isinstance(year, int):
+            raise TypeError(f"year must be an integer, got {type(year).__name__}")
+        
+        if lat < -90 or lat > 90:
+            raise InvalidCoordinatesError(lat, lon)
+        if lon < -180 or lon > 180:
+            raise InvalidCoordinatesError(lat, lon)
+        
+        from .adoption import _validate_year
+        _validate_year(year)
+        
+        if location_type is not None:
+            if not isinstance(location_type, str):
+                raise TypeError(f"location_type must be a string, got {type(location_type).__name__}")
+            if location_type not in VALID_LOCATION_TYPES:
+                raise InvalidLocationTypeError(location_type, list(VALID_LOCATION_TYPES))
+        else:
             location_type = self._classify_location(lat, lon)
 
-        if aadt is None:
+        if aadt is not None:
+            if not isinstance(aadt, int):
+                raise TypeError(f"aadt must be an integer, got {type(aadt).__name__}")
+            if aadt < 0:
+                logger.warning(f"Negative AADT provided: {aadt}, using 0")
+                aadt = 0
+        else:
             aadt = self._estimate_aadt(lat, lon, location_type)
 
         fleet_ev_share = estimate_fleet_ev_share(year, self.province)
@@ -99,7 +193,7 @@ class LocationDemandModel:
         avg_kwh = self._avg_energy_per_session(location_type)
         daily_kwh = daily_ev_visits * avg_kwh
 
-        return {
+        result = {
             "location_type": location_type,
             "aadt_used": aadt,
             "fleet_ev_share_pct": round(fleet_ev_share * 100, 3),
@@ -108,10 +202,37 @@ class LocationDemandModel:
             "daily_kwh": round(daily_kwh, 1),
             "charging_sessions_per_day": max(1, daily_ev_visits),
         }
+        
+        logger.debug(
+            f"Location estimate: lat={lat}, lon={lon}, year={year} → "
+            f"{daily_ev_visits} EV visits/day, {daily_kwh:.1f} kWh/day"
+        )
+        
+        return result
 
     def estimate_from_db(self, location_id: str, year: int) -> dict:
+        """Estimate demand at a predefined landmark from the database.
+
+        Args:
+            location_id: Landmark ID from LANDMARK_DB
+            year: Forecast year (2018-2050)
+
+        Returns:
+            Dictionary with landmark name and demand estimates
+
+        Raises:
+            UnknownLocationError: If location_id not in LANDMARK_DB
+            InvalidYearError: If year out of valid range
+            TypeError: If parameters have wrong types
+        """
+        if not isinstance(location_id, str):
+            raise TypeError(f"location_id must be a string, got {type(location_id).__name__}")
+        if not isinstance(year, int):
+            raise TypeError(f"year must be an integer, got {type(year).__name__}")
+        
         if location_id not in LANDMARK_DB:
-            raise KeyError(f"Unknown location: {location_id}")
+            raise UnknownLocationError(location_id, list(LANDMARK_DB.keys()))
+        
         loc = LANDMARK_DB[location_id]
         return {
             "name": loc["name"],
@@ -119,11 +240,30 @@ class LocationDemandModel:
         }
 
     def _classify_location(self, lat: float, lon: float) -> str:
+        """Classify location type based on coordinates.
+
+        Args:
+            lat: Latitude
+            lon: Longitude
+
+        Returns:
+            Location type string
+        """
         if 18.770 <= lat <= 18.810 and 98.960 <= lon <= 99.010:
             return "city_center"
         return "highway"
 
     def _estimate_aadt(self, lat: float, lon: float, loc_type: str) -> int:
+        """Estimate AADT for a location based on type and coordinates.
+
+        Args:
+            lat: Latitude
+            lon: Longitude
+            loc_type: Location type
+
+        Returns:
+            Estimated AADT value
+        """
         global CHIANG_MAI_HIGHWAY_AADT
         if CHIANG_MAI_HIGHWAY_AADT is None:
             CHIANG_MAI_HIGHWAY_AADT = get_cm_highway_aadt()
@@ -143,7 +283,16 @@ class LocationDemandModel:
             return 20000
 
     @staticmethod
-    def _find_nearest_highway(lat: float, lon: float) -> int | None:
+    def _find_nearest_highway(lat: float, lon: float) -> Optional[int]:
+        """Find AADT for nearest highway segment.
+
+        Args:
+            lat: Latitude
+            lon: Longitude
+
+        Returns:
+            AADT value or None if no highway found
+        """
         if CHIANG_MAI_HIGHWAY_AADT is None:
             return None
         route_bboxes = [
@@ -164,15 +313,21 @@ class LocationDemandModel:
 
     @staticmethod
     def _avg_energy_per_session(loc_type: str) -> float:
-        if loc_type == "highway":
-            return 30.0
-        elif loc_type == "destination":
-            return 15.0
-        elif loc_type == "city_center":
-            return 12.0
-        elif loc_type == "suburban":
-            return 10.0
-        return 15.0
+        """Get average energy per charging session by location type.
+
+        Args:
+            loc_type: Location type
+
+        Returns:
+            Average kWh per session
+        """
+        energy_map = {
+            "highway": 30.0,
+            "destination": 15.0,
+            "city_center": 12.0,
+            "suburban": 10.0,
+        }
+        return energy_map.get(loc_type, 15.0)
 
 
 class StationDemandModel:
@@ -185,12 +340,47 @@ class StationDemandModel:
 
     This model is calibrated for the CM Cultural Center Super Hub location.
     For other locations, override params accordingly.
+
+    Attributes:
+        province: Province name
+
+    Example:
+        >>> model = StationDemandModel(province="เชียงใหม่")
+        >>> result = model.estimate(year=2030, scenario="base", stalls=12)
+        >>> print(result["daily_sessions"])
+        130
     """
 
-    def __init__(self, province: str = "\u0e40\u0e0a\u0e35\u0e22\u0e07\u0e43\u0e2b\u0e21\u0e48"):
+    VALID_SCENARIOS = {"low", "base", "best"}
+
+    def __init__(self, province: str = "เชียงใหม่"):
+        """Initialize station demand model for a province.
+
+        Args:
+            province: Province name (default: เชียงใหม่)
+
+        Raises:
+            TypeError: If province is not a string
+        """
+        if not isinstance(province, str):
+            raise TypeError(f"Province must be a string, got {type(province).__name__}")
+        
         self.province = province
+        logger.debug(f"Initialized StationDemandModel for {province}")
 
     def estimate_cm_ev_population(self, year: int) -> int:
+        """Estimate EV population for the province.
+
+        Args:
+            year: Target year (2018-2050)
+
+        Returns:
+            Estimated EV population
+
+        Raises:
+            InvalidYearError: If year out of valid range
+            TypeError: If year is not an integer
+        """
         return estimate_fleet_ev_population(year, self.province)
 
     def estimate(
@@ -198,25 +388,81 @@ class StationDemandModel:
         year: int,
         scenario: str = "base",
         stalls: int = 12,
-        station_capture_rate: float = None,
-        sessions_per_stall_per_day_peak: float = None,
+        station_capture_rate: Optional[float] = None,
+        sessions_per_stall_per_day_peak: Optional[float] = None,
         calibration_factor: float = 1.0,
     ) -> dict:
         """Estimate daily sessions and energy for a charging station.
 
-        Parameters
-        ----------
-        year : int
-            Forecast year (2026-2036)
-        scenario : str
-            "low", "base", or "best"
-        stalls : int
-            Number of charging stalls at the station
-        station_capture_rate : float or None
-            Override capture rate for residents (0-1)
-        sessions_per_stall_per_day_peak : float or None
-            Override max sessions per stall per day
+        Args:
+            year: Forecast year (2018-2050)
+            scenario: One of "low", "base", "best"
+            stalls: Number of charging stalls at the station (1-100)
+            station_capture_rate: Override capture rate for residents (0-1)
+            sessions_per_stall_per_day_peak: Override max sessions per stall per day
+            calibration_factor: Multiplier to fit model to observed data (default 1.0)
+
+        Returns:
+            Dictionary with keys:
+                - year: int
+                - scenario: str
+                - stalls: int
+                - cm_ev_population: int
+                - daily_sessions: int
+                - daily_sessions_peak: int
+                - daily_kwh: float
+                - daily_kwh_peak: float
+                - max_sessions_per_day: int
+                - utilization_pct: float
+                - components: dict with resident, ride_hail, tourist, transit
+
+        Raises:
+            InvalidYearError: If year out of valid range
+            TypeError: If parameters have wrong types
+            ValueError: If scenario is invalid or parameters out of range
         """
+        if not isinstance(year, int):
+            raise TypeError(f"year must be an integer, got {type(year).__name__}")
+        if not isinstance(scenario, str):
+            raise TypeError(f"scenario must be a string, got {type(scenario).__name__}")
+        if not isinstance(stalls, int):
+            raise TypeError(f"stalls must be an integer, got {type(stalls).__name__}")
+        if not isinstance(calibration_factor, (int, float)):
+            raise TypeError(f"calibration_factor must be a number, got {type(calibration_factor).__name__}")
+        
+        from .adoption import _validate_year
+        _validate_year(year)
+        
+        if scenario not in self.VALID_SCENARIOS:
+            raise ValueError(
+                f"Invalid scenario: '{scenario}'. "
+                f"Valid scenarios: {', '.join(sorted(self.VALID_SCENARIOS))}"
+            )
+        
+        if stalls < 1 or stalls > 100:
+            raise ValueError(f"stalls must be between 1 and 100, got {stalls}")
+        
+        if calibration_factor <= 0:
+            raise ValueError(f"calibration_factor must be positive, got {calibration_factor}")
+        
+        if station_capture_rate is not None:
+            if not isinstance(station_capture_rate, (int, float)):
+                raise TypeError(f"station_capture_rate must be a number, got {type(station_capture_rate).__name__}")
+            if station_capture_rate < 0 or station_capture_rate > 1:
+                raise ValueError(f"station_capture_rate must be in [0, 1], got {station_capture_rate}")
+        
+        if sessions_per_stall_per_day_peak is not None:
+            if not isinstance(sessions_per_stall_per_day_peak, (int, float)):
+                raise TypeError(
+                    f"sessions_per_stall_per_day_peak must be a number, "
+                    f"got {type(sessions_per_stall_per_day_peak).__name__}"
+                )
+            if sessions_per_stall_per_day_peak <= 0:
+                raise ValueError(
+                    f"sessions_per_stall_per_day_peak must be positive, "
+                    f"got {sessions_per_stall_per_day_peak}"
+                )
+        
         params = self._scenario_params(scenario)
         if station_capture_rate is not None:
             params["capture_resident"] = station_capture_rate
@@ -281,7 +527,7 @@ class StationDemandModel:
         daily_kwh_peak = total_daily_peak * avg_kwh
         utilization_pct = round(total_daily / max_sessions * 100, 1)
 
-        return {
+        result = {
             "year": year,
             "scenario": scenario,
             "stalls": stalls,
@@ -299,9 +545,27 @@ class StationDemandModel:
                 "transit": round(transit_daily),
             },
         }
+        
+        logger.debug(
+            f"Station estimate: year={year}, scenario={scenario}, stalls={stalls} → "
+            f"{int(total_daily)} sessions/day, {daily_kwh:.0f} kWh/day"
+        )
+        
+        return result
 
     @staticmethod
     def _scenario_params(scenario: str) -> dict:
+        """Get scenario-specific parameters.
+
+        Args:
+            scenario: One of "low", "base", "best"
+
+        Returns:
+            Dictionary of scenario parameters
+
+        Raises:
+            ValueError: If scenario is invalid
+        """
         all_params = {
             "low": {
                 "public_charge_frac": 0.30,
@@ -367,4 +631,8 @@ class StationDemandModel:
                 "sessions_per_stall": 24,
             },
         }
+        
+        if scenario not in all_params:
+            raise ValueError(f"Unknown scenario: {scenario}")
+        
         return all_params[scenario].copy()

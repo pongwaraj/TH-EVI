@@ -23,9 +23,16 @@ Design notes
 Run:  python -m th_evi.validation
 """
 
+from __future__ import annotations
+
+import logging
 from statistics import mean
+from typing import Optional
+
 from .adoption import EVAdoptionModel
 from .location import StationDemandModel
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -64,15 +71,18 @@ STATION_TO_COLLECT = [
 # Metrics
 # ---------------------------------------------------------------------------
 
-def _mae(pred, obs):
+def _mae(pred: list[float], obs: list[float]) -> float:
+    """Mean Absolute Error."""
     return mean(abs(p - o) for p, o in zip(pred, obs))
 
 
-def _mape(pred, obs):
+def _mape(pred: list[float], obs: list[float]) -> float:
+    """Mean Absolute Percentage Error."""
     return mean(abs(p - o) / o for p, o in zip(pred, obs)) * 100
 
 
-def _rmse(pred, obs):
+def _rmse(pred: list[float], obs: list[float]) -> float:
+    """Root Mean Square Error."""
     return (mean((p - o) ** 2 for p, o in zip(pred, obs))) ** 0.5
 
 
@@ -80,9 +90,18 @@ def _rmse(pred, obs):
 # Adoption layer
 # ---------------------------------------------------------------------------
 
-def validate_adoption(province="default"):
-    """Compare S-curve new-car BEV share to FTI annual actuals."""
-    # Use the national curve (province factor = 1.0 for ror.1 basis).
+def validate_adoption(province: str = "default") -> dict:
+    """Compare S-curve new-car BEV share to FTI annual actuals.
+
+    Args:
+        province: Province name (default uses national curve)
+
+    Returns:
+        Dictionary with keys:
+            - rows: list of {year, pred_pct, obs_pct, abs_err_pp}
+            - MAPE_pct: Mean Absolute Percentage Error
+            - RMSE_pp: Root Mean Square Error in percentage points
+    """
     m = EVAdoptionModel(province=province)
     years = sorted(ADOPTION_GROUND_TRUTH)
     pred = [m.get_ev_share(y) for y in years]
@@ -92,11 +111,15 @@ def validate_adoption(province="default"):
          "abs_err_pp": round((p - o) * 100, 1)}
         for y, p, o in zip(years, pred, obs)
     ]
-    return {
+    
+    result = {
         "rows": rows,
         "MAPE_pct": round(_mape(pred, obs), 1),
         "RMSE_pp": round(_rmse(pred, obs) * 100, 2),
     }
+    
+    logger.info(f"Adoption validation: MAPE={result['MAPE_pct']}%, RMSE={result['RMSE_pp']} pp")
+    return result
 
 
 # ---------------------------------------------------------------------------
