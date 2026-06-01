@@ -1,0 +1,13 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+udon_city_center,Udon Thani city center,city_center,17.364697,102.815892,latlong.info,medium,"City-level coordinate anchor for Udon Thani screening."
+central_udon,Central Udon / CentralPlaza Udon Thani,shopping_mall,17.405827,102.799790,Wikipedia/Central Udon coordinate,high,"Primary retail destination; 248 stores and major urban anchor per public listing."
+ud_town,UD Town,shopping_mall,17.4050,102.8070,UD Town public address + seed coordinate,medium,"Open-air lifestyle center near train/bus core; verify exact coordinate before site analysis."
+centara_udon,Centara Udon / Central hotel anchor,hotel,17.4060,102.8005,public hotel/Central context,medium,"Hotel/MICE anchor around Central Udon."
+udon_railway_station,Udon Thani Railway Station,transport,17.4040,102.8050,seed_estimate,low_medium,"Rail/transport node near central urban core; verify exact pin."
+udon_bus_terminal_1,Udon Thani Bus Terminal 1,transport,17.4035,102.8025,seed_estimate,low_medium,"Intercity bus demand node near Central/UD Town; verify exact pin."
+udon_thani_airport,Udon Thani International Airport,airport,17.3864,102.7882,public airport references,medium,"Domestic airport serving Udon and Nong Khai/Laos access."
+nong_prajak_park,Nong Prajak Park,recreation,17.4170,102.7750,Udon Thani attractions public context + seed coordinate,medium,"Major park/recreation zone in west city."
+udon_thani_rajabhat,Udon Thani Rajabhat University,education,17.3980,102.8020,seed_estimate,low,"Education and residential demand proxy; verify exact pin."
+tesco_lotus_udon_seed,Lotus's / hypermarket Udon seed,shopping_mall,17.3900,102.8100,seed_estimate,low,"Placeholder for hypermarket demand; verify exact branch and charger presence."
+big_c_udon_seed,Big C Udon seed,shopping_mall,17.4100,102.8200,seed_estimate,low,"Placeholder for hypermarket demand; verify exact branch and charger presence."
+nong_khai_gateway_axis,Nong Khai / Laos gateway axis,transport_corridor,17.5200,102.7800,seed_estimate,low_medium,"Udon-Nong Khai-Laos travel corridor proxy."

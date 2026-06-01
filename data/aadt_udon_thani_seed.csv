@@ -1,0 +1,11 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,22,Nong Kham - Nong Han,8+000,33979,Udon Thani,DOH aadt_2566.csv,"Highest available Udon Thani AADT point in current dataset."
+2566,216,Udon Thani western ring road,14+580,31736,Udon Thani,DOH aadt_2566.csv,"Strong west ring-road count around city."
+2566,2,Udon Thani - Nam Suai,471+435,28734,Udon Thani,DOH aadt_2566.csv,"Route 2 north/west flow."
+2566,2,Non Sa-at - Udon Thani,443+084,28629,Udon Thani,DOH aadt_2566.csv,"Route 2 south gateway toward Khon Kaen/Bangkok."
+2566,2,Udon Thani - Nam Suai,458+935,27140,Udon Thani,DOH aadt_2566.csv,"Route 2 city-side count."
+2566,216,Udon Thani eastern ring road,20+209,25424,Udon Thani,DOH aadt_2566.csv,"East ring-road corridor."
+2566,22,Nong Kham - Nong Han,21+300,22267,Udon Thani,DOH aadt_2566.csv,"Route 22 corridor."
+2566,2023,Nam Khong - Si That,0+500,21567,Udon Thani,DOH aadt_2566.csv,"Provincial connector count."
+2566,210,Udon Thani - Nikhom Chiang Phin,8+417,20645,Udon Thani,DOH aadt_2566.csv,"West/north-west connector."
+2566,216,Udon Thani southern ring road,0+700,16609,Udon Thani,DOH aadt_2566.csv,"South ring-road count."
