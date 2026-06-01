@@ -28,6 +28,7 @@ th_evi/
   site.py          Site readiness, competitor capture, ramp-up, power sharing
   temporal.py      Hourly arrivals and Erlang-C queue sizing
   validation.py    Adoption and station validation report
+  db.py            SQLAlchemy schema for reports and EV fleet mix data
   constants.py     Thailand and Chiang Mai model assumptions
   data.py          Data loading utilities for DLT, DOH, OSM, population
   api.py           FastAPI endpoints and local static frontend
@@ -92,6 +93,11 @@ The site layer converts raw area demand into site-captured sessions using:
 The temporal layer converts daily sessions into hourly arrivals and uses
 Erlang-C queueing to size plugs against explicit service levels such as
 `P(wait) <= 10%` and average wait under 10 minutes.
+
+The database schema is prepared for later EV fleet-mix enrichment: EV model
+specs, monthly registrations, booking signals, and province-level fleet mix can
+be stored before feeding weighted battery size, kWh/session, and charging speed
+back into the demand and queueing layers.
 
 ## Data Notes
 

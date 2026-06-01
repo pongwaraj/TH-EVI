@@ -135,6 +135,103 @@ class AnalysisResult(Base):
     run: Mapped[AnalysisRun] = relationship(back_populates="result")
 
 
+class EVModel(Base):
+    __tablename__ = "ev_models"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    brand: Mapped[str] = mapped_column(String(80), nullable=False)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    variant: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    segment: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    battery_kwh: Mapped[float | None] = mapped_column(Float, nullable=True)
+    usable_battery_kwh: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_dc_kw: Mapped[float | None] = mapped_column(Float, nullable=True)
+    typical_dc_kw: Mapped[float | None] = mapped_column(Float, nullable=True)
+    efficiency_kwh_per_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    registrations: Mapped[list["EVRegistration"]] = relationship(
+        back_populates="ev_model", cascade="all, delete-orphan"
+    )
+    bookings: Mapped[list["EVBooking"]] = relationship(
+        back_populates="ev_model", cascade="all, delete-orphan"
+    )
+    fleet_mix_rows: Mapped[list["EVFleetMix"]] = relationship(
+        back_populates="ev_model", cascade="all, delete-orphan"
+    )
+
+
+class EVRegistration(Base):
+    __tablename__ = "ev_registrations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ev_model_id: Mapped[int | None] = mapped_column(ForeignKey("ev_models.id"), nullable=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    month: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    brand: Mapped[str] = mapped_column(String(80), nullable=False)
+    model: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    registrations: Mapped[int] = mapped_column(Integer, nullable=False)
+    vehicle_type: Mapped[str] = mapped_column(String(80), default="passenger_bev", nullable=False)
+    source: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="high", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    ev_model: Mapped[EVModel | None] = relationship(back_populates="registrations")
+
+
+class EVBooking(Base):
+    __tablename__ = "ev_bookings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ev_model_id: Mapped[int | None] = mapped_column(ForeignKey("ev_models.id"), nullable=True)
+    event_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    booking_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    month: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    brand: Mapped[str] = mapped_column(String(80), nullable=False)
+    model: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    bookings: Mapped[int] = mapped_column(Integer, nullable=False)
+    estimated_delivery_lag_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    ev_model: Mapped[EVModel | None] = relationship(back_populates="bookings")
+
+
+class EVFleetMix(Base):
+    __tablename__ = "ev_fleet_mix"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ev_model_id: Mapped[int | None] = mapped_column(ForeignKey("ev_models.id"), nullable=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    month: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    brand: Mapped[str] = mapped_column(String(80), nullable=False)
+    model: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    estimated_active_units: Mapped[int] = mapped_column(Integer, nullable=False)
+    share_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weighted_battery_kwh: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weighted_session_kwh_city: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weighted_session_kwh_highway: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weighted_dc_kw: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    ev_model: Mapped[EVModel | None] = relationship(back_populates="fleet_mix_rows")
+
+
 def get_database_url() -> str:
     url = (
         os.environ.get("TH_EVI_DB_URL")
