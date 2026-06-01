@@ -1,0 +1,13 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+phayao_city_center,Phayao city center,city_center,19.1665,99.9010,public city context + seed coordinate,medium,"City-level coordinate anchor for first-pass screening."
+kwan_phayao_lakefront,Kwan Phayao lakefront,recreation,19.1700,99.9000,public lake/tourism context + seed coordinate,medium,"Primary tourism and leisure anchor in Mueang Phayao."
+phayao_bus_terminal,Phayao Bus Terminal,transport,19.1650,99.9000,seed_estimate,low,"Intercity bus and local transport demand proxy; verify exact pin."
+phayao_hospital,Phayao Hospital,hospital,19.1690,99.8950,seed_estimate,low_medium,"Hospital/government demand proxy near city core; verify exact pin."
+university_of_phayao,University of Phayao,education,19.0300,99.9000,public university context + seed coordinate,medium,"Education/residential demand anchor near Mae Ka and Route 1."
+mae_ka_route1_axis,Mae Ka / Route 1 high-AADT axis,transport_corridor,19.1300,99.8800,DOH AADT context + seed coordinate,medium,"Route 1 approach with top Phayao AADT point."
+pratu_chai_intersection,Pratu Chai / Route 1 city gate,transport_corridor,19.1800,99.8950,DOH AADT context + seed coordinate,low_medium,"City gateway proxy; verify exact road geometry."
+dok_khamtai_district,Dok Khamtai district center,district_center,19.1600,100.0500,seed_estimate,low_medium,"East-side district demand and Route 1021 connector proxy."
+chiang_kham_district,Chiang Kham district center,district_center,19.5200,100.3000,seed_estimate,low_medium,"Northern/eastern district center with tourism and local service demand."
+mae_chai_district,Mae Chai district center,district_center,19.3500,99.8200,seed_estimate,low,"Route 1 district/gateway demand proxy."
+phu_sang_waterfall_axis,Phu Sang tourism axis,tourism,19.6500,100.3600,public tourism context + seed coordinate,low,"Tourism-oriented demand; likely seasonal and lower certainty."
+pt_pump_phayao_seed,PT Pump Phayao / rest-stop candidate,gas_station,19.1500,99.8800,TripNiceDay nearby-place context + seed coordinate,low_medium,"Rest-stop candidate near PEA VOLTA Phayao listing; verify exact pin and charger presence."

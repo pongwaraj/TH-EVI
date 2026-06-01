@@ -1,0 +1,11 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,1,Mae Ka - Pratu Chai,836+967,37625,Phayao,DOH aadt_2566.csv,"Highest available Phayao AADT point in current dataset."
+2566,1,Mae Ka - Pratu Chai,822+117,19487,Phayao,DOH aadt_2566.csv,"Route 1 city approach / through-traffic count."
+2566,1021,Mae Tam - Ban Mai,7+800,9340,Phayao,DOH aadt_2566.csv,"Main east-side city connector."
+2566,1021,Nam Waen - Salaeng,70+000,8864,Phayao,DOH aadt_2566.csv,"Route 1021 district corridor."
+2566,1,Pratu Chai - Phan,867+967,8235,Phayao,DOH aadt_2566.csv,"Route 1 north/south gateway count."
+2566,1148,Sop Tu - Ban Yuan,111+404,6848,Phayao,DOH aadt_2566.csv,"Northern/eastern district connector."
+2566,1202,Phayao - San Ton Haen,5+000,5445,Phayao,DOH aadt_2566.csv,"Local city connector."
+2566,1148,Sakoen - Sop Tu,95+200,4770,Phayao,DOH aadt_2566.csv,"District/tourism corridor with higher heavy-vehicle share."
+2566,1021,Nam Waen - Salaeng,87+108,4496,Phayao,DOH aadt_2566.csv,"Secondary Route 1021 point."
+2566,1021,Ban Mai - Nam Waen,46+592,4250,Phayao,DOH aadt_2566.csv,"Secondary Route 1021 district corridor."
