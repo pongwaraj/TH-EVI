@@ -76,6 +76,11 @@ LANDMARK_DB = {
         "lat": 18.776, "lon": 98.969,
         "type": "highway", "route": 1141, "aadt": 118853,
     },
+    "cm_meechok_plaza": {
+        "name": "มีโชคพลาซ่า คอมมูนิตี้มอลล์",
+        "lat": 18.824, "lon": 99.010,
+        "type": "destination", "aadt": 6000,
+    },
 }
 
 
