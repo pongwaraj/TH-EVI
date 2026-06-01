@@ -1,0 +1,13 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+khon_kaen_city_center,Khon Kaen city center,city_center,16.4330,102.8330,public city coordinate + seed anchor,medium,"City-level coordinate anchor for first-pass screening."
+central_khon_kaen,Central Khon Kaen,shopping_mall,16.4338,102.8257,public mall listing + seed coordinate,medium_high,"Primary retail destination and known EV charging audit target."
+khon_kaen_railway_station,Khon Kaen Railway Station,transport,16.4290,102.8300,public rail station context + seed coordinate,medium,"Rail demand node in downtown Nai Mueang; verify exact pin before final report."
+khon_kaen_airport,Khon Kaen International Airport,airport,16.4666,102.7837,public airport context + seed coordinate,medium,"Airport and rental/fleet demand anchor west of city."
+khon_kaen_bus_terminal_3,Khon Kaen Bus Terminal 3,transport,16.3670,102.8230,public bus terminal context + seed coordinate,low_medium,"Intercity bus terminal and south-city travel demand; verify exact pin."
+khon_kaen_university,Khon Kaen University,education,16.4740,102.8235,public university context + seed coordinate,medium,"Large university/medical/government demand cluster."
+srinagarind_hospital,Srinagarind Hospital / medical cluster,hospital,16.4700,102.8260,seed_estimate,low_medium,"Major hospital/medical destination near KKU; verify exact pin."
+kaen_nakhon_lake,Kaen Nakhon Lake,recreation,16.4200,102.8420,public attraction context + seed coordinate,medium,"Recreation and hotel/residential demand proxy."
+ton_tann_market,Ton Tann Market / lifestyle market,lifestyle,16.4130,102.8290,seed_estimate,low_medium,"Evening lifestyle/food destination; verify exact pin."
+khon_kaen_innovation_center,Khon Kaen Innovation Center / downtown office anchor,office,16.4300,102.8250,public business context + seed coordinate,low_medium,"Office/business anchor for CBD demand screening."
+route2_mittraphap_city_axis,Route 2 Friendship Highway city axis,transport_corridor,16.4400,102.8100,DOH AADT context + seed coordinate,medium,"High-volume city corridor proxy."
+western_ring_airport_axis,Western ring road / airport axis,transport_corridor,16.4550,102.7850,DOH AADT context + seed coordinate,medium,"Airport and bypass corridor proxy."

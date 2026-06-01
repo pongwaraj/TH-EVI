@@ -56,6 +56,7 @@ PROVINCE_EV_FACTOR = {
     "เชียงใหม่": 1.00,   # ร.1 basis — use national S-curve directly (was 0.40, mixed-denominator)
     "ลำปาง": 0.85,       # Pilot assumption until DLT province calibration is added
     "อุดรธานี": 0.90,     # Pilot assumption: regional hub, below Chiang Mai until DLT calibration
+    "ขอนแก่น": 1.00,      # Pilot assumption: major Northeast hub; keep at national curve until DLT calibration
     "default": 1.00,
 }
 
@@ -145,12 +146,14 @@ PROVINCE_NEW_CAR_RATE = {
     "เชียงใหม่": 6_200,
     "ลำปาง": 2_000,
     "อุดรธานี": 3_200,
+    "ขอนแก่น": 5_000,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
     "เชียงใหม่": 350_000,
     "ลำปาง": 115_000,
     "อุดรธานี": 180_000,
+    "ขอนแก่น": 300_000,
 }
 
 # --- National Average Daily Trips per Vehicle ---

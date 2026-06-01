@@ -1,0 +1,11 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,2,Khon Kaen - Hin Lat,344+331,53895,Khon Kaen,DOH aadt_2566.csv,"Highest available Khon Kaen AADT point in current dataset."
+2566,2,Tha Phra - Khon Kaen,334+181,47304,Khon Kaen,DOH aadt_2566.csv,"Strong Route 2 city approach count."
+2566,12,Ban Fang - Khon Kaen,545+249,40107,Khon Kaen,DOH aadt_2566.csv,"Important west-city Route 12 gateway."
+2566,12,Rong Saeng - Nong Kae,472+549,39780,Khon Kaen,DOH aadt_2566.csv,"High-volume Route 12 corridor toward Chum Phae."
+2566,12,Rong Saeng - Nong Kae,469+996,33767,Khon Kaen,DOH aadt_2566.csv,"Secondary Route 12 corridor count."
+2566,2,Hin Lat - Non Sa-at,374+669,29260,Khon Kaen,DOH aadt_2566.csv,"Route 2 north/south intercity flow with heavy-vehicle share."
+2566,2,Ban Phai - Tha Phra,310+578,29032,Khon Kaen,DOH aadt_2566.csv,"Route 2 south gateway around Ban Phai/Tha Phra."
+2566,230,Khon Kaen western ring road,11+000,26174,Khon Kaen,DOH aadt_2566.csv,"Western ring-road and airport/bypass access."
+2566,2131,Khon Kaen - Ban Sa-at,2+493,25229,Khon Kaen,DOH aadt_2566.csv,"City connector count."
+2566,12,Khon Kaen - Phrom Nimit,562+054,24842,Khon Kaen,DOH aadt_2566.csv,"Route 12 east/north-east side count."
