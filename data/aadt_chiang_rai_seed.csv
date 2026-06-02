@@ -1,0 +1,13 @@
+year_be,route,name,km,aadt,heavy_vehicle_pct,province,source,notes
+2566,1,Rong Khun - Mae Korn Junction,924+617,31773,14.16,Chiang Rai,DOH aadt_2566.csv,"Highest available Chiang Rai AADT point; key Route 1 south-city approach."
+2566,1,Mae Korn Junction - Huai Phlu,930+617,27421,5.507,Chiang Rai,DOH aadt_2566.csv,"High-volume Route 1 urban/city approach count."
+2566,118,Doi Nang Kaew - Mae Suai,87+800,24691,27.686,Chiang Rai,DOH aadt_2566.csv,"Important Chiang Mai/Phayao to Chiang Rai intercity corridor with high heavy-vehicle share."
+2566,1,Mae Korn Junction - Huai Phlu,942+167,24433,4.924,Chiang Rai,DOH aadt_2566.csv,"Second high-volume point on Route 1 city approach."
+2566,118,Doi Nang Kaew - Mae Suai,53+200,23239,28.177,Chiang Rai,DOH aadt_2566.csv,"Route 118 mountain/intercity corridor."
+2566,131,Chiang Rai bypass,3+000,22220,2.016,Chiang Rai,DOH aadt_2566.csv,"City bypass screening corridor."
+2566,1,Mae Korn Junction - Huai Phlu,948+000,21880,12.719,Chiang Rai,DOH aadt_2566.csv,"Route 1 urban/corridor count."
+2566,1020,Chiang Rai - Pong Kluea,6+000,21548,36.639,Chiang Rai,DOH aadt_2566.csv,"Eastbound Chiang Rai to Chiang Khong corridor; high heavy-vehicle share."
+2566,1233,Sri Sai Mun - Ban Dai,2+000,18975,2.962,Chiang Rai,DOH aadt_2566.csv,"City/northeast connector screening point."
+2566,1,Phan - Rong Khun,909+967,16614,9.998,Chiang Rai,DOH aadt_2566.csv,"Route 1 Phan/White Temple approach."
+2566,1,Mae Kham - Mae Sai border bridge,975+777,12928,12.508,Chiang Rai,DOH aadt_2566.csv,"Mae Sai border gateway corridor."
+2566,1020,Chomphu - Chiang Khong,106+000,11052,27.217,Chiang Rai,DOH aadt_2566.csv,"Chiang Khong / Mekong border-side corridor."

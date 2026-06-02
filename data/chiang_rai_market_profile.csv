@@ -1,0 +1,26 @@
+metric,value,unit,source,analysis_use,notes
+province_population,1295922,people,DOPA 2568,province demand denominator,Verified province population from imported EV Hub DOPA dataset.
+province_households,603627,households,DOPA 2568,resident charging context,Verified province household count.
+mueang_chiang_rai_population,109804,people,DOPA 2568,city/destination demand,Mueang Chiang Rai district population.
+chiang_rai_municipality_population,73712,people,DOPA 2568,urban core demand,เทศบาลนครเชียงราย from DOPA local-administration rows.
+phan_population,107623,people,DOPA 2568,route1_and_rong_khun_corridor,Large southern district on Route 1.
+mae_sai_population,77498,people,DOPA 2568,border_gateway_demand,Myanmar border gateway / Route 1 north corridor.
+mae_fa_luang_population,77387,people,DOPA 2568,tourism_and_northern_corridor,Doi Tung / Mae Fah Luang tourism and highland corridor context.
+mae_chan_population,69678,people,DOPA 2568,northern_corridor_demand,Key corridor between city and Mae Sai / Chiang Saen.
+chiang_khong_population,24898,people,DOPA 2568,border_gateway_demand,Laos border / Mekong gateway; population is modest but corridor role matters.
+ror1_passenger_cars,178675,vehicles,DLT Apr 2026,EV penetration denominator,Verified รย.1 passenger-car fleet.
+ror1_bev,3545,vehicles,DLT Apr 2026,current BEV stock,Verified รย.1 BEV stock.
+ror1_phev,404,vehicles,DLT Apr 2026,current PHEV stock,PHEV gasoline 403 + PHEV diesel 1.
+ror1_chargeable_ev,3949,vehicles,DLT Apr 2026,current chargeable EV stock,BEV + PHEV in รย.1.
+ror1_bev_share,0.01984,share,DLT Apr 2026,adoption calibration,BEV share of รย.1 passenger cars.
+ror1_chargeable_ev_share,0.02210,share,DLT Apr 2026,adoption calibration,BEV + PHEV share of รย.1 passenger cars.
+all_vehicle_law_total,833896,vehicles,DLT Apr 2026,province mobility context,All vehicles under motor vehicle law.
+all_vehicle_law_bev,4150,vehicles,DLT Apr 2026,province EV context,All-segment BEV stock.
+all_vehicle_law_phev,404,vehicles,DLT Apr 2026,province EV context,All-segment PHEV stock.
+all_vehicle_law_chargeable_ev,4554,vehicles,DLT Apr 2026,province EV context,All-segment BEV + PHEV stock.
+top_aadt_route1_rong_khun_mae_korn,31773,vehicles/day,DOH AADT 2566,route1_south_city_approach,Highest Chiang Rai AADT point in current seed data.
+route118_doi_nang_kaew_mae_suai_aadt,24691,vehicles/day,DOH AADT 2566,chiang_mai_chiang_rai_corridor,Key intercity mountain corridor from Chiang Mai / Phayao side.
+route131_chiang_rai_bypass_aadt,22220,vehicles/day,DOH AADT 2566,city_bypass_demand,Bypass and city-edge screening corridor.
+route1020_chiang_rai_pong_kluea_aadt,21548,vehicles/day,DOH AADT 2566,chiang_khong_corridor,Eastbound city-to-Chiang Khong corridor.
+mae_sai_border_route1_aadt,12928,vehicles/day,DOH AADT 2566,border_gateway_demand,Route 1 Mae Kham - Mae Sai border corridor.
+data_readiness,screening_ready_with_competitor_audit_needed,text,TH-EVI assessment,go/no-go caution,Strong public data base; charger live status/kW and utilization still need operator-app verification.

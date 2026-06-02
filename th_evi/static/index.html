@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TH-EVI Site Analysis</title>
+<title>TH-EVI | EV Charging Site Analysis</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -16,6 +16,13 @@ button, input, select, textarea { font: inherit; }
 .section { padding: 16px 18px; border-bottom: 1px solid #e6ebf0; }
 h1 { margin: 0; font-size: 22px; }
 h2 { margin: 0 0 12px; font-size: 15px; }
+.app-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.lang-switch { display: inline-flex; border: 1px solid #cdd6df; border-radius: 6px; overflow: hidden; flex: 0 0 auto; }
+.lang-switch button {
+  border: 0; background: #fff; color: #12395b; padding: 6px 9px; cursor: pointer;
+  min-height: 30px; font-size: 12px;
+}
+.lang-switch button.active { background: #12395b; color: #fff; }
 .muted { color: #66788a; font-size: 12px; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -57,130 +64,151 @@ a { color: #0b65c2; text-decoration: none; }
 <body>
 <aside id="panel">
   <div class="section">
-    <h1>TH-EVI Site Analysis</h1>
-    <div class="muted">Chiang Mai candidate charging station demand</div>
+    <div class="app-head">
+      <div>
+        <h1>TH-EVI</h1>
+        <div class="muted" data-i18n="appSubtitle">วิเคราะห์ความต้องการสถานีชาร์จ EV สำหรับประเทศไทย</div>
+      </div>
+      <div class="lang-switch" aria-label="Language">
+        <button type="button" id="lang-th" class="active">ไทย</button>
+        <button type="button" id="lang-en">EN</button>
+      </div>
+    </div>
   </div>
 
   <form id="analysis-form">
     <div class="section">
-      <h2>Candidate Site</h2>
-      <label>Site name <input id="name" required value="New Candidate Site"></label>
+      <h2 data-i18n="candidateSite">พื้นที่ที่จะวิเคราะห์</h2>
+      <label><span data-i18n="siteName">ชื่อสถานที่</span><input id="name" required value="TCE Project Headquarters"></label>
       <div class="grid">
-        <label>Latitude <input id="lat" type="number" step="0.000001" required value="18.766000"></label>
-        <label>Longitude <input id="lon" type="number" step="0.000001" required value="98.962000"></label>
+        <label><span data-i18n="latitude">ละติจูด</span><input id="lat" type="number" step="0.000001" required value="18.754992"></label>
+        <label><span data-i18n="longitude">ลองจิจูด</span><input id="lon" type="number" step="0.000001" required value="99.036817"></label>
       </div>
       <div class="grid">
-        <label>Zone <input id="zone" value="Airport / Central Airport"></label>
-        <label>Year <input id="year" type="number" min="2025" max="2050" value="2030"></label>
+        <label><span data-i18n="province">จังหวัด</span>
+          <select id="province">
+            <option value="เชียงใหม่">เชียงใหม่</option>
+            <option value="เชียงราย">เชียงราย</option>
+            <option value="ลำปาง">ลำปาง</option>
+            <option value="แพร่">แพร่</option>
+            <option value="พะเยา">พะเยา</option>
+            <option value="หนองคาย">หนองคาย</option>
+            <option value="อุดรธานี">อุดรธานี</option>
+            <option value="ขอนแก่น">ขอนแก่น</option>
+            <option value="อุบลราชธานี">อุบลราชธานี</option>
+          </select>
+        </label>
+        <label><span data-i18n="year">ปีที่วิเคราะห์</span><input id="year" type="number" min="2025" max="2050" value="2026"></label>
       </div>
-      <label>Notes <textarea id="notes"></textarea></label>
-      <div class="status">Click the map to fill lat/lon, or paste coordinates from Google Maps.</div>
+      <label><span data-i18n="zone">โซน/ย่าน</span><input id="zone" value="TCE Project HQ / Chiang Mai"></label>
+      <label><span data-i18n="notes">หมายเหตุ</span><textarea id="notes">TCE Project headquarters with SINEXEL 30 kW single-gun charger.</textarea></label>
+      <div class="status" data-i18n="coordinateHelp">คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps</div>
     </div>
 
     <div class="section">
-      <h2>Demand Assumptions</h2>
+      <h2 data-i18n="demandAssumptions">สมมติฐานความต้องการ</h2>
       <div class="grid">
-        <label>Location type
+        <label><span data-i18n="locationType">ประเภททำเล</span>
           <select id="location_type">
-            <option value="">Auto</option>
-            <option value="highway">Highway</option>
-            <option value="city_center">City center</option>
-            <option value="destination" selected>Destination</option>
-            <option value="suburban">Suburban</option>
+            <option value="" data-i18n-option="auto">อัตโนมัติ</option>
+            <option value="highway" data-i18n-option="highway">ทางหลวง</option>
+            <option value="city_center" data-i18n-option="cityCenter">ใจกลางเมือง</option>
+            <option value="destination" selected data-i18n-option="destination">จุดหมายปลายทาง</option>
+            <option value="suburban" data-i18n-option="suburban">ชานเมือง</option>
           </select>
         </label>
-        <label>AADT override <input id="aadt" type="number" min="0" placeholder="Optional"></label>
+        <label><span data-i18n="aadtOverride">กำหนด AADT เอง</span><input id="aadt" type="number" min="0" placeholder="Optional"></label>
       </div>
       <div class="grid">
-        <label>Scenario
+        <label><span data-i18n="scenario">ฉากทัศน์</span>
           <select id="scenario">
-            <option value="conservative">Conservative</option>
-            <option value="base" selected>Base</option>
-            <option value="upside">Upside</option>
+            <option value="conservative" data-i18n-option="conservative">ระมัดระวัง</option>
+            <option value="base" selected data-i18n-option="base">ฐาน</option>
+            <option value="upside" data-i18n-option="upside">เติบโตสูง</option>
           </select>
         </label>
-        <label>Station format
+        <label><span data-i18n="stationFormat">รูปแบบสถานี</span>
           <select id="station_format">
-            <option value="community_mall">Community mall</option>
-            <option value="mall_surface_lot" selected>Mall surface lot</option>
-            <option value="roadside_destination">Roadside destination</option>
-            <option value="highway_hub">Highway hub</option>
-            <option value="urban_hub">Urban hub</option>
-            <option value="inside_parking">Inside parking</option>
-            <option value="test_launch">Test launch</option>
+            <option value="community_mall" data-i18n-option="communityMall">คอมมูนิตี้มอลล์</option>
+            <option value="mall_surface_lot" selected data-i18n-option="mallSurfaceLot">ลานจอดห้าง</option>
+            <option value="roadside_destination" data-i18n-option="roadsideDestination">จุดหมายริมทาง</option>
+            <option value="highway_hub" data-i18n-option="highwayHub">สถานีทางหลวง</option>
+            <option value="urban_hub" data-i18n-option="urbanHub">สถานีในเมือง</option>
+            <option value="inside_parking" data-i18n-option="insideParking">อาคารจอดรถ</option>
+            <option value="test_launch" data-i18n-option="testLaunch">ทดลองเปิด</option>
           </select>
         </label>
       </div>
     </div>
 
     <div class="section">
-      <h2>Station & Site</h2>
+      <h2 data-i18n="stationSite">สถานีและคุณภาพพื้นที่</h2>
       <div class="grid-3">
-        <label>Guns <input id="guns" type="number" min="1" value="12"></label>
-        <label>Total kW <input id="total_site_kw" type="number" min="1" value="720"></label>
-        <label>Max kW/gun <input id="max_kw_per_gun" type="number" min="1" value="180"></label>
+        <label><span data-i18n="guns">หัวชาร์จ</span><input id="guns" type="number" min="1" value="1"></label>
+        <label><span data-i18n="totalKw">กำลังรวม kW</span><input id="total_site_kw" type="number" min="1" value="30"></label>
+        <label><span data-i18n="maxKwGun">กำลังสูงสุด/หัว</span><input id="max_kw_per_gun" type="number" min="1" value="30"></label>
       </div>
       <div class="grid-3">
-        <label>Parking bays <input id="parking_capacity" type="number" min="0" value="50"></label>
-        <label>kWh/session <input id="avg_kwh" type="number" min="1" step="0.1" value="32"></label>
-        <label>THB/kWh <input id="price" type="number" min="0.1" step="0.1" value="6.5"></label>
+        <label><span data-i18n="parking">ช่องจอด</span><input id="parking_capacity" type="number" min="0" value="50"></label>
+        <label><span data-i18n="kwhSession">kWh/ครั้ง</span><input id="avg_kwh" type="number" min="1" step="0.1" value="32"></label>
+        <label><span data-i18n="price">บาท/kWh</span><input id="price" type="number" min="0.1" step="0.1" value="6.5"></label>
       </div>
       <div class="grid-3">
-        <label>Visibility <input id="visibility" type="number" min="0" max="1" step="0.05" value="0.9"></label>
-        <label>Access <input id="access" type="number" min="0" max="1" step="0.05" value="0.85"></label>
-        <label>Tenant <input id="tenant" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+        <label><span data-i18n="visibility">การมองเห็น</span><input id="visibility" type="number" min="0" max="1" step="0.05" value="0.9"></label>
+        <label><span data-i18n="access">การเข้าออก</span><input id="access" type="number" min="0" max="1" step="0.05" value="0.85"></label>
+        <label><span data-i18n="tenant">ความแข็งแรงของผู้เช่า</span><input id="tenant" type="number" min="0" max="1" step="0.05" value="0.9"></label>
       </div>
       <div class="grid">
-        <label>Signage <input id="signage" type="number" min="0" max="1" step="0.05" value="0.8"></label>
-        <label>Opening age days <input id="opening_age_days" type="number" min="0" placeholder="Mature if blank"></label>
+        <label><span data-i18n="signage">ป้าย/การนำทาง</span><input id="signage" type="number" min="0" max="1" step="0.05" value="0.8"></label>
+        <label><span data-i18n="openingAge">จำนวนวันหลังเปิด</span><input id="opening_age_days" type="number" min="0" placeholder="Mature if blank"></label>
       </div>
       <div class="inline" style="margin-top:10px">
-        <label class="check"><input id="roadside_frontage" type="checkbox" checked> Roadside frontage</label>
-        <label class="check"><input id="inside_parking" type="checkbox"> Inside parking structure</label>
+        <label class="check"><input id="roadside_frontage" type="checkbox" checked> <span data-i18n="roadsideFrontage">ติดถนน/เห็นจากถนน</span></label>
+        <label class="check"><input id="inside_parking" type="checkbox"> <span data-i18n="insideParkingStructure">อยู่ในอาคารจอดรถ</span></label>
       </div>
     </div>
 
     <div class="section">
-      <h2>Known Competitor</h2>
+      <h2 data-i18n="knownCompetitor">คู่แข่งที่ทราบ</h2>
       <div class="grid">
-        <label>Name <input id="comp_name" placeholder="Optional"></label>
-        <label>Distance km <input id="comp_distance" type="number" min="0" step="0.1"></label>
+        <label><span data-i18n="competitorName">ชื่อคู่แข่ง</span><input id="comp_name" placeholder="Optional"></label>
+        <label><span data-i18n="distanceKm">ระยะทาง กม.</span><input id="comp_distance" type="number" min="0" step="0.1"></label>
       </div>
       <div class="grid">
-        <label>Guns <input id="comp_guns" type="number" min="1" value="4"></label>
-        <label>Max kW <input id="comp_kw" type="number" min="1" value="120"></label>
+        <label><span data-i18n="competitorGuns">หัวชาร์จ</span><input id="comp_guns" type="number" min="1" value="4"></label>
+        <label><span data-i18n="competitorKw">kW สูงสุด</span><input id="comp_kw" type="number" min="1" value="120"></label>
       </div>
     </div>
 
     <div class="section">
-      <button class="btn" id="analyze-btn" type="submit">Analyze & Save</button>
-      <button class="btn secondary" id="refresh-btn" type="button">Refresh Saved Sites</button>
-      <button class="btn secondary" id="heatmap-btn" type="button">Load Heat Map</button>
+      <button class="btn" id="analyze-btn" type="submit" data-i18n="analyzeSave">วิเคราะห์และบันทึก</button>
+      <button class="btn secondary" id="refresh-btn" type="button" data-i18n="refreshSites">โหลดรายการใหม่</button>
+      <button class="btn secondary" id="heatmap-btn" type="button" data-i18n="loadHeatmap">โหลด Heat Map</button>
       <div id="status" class="status"></div>
-      <div class="heat-legend"><span>Heat</span><i class="heat-ramp"></i><span id="heatmap-meta">Not loaded</span></div>
+      <div class="heat-legend"><span data-i18n="heat">Heat</span><i class="heat-ramp"></i><span id="heatmap-meta" data-i18n="notLoaded">ยังไม่ได้โหลด</span></div>
     </div>
   </form>
 
   <div class="section" id="result-section" style="display:none">
-    <h2>Latest Result</h2>
+    <h2 data-i18n="latestResult">ผลวิเคราะห์ล่าสุด</h2>
     <div class="metrics">
-      <div class="metric"><span>Sessions/day</span><b id="m_sessions">-</b></div>
-      <div class="metric"><span>kWh/day</span><b id="m_kwh">-</b></div>
-      <div class="metric"><span>THB/day</span><b id="m_revenue">-</b></div>
-      <div class="metric"><span>Recommended plugs</span><b id="m_plugs">-</b></div>
+      <div class="metric"><span data-i18n="sessionsDay">ครั้ง/วัน</span><b id="m_sessions">-</b></div>
+      <div class="metric"><span data-i18n="kwhDay">kWh/วัน</span><b id="m_kwh">-</b></div>
+      <div class="metric"><span data-i18n="thbDay">บาท/วัน</span><b id="m_revenue">-</b></div>
+      <div class="metric"><span data-i18n="recommendedPlugs">หัวชาร์จที่แนะนำ</span><b id="m_plugs">-</b></div>
     </div>
-    <div class="status"><a id="report-link" href="#" target="_blank">Open standard report</a></div>
+    <div class="status"><a id="report-link" href="#" target="_blank" data-i18n="openReport">เปิดรายงานมาตรฐาน</a></div>
     <table style="margin-top:12px">
-      <thead><tr><th>Scenario</th><th>Sessions/day</th><th>kWh/day</th><th>Plugs</th></tr></thead>
+      <thead><tr><th data-i18n="scenario">ฉากทัศน์</th><th data-i18n="sessionsDay">ครั้ง/วัน</th><th data-i18n="kwhDay">kWh/วัน</th><th data-i18n="plugs">หัวชาร์จ</th></tr></thead>
       <tbody id="band-body"></tbody>
     </table>
   </div>
 
   <div class="section">
-    <h2>Saved Candidate Sites</h2>
+    <h2 data-i18n="savedSites">พื้นที่ที่บันทึกไว้</h2>
     <table>
-      <thead><tr><th>Site</th><th>Sessions</th><th>Report</th></tr></thead>
-      <tbody id="sites-body"><tr><td colspan="3" class="muted">Loading...</td></tr></tbody>
+      <thead><tr><th data-i18n="site">สถานที่</th><th data-i18n="sessions">ครั้งชาร์จ</th><th data-i18n="report">รายงาน</th></tr></thead>
+      <tbody id="sites-body"><tr><td colspan="3" class="muted" data-i18n="loading">กำลังโหลด...</td></tr></tbody>
     </table>
   </div>
 </aside>
@@ -188,7 +216,203 @@ a { color: #0b65c2; text-decoration: none; }
 <div id="map"></div>
 
 <script>
-const map = L.map("map").setView([18.79, 98.98], 11);
+const translations = {
+  th: {
+    appSubtitle: "วิเคราะห์ความต้องการสถานีชาร์จ EV สำหรับประเทศไทย",
+    candidateSite: "พื้นที่ที่จะวิเคราะห์",
+    siteName: "ชื่อสถานที่",
+    latitude: "ละติจูด",
+    longitude: "ลองจิจูด",
+    province: "จังหวัด",
+    year: "ปีที่วิเคราะห์",
+    zone: "โซน/ย่าน",
+    notes: "หมายเหตุ",
+    coordinateHelp: "คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps",
+    demandAssumptions: "สมมติฐานความต้องการ",
+    locationType: "ประเภททำเล",
+    aadtOverride: "กำหนด AADT เอง",
+    scenario: "ฉากทัศน์",
+    stationFormat: "รูปแบบสถานี",
+    stationSite: "สถานีและคุณภาพพื้นที่",
+    guns: "หัวชาร์จ",
+    totalKw: "กำลังรวม kW",
+    maxKwGun: "กำลังสูงสุด/หัว",
+    parking: "ช่องจอด",
+    kwhSession: "kWh/ครั้ง",
+    price: "บาท/kWh",
+    visibility: "การมองเห็น",
+    access: "การเข้าออก",
+    tenant: "ความแข็งแรงของผู้เช่า",
+    signage: "ป้าย/การนำทาง",
+    openingAge: "จำนวนวันหลังเปิด",
+    roadsideFrontage: "ติดถนน/เห็นจากถนน",
+    insideParkingStructure: "อยู่ในอาคารจอดรถ",
+    knownCompetitor: "คู่แข่งที่ทราบ",
+    competitorName: "ชื่อคู่แข่ง",
+    distanceKm: "ระยะทาง กม.",
+    competitorGuns: "หัวชาร์จ",
+    competitorKw: "kW สูงสุด",
+    analyzeSave: "วิเคราะห์และบันทึก",
+    refreshSites: "โหลดรายการใหม่",
+    loadHeatmap: "โหลด Heat Map",
+    heat: "Heat",
+    notLoaded: "ยังไม่ได้โหลด",
+    latestResult: "ผลวิเคราะห์ล่าสุด",
+    sessionsDay: "ครั้ง/วัน",
+    kwhDay: "kWh/วัน",
+    thbDay: "บาท/วัน",
+    recommendedPlugs: "หัวชาร์จที่แนะนำ",
+    openReport: "เปิดรายงานมาตรฐาน",
+    plugs: "หัวชาร์จ",
+    savedSites: "พื้นที่ที่บันทึกไว้",
+    site: "สถานที่",
+    sessions: "ครั้งชาร์จ",
+    report: "รายงาน",
+    loading: "กำลังโหลด...",
+    auto: "อัตโนมัติ",
+    highway: "ทางหลวง",
+    cityCenter: "ใจกลางเมือง",
+    destination: "จุดหมายปลายทาง",
+    suburban: "ชานเมือง",
+    conservative: "ระมัดระวัง",
+    base: "ฐาน",
+    upside: "เติบโตสูง",
+    communityMall: "คอมมูนิตี้มอลล์",
+    mallSurfaceLot: "ลานจอดห้าง",
+    roadsideDestination: "จุดหมายริมทาง",
+    highwayHub: "สถานีทางหลวง",
+    urbanHub: "สถานีในเมือง",
+    insideParking: "อาคารจอดรถ",
+    testLaunch: "ทดลองเปิด",
+    analyzing: "กำลังวิเคราะห์และบันทึก...",
+    savedRun: "บันทึก run",
+    candidatePoint: "จุดที่เลือก",
+    noSavedSites: "ยังไม่มีพื้นที่ที่บันทึกไว้",
+    open: "เปิด",
+    loadingHeatmap: "กำลังโหลด Heat Map...",
+    heatmapLoaded: "โหลด Heat Map แล้ว",
+    heatmapUnavailable: "Heat Map รองรับเฉพาะเชียงใหม่ในตอนนี้",
+    referenceLandmarks: "จุดอ้างอิง",
+    existingChargers: "สถานีชาร์จเดิม",
+    candidateSites: "พื้นที่ที่บันทึก",
+    areaDemandHeat: "Heat Map ความต้องการ",
+    reportLink: "รายงาน",
+    sessionsPerDay: "ครั้ง/วัน",
+    kwhPerDay: "kWh/วัน",
+    heatScore: "Heat score",
+    modelSessions: "ครั้งจากโมเดล",
+    zoneScore: "คะแนนโซน",
+    charger: "สถานีชาร์จ"
+  },
+  en: {
+    appSubtitle: "EV charging station demand analysis for Thailand",
+    candidateSite: "Candidate Site",
+    siteName: "Site name",
+    latitude: "Latitude",
+    longitude: "Longitude",
+    province: "Province",
+    year: "Analysis year",
+    zone: "Zone",
+    notes: "Notes",
+    coordinateHelp: "Click the map to fill lat/lon, or paste coordinates from Google Maps.",
+    demandAssumptions: "Demand Assumptions",
+    locationType: "Location type",
+    aadtOverride: "AADT override",
+    scenario: "Scenario",
+    stationFormat: "Station format",
+    stationSite: "Station & Site",
+    guns: "Guns",
+    totalKw: "Total kW",
+    maxKwGun: "Max kW/gun",
+    parking: "Parking bays",
+    kwhSession: "kWh/session",
+    price: "THB/kWh",
+    visibility: "Visibility",
+    access: "Access",
+    tenant: "Tenant strength",
+    signage: "Signage",
+    openingAge: "Opening age days",
+    roadsideFrontage: "Roadside frontage",
+    insideParkingStructure: "Inside parking structure",
+    knownCompetitor: "Known Competitor",
+    competitorName: "Name",
+    distanceKm: "Distance km",
+    competitorGuns: "Guns",
+    competitorKw: "Max kW",
+    analyzeSave: "Analyze & Save",
+    refreshSites: "Refresh Saved Sites",
+    loadHeatmap: "Load Heat Map",
+    heat: "Heat",
+    notLoaded: "Not loaded",
+    latestResult: "Latest Result",
+    sessionsDay: "Sessions/day",
+    kwhDay: "kWh/day",
+    thbDay: "THB/day",
+    recommendedPlugs: "Recommended plugs",
+    openReport: "Open standard report",
+    plugs: "Plugs",
+    savedSites: "Saved Candidate Sites",
+    site: "Site",
+    sessions: "Sessions",
+    report: "Report",
+    loading: "Loading...",
+    auto: "Auto",
+    highway: "Highway",
+    cityCenter: "City center",
+    destination: "Destination",
+    suburban: "Suburban",
+    conservative: "Conservative",
+    base: "Base",
+    upside: "Upside",
+    communityMall: "Community mall",
+    mallSurfaceLot: "Mall surface lot",
+    roadsideDestination: "Roadside destination",
+    highwayHub: "Highway hub",
+    urbanHub: "Urban hub",
+    insideParking: "Inside parking",
+    testLaunch: "Test launch",
+    analyzing: "Analyzing and saving...",
+    savedRun: "Saved run",
+    candidatePoint: "Candidate point",
+    noSavedSites: "No saved sites yet",
+    open: "Open",
+    loadingHeatmap: "Loading heat map...",
+    heatmapLoaded: "Heat map loaded",
+    heatmapUnavailable: "Heat Map currently supports Chiang Mai only",
+    referenceLandmarks: "Reference landmarks",
+    existingChargers: "Existing chargers",
+    candidateSites: "Candidate sites",
+    areaDemandHeat: "Area demand heat",
+    reportLink: "Report",
+    sessionsPerDay: "sessions/day",
+    kwhPerDay: "kWh/day",
+    heatScore: "Heat score",
+    modelSessions: "Model sessions",
+    zoneScore: "Zone score",
+    charger: "Charger"
+  }
+};
+
+let currentLang = localStorage.getItem("thEviLang") || "th";
+const t = key => (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem("thEviLang", lang);
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-option]").forEach(el => {
+    el.textContent = t(el.dataset.i18nOption);
+  });
+  document.getElementById("lang-th").classList.toggle("active", lang === "th");
+  document.getElementById("lang-en").classList.toggle("active", lang === "en");
+  refreshLayerControlLabels();
+}
+
+const DEFAULT_CENTER = [18.754992, 99.036817];
+const map = L.map("map").setView(DEFAULT_CENTER, 15);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors"
 }).addTo(map);
@@ -198,6 +422,7 @@ const chargerLayer = L.layerGroup().addTo(map);
 const landmarkLayer = L.layerGroup().addTo(map);
 const heatmapLayer = L.layerGroup().addTo(map);
 let draftMarker = null;
+let layerControl = null;
 
 const $ = id => document.getElementById(id);
 const num = id => {
@@ -229,7 +454,7 @@ function payload() {
       name: $("name").value.trim(),
       lat: num("lat"),
       lon: num("lon"),
-      province: "เชียงใหม่",
+      province: $("province").value,
       zone: $("zone").value.trim() || null,
       notes: $("notes").value.trim() || null
     },
@@ -260,7 +485,7 @@ function payload() {
 function setDraftMarker(lat, lon) {
   if (draftMarker) draftMarker.remove();
   draftMarker = L.marker([lat, lon], { draggable: true }).addTo(map);
-  draftMarker.bindPopup("Candidate point").openPopup();
+  draftMarker.bindPopup(t("candidatePoint")).openPopup();
   draftMarker.on("dragend", e => {
     const p = e.target.getLatLng();
     $("lat").value = p.lat.toFixed(6);
@@ -277,7 +502,7 @@ map.on("click", e => {
 async function analyze(event) {
   event.preventDefault();
   $("analyze-btn").disabled = true;
-  $("status").textContent = "Analyzing and saving...";
+  $("status").textContent = t("analyzing");
   $("status").className = "status";
   try {
     const resp = await fetch("/api/site-analysis", {
@@ -289,7 +514,7 @@ async function analyze(event) {
     const result = await resp.json();
     showResult(result);
     await loadSavedSites();
-    $("status").textContent = `Saved run #${result.run_id}`;
+    $("status").textContent = `${t("savedRun")} #${result.run_id}`;
   } catch (err) {
     $("status").textContent = err.message;
     $("status").className = "status danger";
@@ -321,7 +546,7 @@ function showResult(result) {
     <b>${result.site.name}</b><br>
     ${fmt(result.summary.sessions_per_day)} sessions/day<br>
     ${fmt(result.summary.daily_kwh)} kWh/day<br>
-    <a href="${result.report_url}" target="_blank">Report</a>
+    <a href="${result.report_url}" target="_blank">${t("reportLink")}</a>
   `).addTo(candidateLayer);
   map.setView([lat, lon], 14);
 }
@@ -330,20 +555,20 @@ async function loadSavedSites() {
   const resp = await fetch("/api/sites");
   const data = await resp.json();
   candidateLayer.clearLayers();
-  $("sites-body").innerHTML = data.sites.length ? "" : `<tr><td colspan="3" class="muted">No saved sites yet</td></tr>`;
+  $("sites-body").innerHTML = data.sites.length ? "" : `<tr><td colspan="3" class="muted">${t("noSavedSites")}</td></tr>`;
   data.sites.forEach(site => {
     const latest = site.latest;
     const sessions = latest ? fmt(latest.sessions_per_day) : "-";
-    const report = latest ? `<a href="/reports/${latest.run_id}" target="_blank">Open</a>` : "-";
+    const report = latest ? `<a href="/reports/${latest.run_id}" target="_blank">${t("open")}</a>` : "-";
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${site.name}<div class="muted">${site.zone || ""}</div></td><td>${sessions}</td><td>${report}</td>`;
+    tr.innerHTML = `<td>${site.name}<div class="muted">${site.province || ""} ${site.zone || ""}</div></td><td>${sessions}</td><td>${report}</td>`;
     $("sites-body").appendChild(tr);
     L.circleMarker([site.lat, site.lon], {
       radius: 7,
       color: "#12395b",
       fillColor: "#36a2eb",
       fillOpacity: 0.75
-    }).bindPopup(`<b>${site.name}</b><br>${sessions} sessions/day<br>${report}`).addTo(candidateLayer);
+    }).bindPopup(`<b>${site.name}</b><br>${sessions} ${t("sessionsPerDay")}<br>${report}`).addTo(candidateLayer);
   });
 }
 
@@ -365,13 +590,18 @@ async function loadReferenceLayers() {
       radius: 5,
       color: "#805ad5",
       fillOpacity: 0.65
-    }).bindPopup(`<b>${st.operator || "Charger"}</b><br>${st.capacity || "?"} bays`).addTo(chargerLayer);
+    }).bindPopup(`<b>${st.operator || t("charger")}</b><br>${st.capacity || "?"} bays`).addTo(chargerLayer);
   });
 }
 
 async function loadHeatMap() {
+  if ($("province").value !== "เชียงใหม่") {
+    $("status").textContent = t("heatmapUnavailable");
+    $("status").className = "status";
+    return;
+  }
   $("heatmap-btn").disabled = true;
-  $("status").textContent = "Loading heat map...";
+  $("status").textContent = t("loadingHeatmap");
   $("status").className = "status";
   try {
     const year = num("year") || 2030;
@@ -388,15 +618,15 @@ async function loadHeatMap() {
         fillColor: color,
         fillOpacity: Math.max(0.18, 0.62 * point.intensity)
       }).bindPopup(`
-        <b>Heat score ${fmt(point.heat_score)}</b><br>
+        <b>${t("heatScore")} ${fmt(point.heat_score)}</b><br>
         ${point.location_type}<br>
-        Model sessions: ${fmt(point.model_sessions)}<br>
-        Zone score: ${fmt(point.zone_score)}<br>
+        ${t("modelSessions")}: ${fmt(point.model_sessions)}<br>
+        ${t("zoneScore")}: ${fmt(point.zone_score)}<br>
         ${(point.zones || []).join("<br>")}
       `).addTo(heatmapLayer);
     });
     $("heatmap-meta").textContent = `${data.point_count} points, max ${fmt(data.max_heat_score)}, ${data.year} ${data.scenario}`;
-    $("status").textContent = "Heat map loaded";
+    $("status").textContent = t("heatmapLoaded");
   } catch (err) {
     $("status").textContent = err.message;
     $("status").className = "status danger";
@@ -405,16 +635,29 @@ async function loadHeatMap() {
   }
 }
 
-L.control.layers(null, {
-  "Candidate sites": candidateLayer,
-  "Area demand heat": heatmapLayer,
-  "Reference landmarks": landmarkLayer,
-  "Existing chargers": chargerLayer
-}).addTo(map);
+function refreshLayerControlLabels() {
+  if (layerControl) map.removeControl(layerControl);
+  layerControl = L.control.layers(null, {
+    [t("candidateSites")]: candidateLayer,
+    [t("areaDemandHeat")]: heatmapLayer,
+    [t("referenceLandmarks")]: landmarkLayer,
+    [t("existingChargers")]: chargerLayer
+  }).addTo(map);
+}
 
 $("analysis-form").addEventListener("submit", analyze);
 $("refresh-btn").addEventListener("click", loadSavedSites);
 $("heatmap-btn").addEventListener("click", loadHeatMap);
+$("lang-th").addEventListener("click", () => applyLanguage("th"));
+$("lang-en").addEventListener("click", () => applyLanguage("en"));
+$("province").addEventListener("change", () => {
+  if ($("province").value !== "เชียงใหม่") {
+    heatmapLayer.clearLayers();
+    $("heatmap-meta").textContent = t("heatmapUnavailable");
+  }
+});
+applyLanguage(currentLang);
+$("year").value = new Date().getFullYear();
 setDraftMarker(Number($("lat").value), Number($("lon").value));
 loadReferenceLayers();
 loadSavedSites();

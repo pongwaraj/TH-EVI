@@ -1,0 +1,23 @@
+metric,value,unit,source,analysis_use,notes
+province_population,417480,people,DOPA 2568,province demand denominator,Verified province population from imported EV Hub DOPA dataset.
+province_households,187264,households,DOPA 2568,resident charging context,Verified province household count.
+mueang_phrae_population,60987,people,DOPA 2568,city/destination demand,Main city population from district-level DOPA rows.
+sung_men_population,65715,people,DOPA 2568,suburban/local demand,Largest district population in current DOPA district rows.
+den_chai_population,19154,people,DOPA 2568,gateway/local demand,Local population is modest; Den Chai should be assessed mainly as road/rail gateway.
+den_chai_households,8753,households,DOPA 2568,gateway/local demand,Household base for local resident demand.
+ror1_passenger_cars,51702,vehicles,DLT Apr 2026,EV penetration denominator,Verified รย.1 passenger-car fleet.
+ror1_bev,426,vehicles,DLT Apr 2026,current BEV stock,Verified รย.1 BEV stock.
+ror1_phev,105,vehicles,DLT Apr 2026,current PHEV stock,Verified รย.1 PHEV gasoline + diesel stock.
+ror1_chargeable_ev,531,vehicles,DLT Apr 2026,current chargeable EV stock,BEV + PHEV in รย.1.
+ror1_bev_share,0.00824,share,DLT Apr 2026,adoption calibration,BEV share of รย.1 passenger cars.
+ror1_chargeable_ev_share,0.01027,share,DLT Apr 2026,adoption calibration,BEV + PHEV share of รย.1 passenger cars.
+all_vehicle_law_total,271288,vehicles,DLT Apr 2026,province mobility context,All vehicles under motor vehicle law.
+all_vehicle_law_bev,551,vehicles,DLT Apr 2026,province EV context,All-segment BEV stock.
+all_vehicle_law_phev,105,vehicles,DLT Apr 2026,province EV context,All-segment PHEV stock.
+all_vehicle_law_chargeable_ev,656,vehicles,DLT Apr 2026,province EV context,All-segment BEV + PHEV stock.
+top_aadt_route101_na_laem_nong_ha,19509,vehicles/day,DOH AADT 2566,corridor demand,Highest Phrae AADT point in current seed data.
+route101_pak_chua_charoen_rat_aadt,14374,vehicles/day,DOH AADT 2566,corridor demand,City/province corridor screening point.
+route11_nong_nam_khiao_pang_kho_aadt,11849,vehicles/day,DOH AADT 2566,Den Chai/Lampang-Uttaradit corridor,Route 11 corridor relevant to Den Chai gateway screening.
+den_chai_entrance_aadt,4809,vehicles/day,DOH AADT 2566,local gateway demand,Direct Den Chai entrance count is modest; strategic role depends on Route 11/101 and rail gateway.
+primary_hot_zone,Den Chai Route 11/101 and rail gateway,text,TH-EVI seed,site screening,Ranked first in current Phrae hot-zone seed because gateway role can exceed local-population signal.
+data_readiness,screening_ready_not_investment_grade,text,TH-EVI assessment,go/no-go caution,Competitor pins/kW/open hours and real session utilization still need field/operator verification.
