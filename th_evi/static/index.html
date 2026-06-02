@@ -556,7 +556,7 @@ async function quickEstimate(lat, lon) {
           <button onclick="useAsCandidate(\${lat.toFixed(6)}, \${lon.toFixed(6)})" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">
             ✓ Use as Candidate
           </button>
-          <button onclick="estimateMarker?.remove();estimateMarker=null" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">
+          <button onclick="closeEstimate()" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">
             ✕ Close
           </button>
         </div>
@@ -567,7 +567,10 @@ async function quickEstimate(lat, lon) {
     map.setView([lat, lon], 15);
 
   } catch (err) {
-    alert("Error estimating demand: " + err.message);
+    console.error("Estimate error:", err);
+    // ไม่แสดง alert ให้ผู้ใช้ได้คลิก map ต่อได้
+    $("status").textContent = `⚠ Error: ${err.message}`;
+    $("status").className = "status danger";
   }
 }
 
@@ -577,10 +580,17 @@ function useAsCandidate(lat, lon) {
   $("lon").value = lon.toFixed(6);
   $("name").focus();
   setDraftMarker(lat, lon);
-  estimateMarker?.remove();
-  estimateMarker = null;
+  closeEstimate();
   // Scroll to form
   document.getElementById("analysis-form").scrollIntoView({ behavior: "smooth" });
+}
+
+// ปิด estimate popup
+function closeEstimate() {
+  if (estimateMarker) {
+    estimateMarker.remove();
+  }
+  estimateMarker = null;
 }
 
 map.on("click", e => {
@@ -773,15 +783,26 @@ $("province").addEventListener("change", () => {
   }
 });
 
-applyLanguage(currentLang);
-$("year").value = new Date().getFullYear();
-setDraftMarker(Number($("lat").value), Number($("lon").value));
-loadReferenceLayers();
-loadSavedSites();
+try {
+  applyLanguage(currentLang);
+  $("year").value = new Date().getFullYear();
+  setDraftMarker(Number($("lat").value), Number($("lon").value));
+  loadReferenceLayers();
+  loadSavedSites();
 
-// Auto-load heat map ตอนเปิดแอพ (ถ้าเป็น Chiang Mai)
-if ($("province").value === "เชียงใหม่") {
-  setTimeout(() => loadHeatMap(), 500);  // Slight delay เพื่อให้ UI render ก่อน
+  // Auto-load heat map ตอนเปิดแอพ (ถ้าเป็น Chiang Mai)
+  if ($("province").value === "เชียงใหม่") {
+    setTimeout(() => {
+      try {
+        loadHeatMap();
+      } catch (err) {
+        console.error("Heat map load error:", err);
+        // ไม่หยุดการทำงาน ให้ map เดินหน้า
+      }
+    }, 500);  // Slight delay เพื่อให้ UI render ก่อน
+  }
+} catch (err) {
+  console.error("Initialization error:", err);
 }
 </script>
 </body>
