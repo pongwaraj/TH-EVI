@@ -1,0 +1,13 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+phrae_city_center,Phrae city center,city_center,18.1450,100.1400,public city context + seed coordinate,medium,"City-level coordinate anchor for first-pass screening."
+den_chai_railway_station,Den Chai Railway Station,transport,17.9840,100.0520,public railway context + seed coordinate,medium_high,"Main railway station serving Phrae province; important road/rail gateway anchor."
+den_chai_route11_101_axis,Den Chai Route 11/101 road axis,transport_corridor,17.9800,100.0500,public route context + seed coordinate,medium,"Route 11 and 101 gateway proxy around Den Chai."
+phrae_bus_terminal,Phrae Bus Terminal,transport,18.1430,100.1420,seed_estimate,low_medium,"City transport node; verify exact pin before final site analysis."
+phrae_hospital,Phrae Hospital,hospital,18.1450,100.1500,seed_estimate,low_medium,"Hospital/government demand proxy near city core."
+kad_kong_kao_old_town,Kad Kong Kao / Phrae old town,tourism,18.1450,100.1400,public tourism context + seed coordinate,medium,"Old-town, tourism, retail, and restaurant demand proxy."
+wat_phra_that_cho_hae,Wat Phra That Cho Hae,tourism,18.1250,100.2370,public tourism context + seed coordinate,medium,"Major Phrae tourism anchor east of city."
+robinson_lifestyle_phrae_seed,Robinson/Lifestyle retail Phrae candidate,shopping_mall,18.1200,100.1450,seed_estimate,low,"Retail anchor placeholder; verify exact branch/pin and charger presence."
+sung_men_district,Sung Men district center,district_center,18.0500,100.1100,seed_estimate,low_medium,"Large district south of Mueang Phrae; local demand proxy."
+long_district,Long district center,district_center,18.0800,99.8300,seed_estimate,low_medium,"District and route/tourism demand proxy."
+route101_na_laem_axis,Route 101 Na Laem - Nong Ha axis,transport_corridor,18.2200,100.1700,DOH AADT context + seed coordinate,medium,"Highest-AADT Route 101 screening anchor."
+route129_bypass_axis,Route 129 Phrae bypass axis,transport_corridor,18.1300,100.1100,DOH AADT context + seed coordinate,medium,"Bypass and city-edge roadside screening anchor."

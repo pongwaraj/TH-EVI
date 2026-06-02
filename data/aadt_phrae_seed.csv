@@ -1,0 +1,11 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,101,Na Laem - Nong Ha,259+511,19509,Phrae,DOH aadt_2566.csv,"Highest available Phrae AADT point in current dataset."
+2566,101,Pak Chua Junction - Charoen Rat Junction,229+872,14374,Phrae,DOH aadt_2566.csv,"Route 101 city/province corridor count."
+2566,11,Nong Nam Khiao - Pang Kho,369+006,11849,Phrae,DOH aadt_2566.csv,"Route 11 Den Chai/Lampang-Uttaradit corridor relevance."
+2566,103,Mae Yang Ho - Mae Tip,9+200,11319,Phrae,DOH aadt_2566.csv,"Route 103 local/interdistrict connector."
+2566,129,Phrae bypass,8+939,10921,Phrae,DOH aadt_2566.csv,"Phrae city bypass count."
+2566,103,Mae Yang Ho - Mae Tip,33+218,10648,Phrae,DOH aadt_2566.csv,"Secondary Route 103 point."
+2566,1154,Song - Kaeng Suea Ten,4+856,8940,Phrae,DOH aadt_2566.csv,"Northern district/tourism corridor."
+2566,1120,Song - Mae Ten,2+000,6976,Phrae,DOH aadt_2566.csv,"District connector count."
+2566,101,Nong Ha - Suan Pa,274+772,6733,Phrae,DOH aadt_2566.csv,"Route 101 secondary point."
+2566,1419,Den Chai entrance,4+608,4809,Phrae,DOH aadt_2566.csv,"Direct Den Chai entrance count; local count is modest but strategic gateway role is higher."
