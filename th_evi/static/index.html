@@ -185,7 +185,18 @@ a { color: #0b65c2; text-decoration: none; }
       <button class="btn secondary" id="refresh-btn" type="button" data-i18n="refreshSites">โหลดรายการใหม่</button>
       <button class="btn secondary" id="heatmap-btn" type="button" data-i18n="loadHeatmap">โหลด Heat Map</button>
       <div id="status" class="status"></div>
-      <div class="heat-legend"><span data-i18n="heat">Heat</span><i class="heat-ramp"></i><span id="heatmap-meta" data-i18n="notLoaded">ยังไม่ได้โหลด</span></div>
+      <div class="heat-legend">
+        <span data-i18n="heat">🗺️ Heat Map:</span>
+        <span id="heatmap-meta" data-i18n="notLoaded" style="font-weight:bold">ยังไม่ได้โหลด</span>
+      </div>
+      <div style="margin-top:8px;padding:8px;background:#f9fafb;border-radius:6px;font-size:11px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#1a9850;border-radius:2px"></span> <b>Cool</b> (&lt;15%)</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#a6d96a;border-radius:2px"></span> <b>Mild</b> (15-30%)</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#ffff8c;border-radius:2px"></span> <b>Moderate</b> (30-45%)</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#fdae61;border-radius:2px"></span> <b>Warm</b> (45-60%)</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#f46d43;border-radius:2px"></span> <b>Hot</b> (60-75%)</div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:16px;height:16px;background:#d7191c;border-radius:2px"></span> <b>Very Hot</b> (&gt;75%)</div>
+      </div>
     </div>
   </form>
 
@@ -433,10 +444,14 @@ const bool = id => $(id).checked;
 const fmt = value => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
 
 function heatColor(intensity) {
-  if (intensity >= 0.75) return "#d7191c";
-  if (intensity >= 0.50) return "#fdae61";
-  if (intensity >= 0.25) return "#ffff8c";
-  return "#2c7bb6";
+  // ไล่สีจากเขียว → เหลือง → ส้ม → แดง
+  if (intensity >= 0.9) return "#8B0000";      // Dark red - very hot
+  if (intensity >= 0.75) return "#d7191c";     // Red - hot
+  if (intensity >= 0.60) return "#f46d43";     // Orange-red - warm
+  if (intensity >= 0.45) return "#fdae61";     // Orange - moderate
+  if (intensity >= 0.30) return "#ffff8c";     // Yellow - mild
+  if (intensity >= 0.15) return "#a6d96a";     // Light green - cool
+  return "#1a9850";                            // Dark green - very cool
 }
 
 function payload() {
@@ -595,40 +610,57 @@ async function loadReferenceLayers() {
 }
 
 async function loadHeatMap() {
-  if ($("province").value !== "เชียงใหม่") {
+  const province = $("province").value;
+  if (province !== "เชียงใหม่") {
     $("status").textContent = t("heatmapUnavailable");
     $("status").className = "status";
+    heatmapLayer.clearLayers();
+    $("heatmap-meta").textContent = t("heatmapUnavailable");
     return;
   }
   $("heatmap-btn").disabled = true;
   $("status").textContent = t("loadingHeatmap");
   $("status").className = "status";
   try {
-    const year = num("year") || 2030;
+    const year = num("year") || new Date().getFullYear();
     const scenario = $("scenario").value || "base";
     const resp = await fetch(`/api/heatmap/chiang-mai?year=${year}&scenario=${scenario}&resolution_km=1.0`);
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
     heatmapLayer.clearLayers();
+
+    // ลากวง circles บน map
     data.points.forEach(point => {
       const color = heatColor(point.intensity);
+      const radius = Math.max(500, 1200 * point.intensity);  // ขยายให้เห็นชัดขึ้น
+      const opacity = Math.max(0.25, 0.70 * point.intensity);  // เพิ่ม opacity
+
       L.circle([point.lat, point.lon], {
-        radius: Math.max(350, 900 * point.intensity),
-        stroke: false,
+        radius: radius,
+        stroke: true,
+        color: color,
+        weight: 2,
         fillColor: color,
-        fillOpacity: Math.max(0.18, 0.62 * point.intensity)
+        fillOpacity: opacity
       }).bindPopup(`
-        <b>${t("heatScore")} ${fmt(point.heat_score)}</b><br>
-        ${point.location_type}<br>
-        ${t("modelSessions")}: ${fmt(point.model_sessions)}<br>
-        ${t("zoneScore")}: ${fmt(point.zone_score)}<br>
-        ${(point.zones || []).join("<br>")}
+        <div style="font-size:13px;padding:5px">
+          <b style="color:${color}">🔥 ${t("heatScore")}: ${fmt(point.heat_score)}</b><br>
+          <small>${point.location_type || "Mixed"}</small><br>
+          📊 ${t("modelSessions")}: <b>${fmt(point.model_sessions)}</b>/day<br>
+          ⭐ ${t("zoneScore")}: ${fmt(point.zone_score)}<br>
+          ${(point.zones || []).map(z => `<small>📍 ${z}</small>`).join("<br>")}
+        </div>
       `).addTo(heatmapLayer);
     });
-    $("heatmap-meta").textContent = `${data.point_count} points, max ${fmt(data.max_heat_score)}, ${data.year} ${data.scenario}`;
-    $("status").textContent = t("heatmapLoaded");
+
+    // อัปเดต metadata
+    const metaText = `${data.point_count} zones | Max ${fmt(data.max_heat_score)} | ${data.year} ${t(data.scenario)}`;
+    $("heatmap-meta").textContent = metaText;
+    $("heatmap-meta").style.color = "#2c7bb6";
+    $("status").textContent = `✓ ${t("heatmapLoaded")}`;
+    $("status").style.color = "#2f855a";
   } catch (err) {
-    $("status").textContent = err.message;
+    $("status").textContent = `⚠ ${err.message}`;
     $("status").className = "status danger";
   } finally {
     $("heatmap-btn").disabled = false;
@@ -650,18 +682,34 @@ $("refresh-btn").addEventListener("click", loadSavedSites);
 $("heatmap-btn").addEventListener("click", loadHeatMap);
 $("lang-th").addEventListener("click", () => applyLanguage("th"));
 $("lang-en").addEventListener("click", () => applyLanguage("en"));
+
+// เพิ่ม auto-reload heat map เมื่อเปลี่ยน scenario หรือ year
+$("scenario").addEventListener("change", () => {
+  if ($("province").value === "เชียงใหม่") loadHeatMap();
+});
+$("year").addEventListener("change", () => {
+  if ($("province").value === "เชียงใหม่") loadHeatMap();
+});
+
 $("province").addEventListener("change", () => {
   if ($("province").value !== "เชียงใหม่") {
     heatmapLayer.clearLayers();
     $("heatmap-meta").textContent = t("heatmapUnavailable");
+  } else {
+    loadHeatMap();  // Auto-load heat map เมื่อเปลี่ยนเป็น Chiang Mai
   }
 });
+
 applyLanguage(currentLang);
 $("year").value = new Date().getFullYear();
 setDraftMarker(Number($("lat").value), Number($("lon").value));
 loadReferenceLayers();
 loadSavedSites();
-loadHeatMap();
+
+// Auto-load heat map ตอนเปิดแอพ (ถ้าเป็น Chiang Mai)
+if ($("province").value === "เชียงใหม่") {
+  setTimeout(() => loadHeatMap(), 500);  // Slight delay เพื่อให้ UI render ก่อน
+}
 </script>
 </body>
 </html>
