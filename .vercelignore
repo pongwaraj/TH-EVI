@@ -13,3 +13,5 @@ docs/**
 data/*.sqlite
 data/*.sqlite3
 data/*.xls
+Proposal/**
+TCE_logo.png
