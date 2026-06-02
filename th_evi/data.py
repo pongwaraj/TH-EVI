@@ -243,6 +243,77 @@ def load_population(level="province", province=None):
     return df
 
 
+def load_evhub_dopa_population(province=None, area_type=None):
+    """Load normalized DOPA 2568 population imported from the old EV Hub project."""
+    path = DATA_DIR / "evhub_dopa_population_2568.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    if province:
+        df = df[df["province"] == province].copy()
+    if area_type:
+        df = df[df["area_type"] == area_type].copy()
+    return df.reset_index(drop=True)
+
+
+def get_evhub_population(province, area_name=None, area_type=None):
+    """Return the best DOPA 2568 population row for a province or named area."""
+    df = load_evhub_dopa_population(province=province, area_type=area_type)
+    if df.empty:
+        return None
+
+    if area_name:
+        match = df[df["area_name"].astype(str).str.contains(area_name, regex=False, na=False)]
+        if match.empty:
+            return None
+        return match.sort_values("population", ascending=False).iloc[0].to_dict()
+
+    province_rows = df[df["area_type"] == "province"]
+    if not province_rows.empty:
+        return province_rows.iloc[0].to_dict()
+    return df.sort_values("population", ascending=False).iloc[0].to_dict()
+
+
+def load_evhub_dlt_fleet(province=None, vehicle_segment=None):
+    """Load normalized DLT April 2026 fleet by fuel type from the old EV Hub project."""
+    path = DATA_DIR / "evhub_dlt_fleet_2569_04.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    if province:
+        df = df[df["province"] == province].copy()
+    if vehicle_segment:
+        df = df[df["vehicle_segment"] == vehicle_segment].copy()
+    return df.reset_index(drop=True)
+
+
+def get_evhub_dlt_fleet(province, vehicle_segment="ror1_passenger_car"):
+    """Return the current DLT fleet row for a province and vehicle segment."""
+    df = load_evhub_dlt_fleet(province=province, vehicle_segment=vehicle_segment)
+    if df.empty:
+        return None
+    return df.iloc[0].to_dict()
+
+
+def load_evhub_sinexcel_prices(package_code=None):
+    """Load SINEXEL charger package prices imported from the old EV Hub project."""
+    path = DATA_DIR / "evhub_sinexcel_price_list.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    if package_code:
+        df = df[df["package_code"] == package_code].copy()
+    return df.reset_index(drop=True)
+
+
+def get_sinexcel_package(package_code):
+    """Return one SINEXEL package price row by package code."""
+    df = load_evhub_sinexcel_prices(package_code=package_code)
+    if df.empty:
+        return None
+    return df.iloc[0].to_dict()
+
+
 def get_chiang_mai_district_population():
     """Get population for all 25 Chiang Mai districts.
 
