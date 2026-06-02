@@ -40,6 +40,7 @@ from .site import (
     StationSpec,
     recommend_station_spec,
 )
+from .spatial import analyze_click_location
 from .temporal import analyze_station
 
 
@@ -109,6 +110,16 @@ class SiteAnalysisRequest(BaseModel):
     competitors: list[CompetitorInput] = Field(default_factory=list)
     year: int = Field(2030, ge=2025, le=2050)
     scenario: str = Field("base", pattern="^(conservative|base|upside)$")
+
+
+class ClickAnalysisRequest(BaseModel):
+    lat: float
+    lon: float
+    province: str = "เชียงใหม่"
+    year: int = Field(2030, ge=2025, le=2050)
+    scenario: str = Field("base", pattern="^(conservative|base|upside)$")
+    avg_kwh_per_session: float = Field(32.0, gt=0)
+    price_per_kwh: float = Field(6.8, gt=0)
 
 
 def _dump_model(model_obj: BaseModel) -> dict[str, Any]:
@@ -328,6 +339,20 @@ def estimate_landmark(location_id: str, year: int = Query(2035, ge=2025, le=2050
 def estimate_location(req: EstimateRequest):
     """Estimate EV demand at an arbitrary lat/lon."""
     return model.estimate(req.lat, req.lon, req.year, req.location_type, req.aadt)
+
+
+@app.post("/api/click-analysis")
+def click_analysis(req: ClickAnalysisRequest):
+    """Estimate a clicked map point using POI attraction and competitor penalty fields."""
+    return analyze_click_location(
+        lat=req.lat,
+        lon=req.lon,
+        province=req.province,
+        year=req.year,
+        scenario=req.scenario,
+        avg_kwh_per_session=req.avg_kwh_per_session,
+        price_per_kwh=req.price_per_kwh,
+    )
 
 
 @app.get("/api/highways")

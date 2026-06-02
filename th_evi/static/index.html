@@ -551,6 +551,9 @@ let estimateMarker = null;
 async function quickEstimate(lat, lon) {
   const year = num("year") || new Date().getFullYear();
   const avgKwh = num("avg_kwh") || 32;
+  const price = num("price") || 6.8;
+  const scenario = $("scenario").value || "base";
+  const province = $("province").value || "เชียงใหม่";
 
   // แสดง loading marker ระหว่างรอ API
   if (estimateMarker) estimateMarker.remove();
@@ -563,18 +566,36 @@ async function quickEstimate(lat, lon) {
   ).openPopup();
 
   try {
-    const resp = await fetch("/api/estimate", {
+    const resp = await fetch("/api/click-analysis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lat, lon, year })
+      body: JSON.stringify({
+        lat,
+        lon,
+        year,
+        province,
+        scenario,
+        avg_kwh_per_session: avgKwh,
+        price_per_kwh: price
+      })
     });
-    if (!resp.ok) throw new Error("Estimate failed");
+    if (!resp.ok) throw new Error("Click analysis failed");
     const data = await resp.json();
 
-    const sessions = data.charging_sessions_per_day || 0;
-    const kwh = sessions * avgKwh;
-    const chargerKw = num("total_site_kw") || 30;
+    const sessions = data.net_sessions_per_day || 0;
+    const kwh = data.daily_kwh || (sessions * avgKwh);
     const power = (kwh > 0) ? (kwh / 8).toFixed(1) : 0;  // Average kW assuming 8 hours operation
+    const poiRows = (data.top_pois || []).slice(0, 3).map(p =>
+      '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
+      p.name + '</span><b>+' + fmt(p.sessions) + '</b></div>'
+    ).join("");
+    const competitorRows = (data.top_competitors || []).slice(0, 3).map(c =>
+      '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
+      c.name + '</span><b>-' + fmt(c.sessions) + '</b></div>'
+    ).join("");
+    const warningRows = (data.warnings || []).slice(0, 2).map(w =>
+      '<div style="color:#8a5a00;font-size:11px">⚠ ' + w + '</div>'
+    ).join("");
 
     // Remove old marker
     if (estimateMarker) estimateMarker.remove();
@@ -595,11 +616,22 @@ async function quickEstimate(lat, lon) {
       '<table style="width:100%;margin-bottom:8px">' +
       '<tr><td style="padding:4px 0"><b>Location:</b></td><td style="text-align:right"><b>' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</b></td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Sessions/day:</td><td style="text-align:right"><b style="color:#d7191c">' + fmt(sessions) + '</b></td></tr>' +
+      '<tr><td style="padding:4px">Base:</td><td style="text-align:right">' + fmt(data.base_sessions) + '</td></tr>' +
+      '<tr style="background:#f0f0f0"><td style="padding:4px">POI boost:</td><td style="text-align:right;color:#2f855a">+' + fmt(data.poi_boost_sessions) + '</td></tr>' +
+      '<tr><td style="padding:4px">Competitor penalty:</td><td style="text-align:right;color:#b42318">-' + fmt(data.competitor_penalty_sessions) + '</td></tr>' +
       '<tr><td style="padding:4px">kWh/day (@ ' + avgKwh + ' kWh):</td><td style="text-align:right"><b style="color:#fdae61">' + fmt(kwh) + '</b></td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Avg Power:</td><td style="text-align:right"><b style="color:#f46d43">' + power + ' kW</b></td></tr>' +
       '<tr><td style="padding:4px">Year:</td><td style="text-align:right">' + year + '</td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Location Type:</td><td style="text-align:right"><small>' + (data.location_type || "Mixed") + '</small></td></tr>' +
       '</table>' +
+      '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
+      '<b style="color:#2f855a">Top POI</b>' + (poiRows || '<div style="font-size:11px;color:#777">No POI in radius</div>') +
+      '</div>' +
+      '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
+      '<b style="color:#b42318">Top Competitors</b>' + (competitorRows || '<div style="font-size:11px;color:#777">No competitor in radius</div>') +
+      '</div>' +
+      '<div style="margin-top:6px;font-size:11px;color:#526577">Confidence: <b>' + (data.confidence || "medium") + '</b></div>' +
+      warningRows +
       '<div style="display:flex;gap:6px;margin-top:10px">' +
       '<button onclick="useAsCandidate(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#10003; Use as Candidate</button>' +
       '<button onclick="closeEstimate()" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">&#10005; Close</button>' +
