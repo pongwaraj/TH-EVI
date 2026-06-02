@@ -508,10 +508,83 @@ function setDraftMarker(lat, lon) {
   });
 }
 
+// Quick estimate เมื่อคลิกแผนที่
+let estimateMarker = null;
+async function quickEstimate(lat, lon) {
+  const year = num("year") || new Date().getFullYear();
+  const avgKwh = num("avg_kwh") || 32;
+
+  try {
+    const resp = await fetch("/api/estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lat, lon, year })
+    });
+    if (!resp.ok) throw new Error("Estimate failed");
+    const data = await resp.json();
+
+    const sessions = data.charging_sessions_per_day || 0;
+    const kwh = sessions * avgKwh;
+    const chargerKw = num("total_site_kw") || 30;
+    const power = (kwh > 0) ? (kwh / 8).toFixed(1) : 0;  // Average kW assuming 8 hours operation
+
+    // Remove old marker
+    if (estimateMarker) estimateMarker.remove();
+
+    // สร้าง marker ใหม่
+    estimateMarker = L.marker([lat, lon], {
+      icon: L.icon({
+        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCAzMiA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTYgMEM4LjI2NzggMCAxNiA2LjcxNTcgMTYgMTVDMTYgMjMuMjg0MyA4IDMyIDggMzJDOCA0MCAxNiA0OCAxNiA0OEMyNCA0OCAzMiA0MCAzMiAzMkMyNCAzMiAxNiAyMy4yODQzIDE2IDE1QzE2IDYuNzE1NyAyMy43MzIyIDAgMzIgMFoiIGZpbGw9IiNGRkEyMDAiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSI2IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==',
+        iconSize: [32, 48],
+        iconAnchor: [16, 48],
+        popupAnchor: [0, -48]
+      })
+    }).addTo(map);
+
+    const popupContent = \`
+      <div style="font-size:13px;min-width:200px">
+        <h3 style="margin:0 0 8px;color:#0066cc;font-size:14px">📊 Quick Estimate</h3>
+        <table style="width:100%;margin-bottom:8px">
+          <tr><td style="padding:4px 0"><b>Location:</b></td><td style="text-align:right"><b>\${fmt(lat.toFixed(4))}, \${fmt(lon.toFixed(4))}</b></td></tr>
+          <tr style="background:#f0f0f0"><td style="padding:4px">Sessions/day:</td><td style="text-align:right"><b style="color:#d7191c">\${fmt(sessions)}</b></td></tr>
+          <tr><td style="padding:4px">kWh/day (@ \${avgKwh} kWh/session):</td><td style="text-align:right"><b style="color:#fdae61">\${fmt(kwh)}</b></td></tr>
+          <tr style="background:#f0f0f0"><td style="padding:4px">Avg Power:</td><td style="text-align:right"><b style="color:#f46d43">\${power} kW</b></td></tr>
+          <tr><td style="padding:4px">Year:</td><td style="text-align:right">\${year}</td></tr>
+          <tr style="background:#f0f0f0"><td style="padding:4px">Location Type:</td><td style="text-align:right"><small>\${data.location_type || "Mixed"}</small></td></tr>
+        </table>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button onclick="useAsCandidate(\${lat.toFixed(6)}, \${lon.toFixed(6)})" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">
+            ✓ Use as Candidate
+          </button>
+          <button onclick="estimateMarker?.remove();estimateMarker=null" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">
+            ✕ Close
+          </button>
+        </div>
+      </div>
+    \`;
+
+    estimateMarker.bindPopup(popupContent).openPopup();
+    map.setView([lat, lon], 15);
+
+  } catch (err) {
+    alert("Error estimating demand: " + err.message);
+  }
+}
+
+// ใช้จุดนี้เป็น candidate site
+function useAsCandidate(lat, lon) {
+  $("lat").value = lat.toFixed(6);
+  $("lon").value = lon.toFixed(6);
+  $("name").focus();
+  setDraftMarker(lat, lon);
+  estimateMarker?.remove();
+  estimateMarker = null;
+  // Scroll to form
+  document.getElementById("analysis-form").scrollIntoView({ behavior: "smooth" });
+}
+
 map.on("click", e => {
-  $("lat").value = e.latlng.lat.toFixed(6);
-  $("lon").value = e.latlng.lng.toFixed(6);
-  setDraftMarker(e.latlng.lat, e.latlng.lng);
+  quickEstimate(e.latlng.lat, e.latlng.lng);
 });
 
 async function analyze(event) {
