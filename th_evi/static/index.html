@@ -9,55 +9,71 @@
 <style>
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #17202a; background: #f4f6f8; }
-body { display: grid; grid-template-columns: minmax(420px, 520px) 1fr; }
+body { display: grid; grid-template-columns: minmax(400px, 480px) 1fr; }
 button, input, select, textarea { font: inherit; }
 #panel { height: 100vh; overflow-y: auto; border-right: 1px solid #d9e2ec; background: #fff; }
-#map { height: 100vh; min-width: 0; }
-.section { padding: 16px 18px; border-bottom: 1px solid #e6ebf0; }
-h1 { margin: 0; font-size: 22px; }
-h2 { margin: 0 0 12px; font-size: 15px; }
+#map { height: 100vh; min-width: 0; cursor: crosshair; }
+.section { padding: 14px 16px; border-bottom: 1px solid #e6ebf0; }
+h1 { margin: 0; font-size: 20px; }
+h2 { margin: 0 0 10px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #526577; }
 .app-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .lang-switch { display: inline-flex; border: 1px solid #cdd6df; border-radius: 6px; overflow: hidden; flex: 0 0 auto; }
-.lang-switch button {
-  border: 0; background: #fff; color: #12395b; padding: 6px 9px; cursor: pointer;
-  min-height: 30px; font-size: 12px;
-}
+.lang-switch button { border: 0; background: #fff; color: #12395b; padding: 5px 9px; cursor: pointer; min-height: 28px; font-size: 12px; }
 .lang-switch button.active { background: #12395b; color: #fff; }
 .muted { color: #66788a; font-size: 12px; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-label { display: grid; gap: 4px; font-size: 12px; color: #34495e; }
-input, select, textarea {
-  width: 100%; border: 1px solid #cdd6df; border-radius: 6px; padding: 8px;
-  background: white; color: #17202a; min-height: 36px;
-}
-textarea { min-height: 64px; resize: vertical; }
-.inline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+label { display: grid; gap: 3px; font-size: 12px; color: #34495e; }
+input, select, textarea { width: 100%; border: 1px solid #cdd6df; border-radius: 6px; padding: 7px 8px; background: white; color: #17202a; min-height: 34px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: #12395b; box-shadow: 0 0 0 2px rgba(18,57,91,.12); }
+textarea { min-height: 56px; resize: vertical; }
+.inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.check { display: flex; gap: 6px; align-items: center; font-size: 13px; }
 .check input { width: auto; min-height: auto; }
-.btn {
-  border: 1px solid #12395b; background: #12395b; color: white; border-radius: 6px;
-  padding: 9px 12px; cursor: pointer; min-height: 38px;
-}
+/* Quick settings bar */
+.quick-bar { background: #f0f5fa; border-bottom: 2px solid #12395b; padding: 12px 16px; }
+.quick-bar h2 { color: #12395b; margin-bottom: 8px; }
+.quick-bar input, .quick-bar select { background: #fff; border-color: #b8cfe0; font-weight: 600; }
+.quick-bar .hint { font-size: 11px; color: #526577; margin-top: 6px; }
+/* Buttons */
+.btn { border: 1px solid #12395b; background: #12395b; color: white; border-radius: 6px; padding: 8px 14px; cursor: pointer; min-height: 36px; font-weight: 600; transition: background .15s; }
+.btn:hover:not(:disabled) { background: #0d2a44; }
 .btn.secondary { background: white; color: #12395b; }
+.btn.secondary:hover:not(:disabled) { background: #f0f5fa; }
+.btn.primary-lg { width: 100%; padding: 11px; font-size: 14px; margin-bottom: 8px; }
 .btn:disabled { opacity: .55; cursor: wait; }
-.metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.metric { border: 1px solid #dde3ea; border-radius: 8px; padding: 12px; background: #fbfcfd; }
-.metric span { color: #66788a; font-size: 12px; }
-.metric b { display: block; font-size: 22px; margin-top: 4px; }
+/* Metrics / results */
+.metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.metric { border: 1px solid #dde3ea; border-radius: 8px; padding: 10px 12px; background: #fbfcfd; }
+.metric span { color: #66788a; font-size: 11px; }
+.metric b { display: block; font-size: 20px; margin-top: 2px; color: #12395b; }
+.result-section { background: #edfaf3; border-left: 4px solid #2f855a; }
+.result-section h2 { color: #276749; }
+/* Tables */
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #edf1f5; vertical-align: top; }
-th { color: #526577; font-weight: 600; }
+th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #edf1f5; vertical-align: top; }
+th { color: #526577; font-weight: 600; background: #f8fafc; }
 a { color: #0b65c2; text-decoration: none; }
-.status { margin-top: 10px; font-size: 13px; color: #526577; min-height: 18px; }
+.status { margin-top: 8px; font-size: 12px; color: #526577; min-height: 16px; }
 .danger { color: #b42318; }
-.heat-legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #526577; margin-top: 8px; }
-.heat-ramp { width: 120px; height: 10px; border-radius: 999px; background: linear-gradient(90deg, #2c7bb6, #ffff8c, #fdae61, #d7191c); }
+/* Heat legend */
+.heat-legend { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #526577; margin-top: 6px; }
 .leaflet-popup-content { font-size: 13px; }
+/* Map hint overlay */
+#map-hint { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(18,57,91,.82); color: #fff; padding: 7px 16px; border-radius: 20px; font-size: 13px; pointer-events: none; z-index: 1000; transition: opacity .4s; white-space: nowrap; }
+/* Loading spinner */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #cdd6df; border-top-color: #12395b; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* Section toggle */
+.section-toggle { cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+.section-toggle::after { content: "▲"; font-size: 10px; color: #aaa; transition: transform .2s; }
+.section-toggle.collapsed::after { transform: rotate(180deg); }
+.section-body { overflow: hidden; transition: max-height .25s ease; }
 @media (max-width: 980px) {
-  body { grid-template-columns: 1fr; grid-template-rows: 58vh auto; }
-  #map { height: 58vh; order: 1; }
+  body { grid-template-columns: 1fr; grid-template-rows: 55vh auto; }
+  #map { height: 55vh; order: 1; }
   #panel { height: auto; order: 2; border-right: 0; }
+  #map-hint { bottom: 20px; }
 }
 </style>
 </head>
@@ -74,6 +90,23 @@ a { color: #0b65c2; text-decoration: none; }
         <button type="button" id="lang-en">EN</button>
       </div>
     </div>
+  </div>
+
+  <!-- Quick Settings bar — ค่าหลักที่ทีมปรับบ่อย -->
+  <div class="quick-bar">
+    <h2 data-i18n="quickSettings">&#9881; ค่าหลัก (ปรับได้ทันที)</h2>
+    <div class="grid-3">
+      <label><span data-i18n="kwhSession">kWh/ครั้ง</span><input id="avg_kwh" type="number" min="1" step="0.5" value="32"></label>
+      <label><span data-i18n="year">ปีที่วิเคราะห์</span><input id="year" type="number" min="2025" max="2050" value="2026"></label>
+      <label><span data-i18n="scenario">ฉากทัศน์</span>
+        <select id="scenario">
+          <option value="conservative" data-i18n-option="conservative">ระมัดระวัง</option>
+          <option value="base" selected data-i18n-option="base">ฐาน</option>
+          <option value="upside" data-i18n-option="upside">เติบโตสูง</option>
+        </select>
+      </label>
+    </div>
+    <div class="hint" data-i18n="quickSettingsHint">&#128073; คลิกบนแผนที่เพื่อดู demand ทันที หรือกรอกข้อมูลด้านล่างแล้วกด "วิเคราะห์และบันทึก"</div>
   </div>
 
   <form id="analysis-form">
@@ -98,35 +131,27 @@ a { color: #0b65c2; text-decoration: none; }
             <option value="อุบลราชธานี">อุบลราชธานี</option>
           </select>
         </label>
-        <label><span data-i18n="year">ปีที่วิเคราะห์</span><input id="year" type="number" min="2025" max="2050" value="2026"></label>
+        <label><span data-i18n="zone">โซน/ย่าน</span><input id="zone" value="TCE Project HQ / Chiang Mai"></label>
       </div>
-      <label><span data-i18n="zone">โซน/ย่าน</span><input id="zone" value="TCE Project HQ / Chiang Mai"></label>
       <label><span data-i18n="notes">หมายเหตุ</span><textarea id="notes">TCE Project headquarters with SINEXEL 30 kW single-gun charger.</textarea></label>
-      <div class="status" data-i18n="coordinateHelp">คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps</div>
+      <div class="muted" style="margin-top:6px" data-i18n="coordinateHelp">&#128205; คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps</div>
     </div>
 
     <div class="section">
-      <h2 data-i18n="demandAssumptions">สมมติฐานความต้องการ</h2>
-      <div class="grid">
-        <label><span data-i18n="locationType">ประเภททำเล</span>
-          <select id="location_type">
-            <option value="" data-i18n-option="auto">อัตโนมัติ</option>
-            <option value="highway" data-i18n-option="highway">ทางหลวง</option>
-            <option value="city_center" data-i18n-option="cityCenter">ใจกลางเมือง</option>
-            <option value="destination" selected data-i18n-option="destination">จุดหมายปลายทาง</option>
-            <option value="suburban" data-i18n-option="suburban">ชานเมือง</option>
-          </select>
-        </label>
-        <label><span data-i18n="aadtOverride">กำหนด AADT เอง</span><input id="aadt" type="number" min="0" placeholder="Optional"></label>
-      </div>
-      <div class="grid">
-        <label><span data-i18n="scenario">ฉากทัศน์</span>
-          <select id="scenario">
-            <option value="conservative" data-i18n-option="conservative">ระมัดระวัง</option>
-            <option value="base" selected data-i18n-option="base">ฐาน</option>
-            <option value="upside" data-i18n-option="upside">เติบโตสูง</option>
-          </select>
-        </label>
+      <h2 class="section-toggle" data-i18n="demandAssumptions" data-target="demand-body">สมมติฐานความต้องการ</h2>
+      <div id="demand-body" class="section-body">
+        <div class="grid" style="margin-bottom:8px">
+          <label><span data-i18n="locationType">ประเภททำเล</span>
+            <select id="location_type">
+              <option value="" data-i18n-option="auto">อัตโนมัติ</option>
+              <option value="highway" data-i18n-option="highway">ทางหลวง</option>
+              <option value="city_center" data-i18n-option="cityCenter">ใจกลางเมือง</option>
+              <option value="destination" selected data-i18n-option="destination">จุดหมายปลายทาง</option>
+              <option value="suburban" data-i18n-option="suburban">ชานเมือง</option>
+            </select>
+          </label>
+          <label><span data-i18n="aadtOverride">กำหนด AADT เอง</span><input id="aadt" type="number" min="0" placeholder="Optional"></label>
+        </div>
         <label><span data-i18n="stationFormat">รูปแบบสถานี</span>
           <select id="station_format">
             <option value="community_mall" data-i18n-option="communityMall">คอมมูนิตี้มอลล์</option>
@@ -142,89 +167,96 @@ a { color: #0b65c2; text-decoration: none; }
     </div>
 
     <div class="section">
-      <h2 data-i18n="stationSite">สถานีและคุณภาพพื้นที่</h2>
-      <div class="grid-3">
-        <label><span data-i18n="guns">หัวชาร์จ</span><input id="guns" type="number" min="1" value="1"></label>
-        <label><span data-i18n="totalKw">กำลังรวม kW</span><input id="total_site_kw" type="number" min="1" value="30"></label>
-        <label><span data-i18n="maxKwGun">กำลังสูงสุด/หัว</span><input id="max_kw_per_gun" type="number" min="1" value="30"></label>
-      </div>
-      <div class="grid-3">
-        <label><span data-i18n="parking">ช่องจอด</span><input id="parking_capacity" type="number" min="0" value="50"></label>
-        <label><span data-i18n="kwhSession">kWh/ครั้ง</span><input id="avg_kwh" type="number" min="1" step="0.1" value="32"></label>
-        <label><span data-i18n="price">บาท/kWh</span><input id="price" type="number" min="0.1" step="0.1" value="6.5"></label>
-      </div>
+      <h2 class="section-toggle" data-i18n="stationSite" data-target="station-body">สถานีและคุณภาพพื้นที่</h2>
+      <div id="station-body" class="section-body">
+        <div class="grid-3" style="margin-bottom:8px">
+          <label><span data-i18n="guns">หัวชาร์จ</span><input id="guns" type="number" min="1" value="1"></label>
+          <label><span data-i18n="totalKw">กำลังรวม kW</span><input id="total_site_kw" type="number" min="1" value="30"></label>
+          <label><span data-i18n="maxKwGun">กำลังสูงสุด/หัว</span><input id="max_kw_per_gun" type="number" min="1" value="30"></label>
+        </div>
+        <div class="grid" style="margin-bottom:8px">
+          <label><span data-i18n="parking">ช่องจอด</span><input id="parking_capacity" type="number" min="0" value="50"></label>
+          <label><span data-i18n="price">บาท/kWh</span><input id="price" type="number" min="0.1" step="0.1" value="6.5"></label>
+        </div>
       <div class="grid-3">
         <label><span data-i18n="visibility">การมองเห็น</span><input id="visibility" type="number" min="0" max="1" step="0.05" value="0.9"></label>
         <label><span data-i18n="access">การเข้าออก</span><input id="access" type="number" min="0" max="1" step="0.05" value="0.85"></label>
         <label><span data-i18n="tenant">ความแข็งแรงของผู้เช่า</span><input id="tenant" type="number" min="0" max="1" step="0.05" value="0.9"></label>
       </div>
-      <div class="grid">
-        <label><span data-i18n="signage">ป้าย/การนำทาง</span><input id="signage" type="number" min="0" max="1" step="0.05" value="0.8"></label>
-        <label><span data-i18n="openingAge">จำนวนวันหลังเปิด</span><input id="opening_age_days" type="number" min="0" placeholder="Mature if blank"></label>
-      </div>
-      <div class="inline" style="margin-top:10px">
-        <label class="check"><input id="roadside_frontage" type="checkbox" checked> <span data-i18n="roadsideFrontage">ติดถนน/เห็นจากถนน</span></label>
-        <label class="check"><input id="inside_parking" type="checkbox"> <span data-i18n="insideParkingStructure">อยู่ในอาคารจอดรถ</span></label>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2 data-i18n="knownCompetitor">คู่แข่งที่ทราบ</h2>
-      <div class="grid">
-        <label><span data-i18n="competitorName">ชื่อคู่แข่ง</span><input id="comp_name" placeholder="Optional"></label>
-        <label><span data-i18n="distanceKm">ระยะทาง กม.</span><input id="comp_distance" type="number" min="0" step="0.1"></label>
-      </div>
-      <div class="grid">
-        <label><span data-i18n="competitorGuns">หัวชาร์จ</span><input id="comp_guns" type="number" min="1" value="4"></label>
-        <label><span data-i18n="competitorKw">kW สูงสุด</span><input id="comp_kw" type="number" min="1" value="120"></label>
+        <div class="grid" style="margin-bottom:8px">
+          <label><span data-i18n="signage">ป้าย/การนำทาง</span><input id="signage" type="number" min="0" max="1" step="0.05" value="0.8"></label>
+          <label><span data-i18n="openingAge">จำนวนวันหลังเปิด</span><input id="opening_age_days" type="number" min="0" placeholder="Mature if blank"></label>
+        </div>
+        <div class="inline">
+          <label class="check"><input id="roadside_frontage" type="checkbox" checked> <span data-i18n="roadsideFrontage">ติดถนน/เห็นจากถนน</span></label>
+          <label class="check"><input id="inside_parking" type="checkbox"> <span data-i18n="insideParkingStructure">อยู่ในอาคารจอดรถ</span></label>
+        </div>
       </div>
     </div>
 
     <div class="section">
-      <button class="btn" id="analyze-btn" type="submit" data-i18n="analyzeSave">วิเคราะห์และบันทึก</button>
-      <button class="btn secondary" id="refresh-btn" type="button" data-i18n="refreshSites">โหลดรายการใหม่</button>
-      <button class="btn secondary" id="heatmap-btn" type="button" data-i18n="loadHeatmap">โหลด Heat Map</button>
+      <h2 class="section-toggle collapsed" data-i18n="knownCompetitor" data-target="competitor-body">คู่แข่งที่ทราบ</h2>
+      <div id="competitor-body" class="section-body" style="max-height:0;overflow:hidden">
+        <div class="grid" style="margin-bottom:8px">
+          <label><span data-i18n="competitorName">ชื่อคู่แข่ง</span><input id="comp_name" placeholder="Optional"></label>
+          <label><span data-i18n="distanceKm">ระยะทาง กม.</span><input id="comp_distance" type="number" min="0" step="0.1"></label>
+        </div>
+        <div class="grid">
+          <label><span data-i18n="competitorGuns">หัวชาร์จ</span><input id="comp_guns" type="number" min="1" value="4"></label>
+          <label><span data-i18n="competitorKw">kW สูงสุด</span><input id="comp_kw" type="number" min="1" value="120"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <button class="btn primary-lg" id="analyze-btn" type="submit" data-i18n="analyzeSave">&#128190; วิเคราะห์และบันทึก</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn secondary" id="refresh-btn" type="button" style="flex:1" data-i18n="refreshSites">&#8635; รีเฟรช</button>
+        <button class="btn secondary" id="heatmap-btn" type="button" style="flex:1" data-i18n="loadHeatmap">&#127777; Heat Map</button>
+      </div>
       <div id="status" class="status"></div>
       <div class="heat-legend">
-        <span data-i18n="heat">🗺️ Heat Map:</span>
-        <span id="heatmap-meta" data-i18n="notLoaded" style="font-weight:bold">ยังไม่ได้โหลด</span>
+        <span data-i18n="heat">Heat Map:</span>
+        <span id="heatmap-meta" data-i18n="notLoaded" style="font-weight:600;color:#12395b">ยังไม่ได้โหลด</span>
       </div>
-      <div style="margin-top:8px;padding:8px;background:#f9fafb;border-radius:6px;font-size:11px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#1a9850;border-radius:2px"></span> <b>Cool</b> (&lt;15%)</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#a6d96a;border-radius:2px"></span> <b>Mild</b> (15-30%)</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#ffff8c;border-radius:2px"></span> <b>Moderate</b> (30-45%)</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#fdae61;border-radius:2px"></span> <b>Warm</b> (45-60%)</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:16px;height:16px;background:#f46d43;border-radius:2px"></span> <b>Hot</b> (60-75%)</div>
-        <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:16px;height:16px;background:#d7191c;border-radius:2px"></span> <b>Very Hot</b> (&gt;75%)</div>
+      <div style="margin-top:8px;padding:8px;background:#f9fafb;border-radius:6px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:3px">
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#1a9850;border-radius:2px"></span>Cool &lt;15%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#a6d96a;border-radius:2px"></span>Mild 15-30%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#ffff8c;border-radius:2px"></span>Moderate 30-45%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#fdae61;border-radius:2px"></span>Warm 45-60%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#f46d43;border-radius:2px"></span>Hot 60-75%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#d7191c;border-radius:2px"></span>Very Hot &gt;75%</div>
       </div>
     </div>
   </form>
 
-  <div class="section" id="result-section" style="display:none">
-    <h2 data-i18n="latestResult">ผลวิเคราะห์ล่าสุด</h2>
+  <div class="section result-section" id="result-section" style="display:none">
+    <h2 data-i18n="latestResult">&#9989; ผลวิเคราะห์ล่าสุด</h2>
     <div class="metrics">
       <div class="metric"><span data-i18n="sessionsDay">ครั้ง/วัน</span><b id="m_sessions">-</b></div>
       <div class="metric"><span data-i18n="kwhDay">kWh/วัน</span><b id="m_kwh">-</b></div>
       <div class="metric"><span data-i18n="thbDay">บาท/วัน</span><b id="m_revenue">-</b></div>
       <div class="metric"><span data-i18n="recommendedPlugs">หัวชาร์จที่แนะนำ</span><b id="m_plugs">-</b></div>
     </div>
-    <div class="status"><a id="report-link" href="#" target="_blank" data-i18n="openReport">เปิดรายงานมาตรฐาน</a></div>
-    <table style="margin-top:12px">
+    <div style="margin-top:8px"><a id="report-link" href="#" target="_blank" data-i18n="openReport">&#128196; เปิดรายงานมาตรฐาน</a></div>
+    <table style="margin-top:10px">
       <thead><tr><th data-i18n="scenario">ฉากทัศน์</th><th data-i18n="sessionsDay">ครั้ง/วัน</th><th data-i18n="kwhDay">kWh/วัน</th><th data-i18n="plugs">หัวชาร์จ</th></tr></thead>
       <tbody id="band-body"></tbody>
     </table>
   </div>
 
   <div class="section">
-    <h2 data-i18n="savedSites">พื้นที่ที่บันทึกไว้</h2>
+    <h2 data-i18n="savedSites">&#128204; พื้นที่ที่บันทึกไว้</h2>
     <table>
-      <thead><tr><th data-i18n="site">สถานที่</th><th data-i18n="sessions">ครั้งชาร์จ</th><th data-i18n="report">รายงาน</th></tr></thead>
+      <thead><tr><th data-i18n="site">สถานที่</th><th data-i18n="sessions">ครั้ง/วัน</th><th data-i18n="report">รายงาน</th></tr></thead>
       <tbody id="sites-body"><tr><td colspan="3" class="muted" data-i18n="loading">กำลังโหลด...</td></tr></tbody>
     </table>
   </div>
 </aside>
 
-<div id="map"></div>
+<div id="map">
+  <div id="map-hint" data-i18n="mapClickHint">&#128270; คลิกบนแผนที่เพื่อดู Demand</div>
+</div>
 
 <script>
 const translations = {
@@ -239,6 +271,9 @@ const translations = {
     zone: "โซน/ย่าน",
     notes: "หมายเหตุ",
     coordinateHelp: "คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps",
+    quickSettings: "ค่าหลัก (ปรับได้ทันที)",
+    quickSettingsHint: "คลิกบนแผนที่เพื่อดู demand ทันที หรือกรอกข้อมูลด้านล่างแล้วกด วิเคราะห์และบันทึก",
+    mapClickHint: "คลิกบนแผนที่เพื่อดู Demand",
     demandAssumptions: "สมมติฐานความต้องการ",
     locationType: "ประเภททำเล",
     aadtOverride: "กำหนด AADT เอง",
@@ -326,6 +361,9 @@ const translations = {
     zone: "Zone",
     notes: "Notes",
     coordinateHelp: "Click the map to fill lat/lon, or paste coordinates from Google Maps.",
+    quickSettings: "Key Settings (adjust anytime)",
+    quickSettingsHint: "Click the map for instant demand estimate, or fill the form below and click Analyze & Save",
+    mapClickHint: "Click map to estimate demand",
     demandAssumptions: "Demand Assumptions",
     locationType: "Location type",
     aadtOverride: "AADT override",
@@ -514,6 +552,16 @@ async function quickEstimate(lat, lon) {
   const year = num("year") || new Date().getFullYear();
   const avgKwh = num("avg_kwh") || 32;
 
+  // แสดง loading marker ระหว่างรอ API
+  if (estimateMarker) estimateMarker.remove();
+  estimateMarker = L.marker([lat, lon]).addTo(map);
+  estimateMarker.bindPopup(
+    '<div style="text-align:center;padding:8px 12px">' +
+    '<span class="spinner"></span>' +
+    '<span style="font-size:13px;color:#526577">&#128202; กำลังคำนวณ...</span>' +
+    '</div>'
+  ).openPopup();
+
   try {
     const resp = await fetch("/api/estimate", {
       method: "POST",
@@ -587,7 +635,17 @@ function closeEstimate() {
   estimateMarker = null;
 }
 
+// ซ่อน map hint หลังจากคลิกครั้งแรก
+var mapHintDismissed = false;
+function dismissMapHint() {
+  if (mapHintDismissed) return;
+  mapHintDismissed = true;
+  var hint = document.getElementById("map-hint");
+  if (hint) { hint.style.opacity = "0"; setTimeout(function() { hint.style.display = "none"; }, 400); }
+}
+
 map.on("click", e => {
+  dismissMapHint();
   quickEstimate(e.latlng.lat, e.latlng.lng);
 });
 
@@ -777,6 +835,21 @@ $("province").addEventListener("change", () => {
   }
 });
 
+// Collapsible section toggle
+document.querySelectorAll(".section-toggle").forEach(function(h2) {
+  var targetId = h2.getAttribute("data-target");
+  var body = document.getElementById(targetId);
+  if (!body) return;
+  // Set initial max-height for expanded sections
+  if (!h2.classList.contains("collapsed")) {
+    body.style.maxHeight = body.scrollHeight + "px";
+  }
+  h2.addEventListener("click", function() {
+    var collapsed = h2.classList.toggle("collapsed");
+    body.style.maxHeight = collapsed ? "0" : body.scrollHeight + "px";
+  });
+});
+
 try {
   applyLanguage(currentLang);
   $("year").value = new Date().getFullYear();
@@ -786,14 +859,9 @@ try {
 
   // Auto-load heat map ตอนเปิดแอพ (ถ้าเป็น Chiang Mai)
   if ($("province").value === "เชียงใหม่") {
-    setTimeout(() => {
-      try {
-        loadHeatMap();
-      } catch (err) {
-        console.error("Heat map load error:", err);
-        // ไม่หยุดการทำงาน ให้ map เดินหน้า
-      }
-    }, 500);  // Slight delay เพื่อให้ UI render ก่อน
+    setTimeout(function() {
+      try { loadHeatMap(); } catch (err) { console.error("Heat map load error:", err); }
+    }, 500);
   }
 } catch (err) {
   console.error("Initialization error:", err);
