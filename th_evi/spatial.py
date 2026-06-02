@@ -45,6 +45,14 @@ SCENARIO_FACTORS = {
 # capturable sessions before competitor penalties are applied.
 POI_CAPTURE_FACTOR = 0.22
 
+# Hot-zone demand pools are broader than individual POIs. A candidate site can
+# capture only a slice of the zone field, so this sits below the POI capture
+# factor but still makes click sessions respond to visible heat/zone scores.
+ZONE_CAPTURE_FACTOR = 0.10
+SECONDARY_ZONE_SHARE = 0.25
+SPATIAL_OVERLAP_SHARE = 0.35
+MAX_COMPETITOR_PENALTY_SHARE = 0.62
+
 POI_CATEGORY_RULES = {
     "airport": (46.0, 5.0),
     "border_crossing": (44.0, 5.0),
@@ -121,7 +129,15 @@ def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
     if not slug:
         return []
-    return _read_csv(DATA_DIR / f"poi_{slug}_seed.csv")
+    rows = _read_csv(DATA_DIR / f"poi_{slug}_seed.csv")
+    if slug == "chiang_mai":
+        for extra in (
+            "poi_central_airport_seed.csv",
+            "poi_mahachok_park_seed.csv",
+            "poi_punn_suk_sankamphaeng_seed.csv",
+        ):
+            rows.extend(_read_csv(DATA_DIR / extra))
+    return rows
 
 
 @lru_cache(maxsize=32)
@@ -137,6 +153,14 @@ def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
     if slug == "chiang_mai":
         rows.extend(_read_csv(DATA_DIR / "competitors_chiang_mai_google_verified.csv"))
     return rows
+
+
+@lru_cache(maxsize=32)
+def load_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
+    slug = _slug_for_province(province)
+    if not slug:
+        return []
+    return _read_csv(DATA_DIR / f"hot_zones_{slug}.csv")
 
 
 def _confidence_multiplier(value: str | None) -> float:
@@ -183,6 +207,52 @@ def poi_attraction_field(
         })
 
     contributions.sort(key=lambda item: item["sessions"], reverse=True)
+    return round(total, 1), contributions
+
+
+def zone_influence_field(
+    lat: float,
+    lon: float,
+    zones: list[dict[str, Any]],
+    scenario: str = "base",
+) -> tuple[float, list[dict[str, Any]]]:
+    """Return hot-zone field score using the same decay shape as the heat map."""
+    total = 0.0
+    contributions = []
+    scenario_key = f"demand_pool_{scenario}"
+    for zone in zones:
+        zone_lat = _float_or_none(zone.get("center_lat"))
+        zone_lon = _float_or_none(zone.get("center_lon"))
+        radius = _float_or_none(zone.get("radius_km"))
+        demand_pool = _float_or_none(zone.get(scenario_key))
+        if zone_lat is None or zone_lon is None or radius is None or demand_pool is None:
+            continue
+
+        radius = max(radius, 0.1)
+        distance = km_between(lat, lon, zone_lat, zone_lon)
+        if distance > radius * 1.8:
+            continue
+
+        weight = max(0.0, 1.0 - distance / (radius * 1.8)) ** 2
+        score = demand_pool * weight
+        if score <= 0.2:
+            continue
+
+        total += score
+        contributions.append({
+            "name": zone.get("name") or zone.get("zone_id") or "Hot zone",
+            "distance_km": round(distance, 2),
+            "radius_km": round(radius, 1),
+            "zone_score": round(score, 1),
+            "competition_pressure": zone.get("competition_pressure") or "unknown",
+            "confidence": zone.get("confidence") or "medium",
+        })
+
+    contributions.sort(key=lambda item: item["zone_score"], reverse=True)
+    if contributions:
+        primary = contributions[0]["zone_score"]
+        secondary = max(0.0, total - primary) * SECONDARY_ZONE_SHARE
+        total = primary + secondary
     return round(total, 1), contributions
 
 
@@ -293,7 +363,9 @@ def analyze_click_location(
     factor = SCENARIO_FACTORS.get(scenario, 1.0)
     pois = load_pois_for_province(province)
     competitors = load_competitors_for_province(province)
+    zones = load_hot_zones_for_province(province)
 
+    zone_score, zone_contributions = zone_influence_field(lat, lon, zones, scenario=scenario)
     poi_boost, poi_contributions = poi_attraction_field(lat, lon, pois)
     competitor_penalty, competitor_contributions, skipped_competitors = competitor_penalty_field(
         lat,
@@ -309,21 +381,36 @@ def analyze_click_location(
     )
 
     base_sessions = location_result["charging_sessions_per_day"] * factor
+    capturable_zone_sessions = zone_score * ZONE_CAPTURE_FACTOR
     capturable_poi_sessions = poi_boost * POI_CAPTURE_FACTOR * factor
-    net_sessions = max(0.0, base_sessions + capturable_poi_sessions - competitor_penalty)
+    spatial_boost = (
+        max(capturable_zone_sessions, capturable_poi_sessions)
+        + min(capturable_zone_sessions, capturable_poi_sessions) * SPATIAL_OVERLAP_SHARE
+    )
+    positive_demand = base_sessions + spatial_boost
+    effective_competitor_penalty = min(
+        competitor_penalty,
+        positive_demand * MAX_COMPETITOR_PENALTY_SHARE,
+    )
+    net_sessions = max(
+        0.0,
+        positive_demand - effective_competitor_penalty,
+    )
 
     confidence = "medium"
     warnings = []
     if not pois:
         confidence = "low"
         warnings.append("No POI seed file found for this province.")
+    if not zones:
+        warnings.append("No hot-zone seed file found for this province.")
     if skipped_competitors:
         warnings.append(f"{skipped_competitors} competitor rows skipped because coordinates are missing.")
     if len(competitor_contributions) == 0:
         warnings.append("No coordinate-verified competitor within radius; penalty may be understated.")
     if len(poi_contributions) == 0:
         warnings.append("No strong POI within radius; demand relies mostly on base area model.")
-    if poi_contributions and competitor_contributions:
+    if (poi_contributions or zone_contributions) and competitor_contributions:
         confidence = "medium_high"
 
     net_sessions_rounded = round(net_sessions, 1)
@@ -336,16 +423,22 @@ def analyze_click_location(
         "scenario": scenario,
         "location_type": location_type,
         "base_sessions": round(base_sessions, 1),
+        "raw_zone_score": round(zone_score, 1),
+        "zone_boost_sessions": round(capturable_zone_sessions, 1),
         "raw_poi_field_sessions": round(poi_boost * factor, 1),
         "poi_boost_sessions": round(capturable_poi_sessions, 1),
-        "competitor_penalty_sessions": round(competitor_penalty, 1),
+        "spatial_boost_sessions": round(spatial_boost, 1),
+        "raw_competitor_penalty_sessions": round(competitor_penalty, 1),
+        "competitor_penalty_sessions": round(effective_competitor_penalty, 1),
         "net_sessions_per_day": net_sessions_rounded,
         "daily_kwh": round(net_sessions_rounded * avg_kwh_per_session, 1),
         "daily_revenue": round(net_sessions_rounded * avg_kwh_per_session * price_per_kwh, 0),
         "avg_kwh_per_session": avg_kwh_per_session,
         "price_per_kwh": price_per_kwh,
         "top_pois": poi_contributions[:5],
+        "top_zones": zone_contributions[:5],
         "top_competitors": competitor_contributions[:5],
+        "zone_count": len(zone_contributions),
         "poi_count": len(poi_contributions),
         "competitor_count": len(competitor_contributions),
         "skipped_competitors_without_coordinates": skipped_competitors,

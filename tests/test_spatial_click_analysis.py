@@ -5,6 +5,7 @@ from th_evi.spatial import (
     analyze_click_location,
     competitor_penalty_field,
     poi_attraction_field,
+    zone_influence_field,
 )
 
 UDON_THANI = "\u0e2d\u0e38\u0e14\u0e23\u0e18\u0e32\u0e19\u0e35"
@@ -55,6 +56,26 @@ def test_competitor_penalty_decays_with_distance_and_skips_missing_coordinates()
     assert near_rows[0]["name"] == "Nearby DC Hub"
 
 
+def test_zone_influence_decays_and_feeds_click_sessions():
+    zones = [
+        {
+            "name": "Hot Retail Zone",
+            "center_lat": "18.0",
+            "center_lon": "99.0",
+            "radius_km": "4.0",
+            "demand_pool_base": "200",
+            "competition_pressure": "medium",
+            "confidence": "high",
+        }
+    ]
+
+    near_score, near_rows = zone_influence_field(18.0, 99.0, zones, scenario="base")
+    far_score, _ = zone_influence_field(18.08, 99.08, zones, scenario="base")
+
+    assert near_score > far_score
+    assert near_rows[0]["name"] == "Hot Retail Zone"
+
+
 def test_click_analysis_combines_base_poi_and_competitor_fields():
     result = analyze_click_location(
         lat=17.4058,
@@ -67,9 +88,17 @@ def test_click_analysis_combines_base_poi_and_competitor_fields():
     )
 
     assert result["net_sessions_per_day"] > 0
+    assert result["zone_boost_sessions"] > 0
     assert result["poi_boost_sessions"] > 0
+    assert result["spatial_boost_sessions"] >= max(
+        result["zone_boost_sessions"],
+        result["poi_boost_sessions"],
+    )
+    assert result["competitor_penalty_sessions"] <= result["raw_competitor_penalty_sessions"]
+    assert result["net_sessions_per_day"] > result["base_sessions"]
     assert result["daily_kwh"] == round(result["net_sessions_per_day"] * 28, 1)
     assert result["top_pois"]
+    assert result["top_zones"]
 
 
 def test_click_analysis_api_returns_explainable_components():
@@ -89,7 +118,11 @@ def test_click_analysis_api_returns_explainable_components():
     assert response.status_code == 200
     payload = response.json()
     assert "base_sessions" in payload
+    assert "zone_boost_sessions" in payload
     assert "poi_boost_sessions" in payload
+    assert "spatial_boost_sessions" in payload
+    assert "raw_competitor_penalty_sessions" in payload
     assert "competitor_penalty_sessions" in payload
+    assert "top_zones" in payload
     assert "top_pois" in payload
     assert "top_competitors" in payload

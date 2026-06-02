@@ -589,6 +589,10 @@ async function quickEstimate(lat, lon) {
       '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
       p.name + '</span><b>+' + fmt(p.sessions) + '</b></div>'
     ).join("");
+    const zoneRows = (data.top_zones || []).slice(0, 3).map(z =>
+      '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
+      z.name + '</span><b>+' + fmt(z.zone_score) + '</b></div>'
+    ).join("");
     const competitorRows = (data.top_competitors || []).slice(0, 3).map(c =>
       '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
       c.name + '</span><b>-' + fmt(c.sessions) + '</b></div>'
@@ -617,13 +621,18 @@ async function quickEstimate(lat, lon) {
       '<tr><td style="padding:4px 0"><b>Location:</b></td><td style="text-align:right"><b>' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</b></td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Sessions/day:</td><td style="text-align:right"><b style="color:#d7191c">' + fmt(sessions) + '</b></td></tr>' +
       '<tr><td style="padding:4px">Base:</td><td style="text-align:right">' + fmt(data.base_sessions) + '</td></tr>' +
-      '<tr style="background:#f0f0f0"><td style="padding:4px">POI boost:</td><td style="text-align:right;color:#2f855a">+' + fmt(data.poi_boost_sessions) + '</td></tr>' +
+      '<tr style="background:#f0f0f0"><td style="padding:4px">Zone boost:</td><td style="text-align:right;color:#2b6cb0">+' + fmt(data.zone_boost_sessions) + '</td></tr>' +
+      '<tr><td style="padding:4px">POI boost:</td><td style="text-align:right;color:#2f855a">+' + fmt(data.poi_boost_sessions) + '</td></tr>' +
+      '<tr style="background:#f0f0f0"><td style="padding:4px">Spatial boost:</td><td style="text-align:right;color:#12395b">+' + fmt(data.spatial_boost_sessions) + '</td></tr>' +
       '<tr><td style="padding:4px">Competitor penalty:</td><td style="text-align:right;color:#b42318">-' + fmt(data.competitor_penalty_sessions) + '</td></tr>' +
       '<tr><td style="padding:4px">kWh/day (@ ' + avgKwh + ' kWh):</td><td style="text-align:right"><b style="color:#fdae61">' + fmt(kwh) + '</b></td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Avg Power:</td><td style="text-align:right"><b style="color:#f46d43">' + power + ' kW</b></td></tr>' +
       '<tr><td style="padding:4px">Year:</td><td style="text-align:right">' + year + '</td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Location Type:</td><td style="text-align:right"><small>' + (data.location_type || "Mixed") + '</small></td></tr>' +
       '</table>' +
+      '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
+      '<b style="color:#2b6cb0">Top Zones</b>' + (zoneRows || '<div style="font-size:11px;color:#777">No hot zone in radius</div>') +
+      '</div>' +
       '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
       '<b style="color:#2f855a">Top POI</b>' + (poiRows || '<div style="font-size:11px;color:#777">No POI in radius</div>') +
       '</div>' +
