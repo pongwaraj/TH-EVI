@@ -19,6 +19,14 @@ data/processed/
 *.sqlite
 *.sqlite3
 
+# Generated proposal / analysis outputs
+Proposal/
+Analysis/
+*.docx
+*.xlsx
+*.xls
+TCE_logo.png
+
 # Notebook checkpoints
 .ipynb_checkpoints/
 
