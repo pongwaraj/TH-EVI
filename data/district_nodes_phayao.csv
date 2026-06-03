@@ -1,0 +1,5 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+py_mueang,Mueang Phayao,Phayao city and lakefront,district_center,19.1666,99.9003,4.3,1.0,Provincial capital and strongest city node.
+py_dok_khamtai,Dok Khamtai,Dok Khamtai district and Route 1 node,transport_junction,19.1523,99.9937,3.6,0.82,Southbound district on the main corridor.
+py_chiang_kham,Chiang Kham,Chiang Kham district center,district_center,19.5234,100.3009,3.8,0.8,Northeast district service center.
+py_pong,Pong,Pong district coverage node,coverage_anchor,19.1498,100.2705,3.5,0.72,Eastern district coverage node.

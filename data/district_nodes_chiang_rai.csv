@@ -1,0 +1,7 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+cr_mueang,Mueang Chiang Rai,Chiang Rai city core,district_center,19.9105,99.8406,4.8,1.0,Provincial capital and strongest urban demand node.
+cr_mae_chan,Mae Chan,Mae Chan district and junction,transport_junction,20.1472,99.8513,3.9,0.84,Key junction north of city toward Mae Sai and Doi Tung.
+cr_mae_sai,Mae Sai,Mae Sai border town,border_town,20.4335,99.8818,4.5,0.92,Border demand and tourism gateway.
+cr_chiang_saen,Chiang Saen,Chiang Saen river-border community,border_town,20.2744,100.0862,4.2,0.84,Mekong tourism and border traffic node.
+cr_chiang_khong,Chiang Khong,Chiang Khong bridge and border node,border_town,20.2652,100.4046,4.6,0.9,Friendship bridge and cross-border logistics town.
+cr_phan,Phan,Phan district center on Route 1,transport_junction,19.5536,99.7406,3.9,0.8,Southbound corridor coverage node.

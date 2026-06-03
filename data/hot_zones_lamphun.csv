@@ -1,0 +1,6 @@
+zone_id,name,center_lat,center_lon,radius_km,heat_rank,demand_pool_conservative,demand_pool_base,demand_pool_upside,competition_pressure,capture_notes,confidence,last_verified_date
+lamphun_city_core_route106,Lamphun city / Route 106 urban corridor,18.5700,99.0100,3.5,1,180,260,380,medium,"City center around Hariphunchai and Route 106 corridor; retail (Big C/Lotus), hospital, bus terminal, and strong commuter flow toward Chiang Mai."
+route11_chiang_mai_corridor,Route 11 Chiang Mai-Lamphun-Lampang corridor,18.6100,99.0300,5.0,2,200,300,440,medium_high,"High AADT Route 11 corridor (30k+); heavy commuter, intercity, and logistics traffic. Good for roadside DCFC hub near Lamphun bypass."
+pa_sang_district_corridor,Pa Sang / Route 114 district corridor,18.5260,98.9400,4.5,3,90,140,210,low,"Pa Sang district and Route 114 corridor; moderate local demand with residential and market anchors."
+mae_tha_route106_south,Mae Tha / Route 106 south corridor,18.4650,99.0000,5.0,4,80,120,180,low,"Route 106 south corridor through Mae Tha; lower density but steady corridor flow."
+li_route106_remote,Li district / Route 106 far south,17.8014,98.9512,6.0,5,60,90,140,low,"Remote south Lamphun district on Route 106 toward Tak/Mae Sariang; limited local demand but relevant for corridor continuity."

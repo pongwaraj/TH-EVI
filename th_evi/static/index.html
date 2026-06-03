@@ -106,6 +106,14 @@ a { color: #0b65c2; text-decoration: none; }
         </select>
       </label>
     </div>
+    <div class="grid" style="margin-top:8px">
+      <label><span>Heat Map Mode</span>
+        <select id="heatmap_mode">
+          <option value="urban">Urban Hot Zones</option>
+          <option value="community">Community Coverage</option>
+        </select>
+      </label>
+    </div>
     <div class="hint" data-i18n="quickSettingsHint">&#128073; คลิกบนแผนที่เพื่อดู demand ทันที หรือกรอกข้อมูลด้านล่างแล้วกด "วิเคราะห์และบันทึก"</div>
   </div>
 
@@ -123,7 +131,9 @@ a { color: #0b65c2; text-decoration: none; }
             <option value="เชียงใหม่">เชียงใหม่</option>
             <option value="เชียงราย">เชียงราย</option>
             <option value="ลำปาง">ลำปาง</option>
+            <option value="ลำพูน">ลำพูน</option>
             <option value="แพร่">แพร่</option>
+            <option value="น่าน">น่าน</option>
             <option value="พะเยา">พะเยา</option>
             <option value="หนองคาย">หนองคาย</option>
             <option value="อุดรธานี">อุดรธานี</option>
@@ -220,12 +230,11 @@ a { color: #0b65c2; text-decoration: none; }
         <span id="heatmap-meta" data-i18n="notLoaded" style="font-weight:600;color:#12395b">ยังไม่ได้โหลด</span>
       </div>
       <div style="margin-top:8px;padding:8px;background:#f9fafb;border-radius:6px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:3px">
-        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#1a9850;border-radius:2px"></span>Cool &lt;15%</div>
-        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#a6d96a;border-radius:2px"></span>Mild 15-30%</div>
         <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#ffff8c;border-radius:2px"></span>Moderate 30-45%</div>
         <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#fdae61;border-radius:2px"></span>Warm 45-60%</div>
         <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#f46d43;border-radius:2px"></span>Hot 60-75%</div>
         <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#d7191c;border-radius:2px"></span>Very Hot &gt;75%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#8B0000;border-radius:2px"></span>Peak &gt;90%</div>
       </div>
     </div>
   </form>
@@ -337,7 +346,7 @@ const translations = {
     open: "เปิด",
     loadingHeatmap: "กำลังโหลด Heat Map...",
     heatmapLoaded: "โหลด Heat Map แล้ว",
-    heatmapUnavailable: "Heat Map รองรับเฉพาะเชียงใหม่ในตอนนี้",
+    heatmapUnavailable: "ไม่มีข้อมูล Heat Map สำหรับจังหวัดนี้ในตอนนี้",
     referenceLandmarks: "จุดอ้างอิง",
     existingChargers: "สถานีชาร์จเดิม",
     candidateSites: "พื้นที่ที่บันทึก",
@@ -427,7 +436,7 @@ const translations = {
     open: "Open",
     loadingHeatmap: "Loading heat map...",
     heatmapLoaded: "Heat map loaded",
-    heatmapUnavailable: "Heat Map currently supports Chiang Mai only",
+    heatmapUnavailable: "Heat map is not available for this province yet",
     referenceLandmarks: "Reference landmarks",
     existingChargers: "Existing chargers",
     candidateSites: "Candidate sites",
@@ -472,24 +481,81 @@ const landmarkLayer = L.layerGroup().addTo(map);
 const heatmapLayer = L.layerGroup().addTo(map);
 let draftMarker = null;
 let layerControl = null;
+const CANDIDATE_STATE_KEY = "th-evi-candidate-state";
 
 const $ = id => document.getElementById(id);
+const PROVINCE_API_VALUES = {
+  "เชียงใหม่": "Chiang Mai",
+  "เชียงราย": "Chiang Rai",
+  "ลำปาง": "Lampang",
+  "ลำพูน": "Lamphun",
+  "แพร่": "Phrae",
+  "น่าน": "Nan",
+  "พะเยา": "Phayao",
+  "หนองคาย": "Nong Khai",
+  "อุดรธานี": "Udon Thani",
+  "ขอนแก่น": "Khon Kaen",
+  "อุบลราชธานี": "Ubon Ratchathani"
+};
 const num = id => {
   const value = $(id).value;
   return value === "" ? null : Number(value);
 };
 const bool = id => $(id).checked;
 const fmt = value => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
+const HEATMAP_MIN_VISIBLE_INTENSITY = 0.30;
+
+function apiProvinceValue() {
+  return PROVINCE_API_VALUES[$("province").value] || $("province").value;
+}
+
+function readCandidateState() {
+  try {
+    const raw = window.localStorage.getItem(CANDIDATE_STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    return parsed;
+  } catch (err) {
+    return null;
+  }
+}
+
+function saveCandidateState() {
+  try {
+    const state = {
+      name: $("name").value,
+      lat: $("lat").value,
+      lon: $("lon").value,
+      province: $("province").value,
+      zone: $("zone").value,
+      notes: $("notes").value
+    };
+    window.localStorage.setItem(CANDIDATE_STATE_KEY, JSON.stringify(state));
+  } catch (err) {
+    // Ignore storage errors; the app should still work without persistence.
+  }
+}
+
+function restoreCandidateState() {
+  const state = readCandidateState();
+  if (!state) return false;
+  if (state.name) $("name").value = state.name;
+  if (state.lat) $("lat").value = state.lat;
+  if (state.lon) $("lon").value = state.lon;
+  if (state.province && PROVINCE_API_VALUES[state.province]) $("province").value = state.province;
+  if (state.zone) $("zone").value = state.zone;
+  if (state.notes) $("notes").value = state.notes;
+  return true;
+}
 
 function heatColor(intensity) {
-  // ไล่สีจากเขียว → เหลือง → ส้ม → แดง
+  // Visible heat only: yellow to red.
   if (intensity >= 0.9) return "#8B0000";      // Dark red - very hot
   if (intensity >= 0.75) return "#d7191c";     // Red - hot
   if (intensity >= 0.60) return "#f46d43";     // Orange-red - warm
   if (intensity >= 0.45) return "#fdae61";     // Orange - moderate
-  if (intensity >= 0.30) return "#ffff8c";     // Yellow - mild
-  if (intensity >= 0.15) return "#a6d96a";     // Light green - cool
-  return "#1a9850";                            // Dark green - very cool
+  return "#ffff8c";                            // Yellow - minimum visible heat
 }
 
 function payload() {
@@ -507,7 +573,7 @@ function payload() {
       name: $("name").value.trim(),
       lat: num("lat"),
       lon: num("lon"),
-      province: $("province").value,
+      province: apiProvinceValue(),
       zone: $("zone").value.trim() || null,
       notes: $("notes").value.trim() || null
     },
@@ -543,7 +609,9 @@ function setDraftMarker(lat, lon) {
     const p = e.target.getLatLng();
     $("lat").value = p.lat.toFixed(6);
     $("lon").value = p.lng.toFixed(6);
+    saveCandidateState();
   });
+  saveCandidateState();
 }
 
 // Quick estimate เมื่อคลิกแผนที่
@@ -553,7 +621,8 @@ async function quickEstimate(lat, lon) {
   const avgKwh = num("avg_kwh") || 32;
   const price = num("price") || 6.8;
   const scenario = $("scenario").value || "base";
-  const province = $("province").value || "เชียงใหม่";
+  const province = apiProvinceValue() || "Chiang Mai";
+  const mode = $("heatmap_mode").value || "urban";
 
   // แสดง loading marker ระหว่างรอ API
   if (estimateMarker) estimateMarker.remove();
@@ -575,6 +644,7 @@ async function quickEstimate(lat, lon) {
         year,
         province,
         scenario,
+        mode,
         avg_kwh_per_session: avgKwh,
         price_per_kwh: price
       })
@@ -592,6 +662,10 @@ async function quickEstimate(lat, lon) {
     const zoneRows = (data.top_zones || []).slice(0, 3).map(z =>
       '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
       z.name + '</span><b>+' + fmt(z.zone_score) + '</b></div>'
+    ).join("");
+    const districtRows = (data.top_districts || []).slice(0, 3).map(d =>
+      '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
+      d.name + '</span><b>+' + fmt(d.sessions) + '</b></div>'
     ).join("");
     const competitorRows = (data.top_competitors || []).slice(0, 3).map(c =>
       '<div style="display:flex;justify-content:space-between;gap:8px"><span>' +
@@ -620,21 +694,29 @@ async function quickEstimate(lat, lon) {
       '<table style="width:100%;margin-bottom:8px">' +
       '<tr><td style="padding:4px 0"><b>Location:</b></td><td style="text-align:right"><b>' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</b></td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Sessions/day:</td><td style="text-align:right"><b style="color:#d7191c">' + fmt(sessions) + '</b></td></tr>' +
+      '<tr><td style="padding:4px">Area demand:</td><td style="text-align:right"><b style="color:#805ad5">' + fmt(data.gross_area_demand_sessions) + '</b></td></tr>' +
       '<tr><td style="padding:4px">Base:</td><td style="text-align:right">' + fmt(data.base_sessions) + '</td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Zone boost:</td><td style="text-align:right;color:#2b6cb0">+' + fmt(data.zone_boost_sessions) + '</td></tr>' +
       '<tr><td style="padding:4px">POI boost:</td><td style="text-align:right;color:#2f855a">+' + fmt(data.poi_boost_sessions) + '</td></tr>' +
+      '<tr style="background:#f0f0f0"><td style="padding:4px">District boost:</td><td style="text-align:right;color:#6b46c1">+' + fmt(data.district_boost_sessions) + '</td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Spatial boost:</td><td style="text-align:right;color:#12395b">+' + fmt(data.spatial_boost_sessions) + '</td></tr>' +
       '<tr><td style="padding:4px">Competitor penalty:</td><td style="text-align:right;color:#b42318">-' + fmt(data.competitor_penalty_sessions) + '</td></tr>' +
       '<tr><td style="padding:4px">kWh/day (@ ' + avgKwh + ' kWh):</td><td style="text-align:right"><b style="color:#fdae61">' + fmt(kwh) + '</b></td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Avg Power:</td><td style="text-align:right"><b style="color:#f46d43">' + power + ' kW</b></td></tr>' +
       '<tr><td style="padding:4px">Year:</td><td style="text-align:right">' + year + '</td></tr>' +
       '<tr style="background:#f0f0f0"><td style="padding:4px">Location Type:</td><td style="text-align:right"><small>' + (data.location_type || "Mixed") + '</small></td></tr>' +
+      '<tr><td style="padding:4px">AADT:</td><td style="text-align:right"><small>' + fmt(data.aadt_used) + '</small></td></tr>' +
+      '<tr style="background:#f0f0f0"><td style="padding:4px">Fleet EV share:</td><td style="text-align:right"><small>' + fmt(data.fleet_ev_share_pct) + '%</small></td></tr>' +
+      '<tr><td style="padding:4px">Charge probability:</td><td style="text-align:right"><small>' + fmt(data.charge_probability_pct) + '%</small></td></tr>' +
       '</table>' +
       '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
       '<b style="color:#2b6cb0">Top Zones</b>' + (zoneRows || '<div style="font-size:11px;color:#777">No hot zone in radius</div>') +
       '</div>' +
       '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
       '<b style="color:#2f855a">Top POI</b>' + (poiRows || '<div style="font-size:11px;color:#777">No POI in radius</div>') +
+      '</div>' +
+      '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
+      '<b style="color:#6b46c1">Top Districts</b>' + (districtRows || '<div style="font-size:11px;color:#777">No district node in radius</div>') +
       '</div>' +
       '<div style="border-top:1px solid #eee;padding-top:6px;margin-top:6px">' +
       '<b style="color:#b42318">Top Competitors</b>' + (competitorRows || '<div style="font-size:11px;color:#777">No competitor in radius</div>') +
@@ -663,6 +745,7 @@ function useAsCandidate(lat, lon) {
   $("lon").value = lon.toFixed(6);
   $("name").focus();
   setDraftMarker(lat, lon);
+  saveCandidateState();
   closeEstimate();
   // Scroll to form
   document.getElementById("analysis-form").scrollIntoView({ behavior: "smooth" });
@@ -786,56 +869,63 @@ async function loadReferenceLayers() {
 }
 
 async function loadHeatMap() {
-  const province = $("province").value;
-  if (province !== "เชียงใหม่") {
-    $("status").textContent = t("heatmapUnavailable");
-    $("status").className = "status";
-    heatmapLayer.clearLayers();
-    $("heatmap-meta").textContent = t("heatmapUnavailable");
-    return;
-  }
+  const province = apiProvinceValue();
+  const mode = $("heatmap_mode").value || "urban";
   $("heatmap-btn").disabled = true;
   $("status").textContent = t("loadingHeatmap");
   $("status").className = "status";
   try {
     const year = num("year") || new Date().getFullYear();
     const scenario = $("scenario").value || "base";
-    const resp = await fetch(`/api/heatmap/chiang-mai?year=${year}&scenario=${scenario}&resolution_km=1.0`);
+    const resp = await fetch(`/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=${scenario}&mode=${mode}&resolution_km=1.0`);
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
     heatmapLayer.clearLayers();
 
-    // ลากวง circles บน map
+    // Draw heat as grid cells that match the backend screening resolution.
+    const latStep = Number(data.lat_step_deg || 0);
+    const lonStep = Number(data.lon_step_deg || 0);
+    const halfLat = latStep > 0 ? latStep / 2 : 0.0045;
+    const halfLon = lonStep > 0 ? lonStep / 2 : 0.0045;
     data.points.forEach(point => {
+      if ((point.intensity || 0) < HEATMAP_MIN_VISIBLE_INTENSITY) return;
       const color = heatColor(point.intensity);
-      const radius = Math.max(500, 1200 * point.intensity);  // ขยายให้เห็นชัดขึ้น
-      const opacity = Math.max(0.25, 0.70 * point.intensity);  // เพิ่ม opacity
+      const cellOpacity = Math.max(0.35, Math.min(0.82, 0.30 + 0.60 * point.intensity));
 
-      L.circle([point.lat, point.lon], {
-        radius: radius,
+      const heatCell = L.rectangle([
+        [point.lat - halfLat, point.lon - halfLon],
+        [point.lat + halfLat, point.lon + halfLon]
+      ], {
         stroke: true,
         color: color,
-        weight: 2,
+        weight: 1,
         fillColor: color,
-        fillOpacity: opacity
-      }).bindPopup(`
-        <div style="font-size:13px;padding:5px">
-          <b style="color:${color}">🔥 ${t("heatScore")}: ${fmt(point.heat_score)}</b><br>
-          <small>${point.location_type || "Mixed"}</small><br>
-          📊 ${t("modelSessions")}: <b>${fmt(point.model_sessions)}</b>/day<br>
-          ⭐ ${t("zoneScore")}: ${fmt(point.zone_score)}<br>
-          ${(point.zones || []).map(z => `<small>📍 ${z}</small>`).join("<br>")}
-        </div>
-      `).addTo(heatmapLayer);
+        fillOpacity: cellOpacity
+      }).addTo(heatmapLayer);
+
+      heatCell.on("click", e => {
+        dismissMapHint();
+        quickEstimate(e.latlng.lat, e.latlng.lng);
+      });
     });
 
     // อัปเดต metadata
-    const metaText = `${data.point_count} zones | Max ${fmt(data.max_heat_score)} | ${data.year} ${t(data.scenario)}`;
+    if (!data.point_count) {
+      $("status").textContent = t("heatmapUnavailable");
+      $("status").className = "status";
+      $("heatmap-meta").textContent = t("heatmapUnavailable");
+      return;
+    }
+
+    const modeLabel = mode === "community" ? "Community" : "Urban";
+    const metaText = `${data.point_count} cells | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${data.year} ${t(data.scenario)}`;
     $("heatmap-meta").textContent = metaText;
     $("heatmap-meta").style.color = "#2c7bb6";
     $("status").textContent = `✓ ${t("heatmapLoaded")}`;
     $("status").style.color = "#2f855a";
   } catch (err) {
+    heatmapLayer.clearLayers();
+    $("heatmap-meta").textContent = t("heatmapUnavailable");
     $("status").textContent = `⚠ ${err.message}`;
     $("status").className = "status danger";
   } finally {
@@ -858,22 +948,24 @@ $("refresh-btn").addEventListener("click", loadSavedSites);
 $("heatmap-btn").addEventListener("click", loadHeatMap);
 $("lang-th").addEventListener("click", () => applyLanguage("th"));
 $("lang-en").addEventListener("click", () => applyLanguage("en"));
+["name", "lat", "lon", "province", "zone", "notes"].forEach(id => {
+  $(id).addEventListener("input", saveCandidateState);
+  $(id).addEventListener("change", saveCandidateState);
+});
 
 // เพิ่ม auto-reload heat map เมื่อเปลี่ยน scenario หรือ year
 $("scenario").addEventListener("change", () => {
-  if ($("province").value === "เชียงใหม่") loadHeatMap();
+  loadHeatMap();
 });
 $("year").addEventListener("change", () => {
-  if ($("province").value === "เชียงใหม่") loadHeatMap();
+  loadHeatMap();
+});
+$("heatmap_mode").addEventListener("change", () => {
+  loadHeatMap();
 });
 
 $("province").addEventListener("change", () => {
-  if ($("province").value !== "เชียงใหม่") {
-    heatmapLayer.clearLayers();
-    $("heatmap-meta").textContent = t("heatmapUnavailable");
-  } else {
-    loadHeatMap();  // Auto-load heat map เมื่อเปลี่ยนเป็น Chiang Mai
-  }
+  loadHeatMap();
 });
 
 // Collapsible section toggle
@@ -894,16 +986,15 @@ document.querySelectorAll(".section-toggle").forEach(function(h2) {
 try {
   applyLanguage(currentLang);
   $("year").value = new Date().getFullYear();
+  restoreCandidateState();
   setDraftMarker(Number($("lat").value), Number($("lon").value));
+  map.setView([Number($("lat").value), Number($("lon").value)], 15);
   loadReferenceLayers();
   loadSavedSites();
 
-  // Auto-load heat map ตอนเปิดแอพ (ถ้าเป็น Chiang Mai)
-  if ($("province").value === "เชียงใหม่") {
-    setTimeout(function() {
-      try { loadHeatMap(); } catch (err) { console.error("Heat map load error:", err); }
-    }, 500);
-  }
+  setTimeout(function() {
+    try { loadHeatMap(); } catch (err) { console.error("Heat map load error:", err); }
+  }, 500);
 } catch (err) {
   console.error("Initialization error:", err);
 }

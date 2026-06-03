@@ -1,0 +1,6 @@
+station_id,name,operator,network,lat,lon,district,connector_summary,power_summary,source_type,verification_status,confidence,notes
+pea_volta_mhs_city,PEA VOLTA Mae Hong Son city candidate,PEA,PEA VOLTA,19.3000,97.9700,Mueang Mae Hong Son,unknown,unknown,seed_estimate,seed_needs_verification,low,PEA VOLTA likely has Mae Hong Son coverage; verify in PEA VOLTA app for exact pin, guns, and power.
+pea_volta_pai,PEA VOLTA Pai candidate,PEA,PEA VOLTA,19.3600,98.4400,Pai,unknown,unknown,seed_estimate,seed_needs_verification,low,EV charging in Pai tourism area; verify exact location and equipment.
+pea_volta_mae_sariang,PEA VOLTA Mae Sariang candidate,PEA,PEA VOLTA,18.1600,97.9300,Mae Sariang,unknown,unknown,seed_estimate,seed_needs_verification,low,Southern district station candidate along Route 108.
+hotel_pai_ac,Pai hotel destination AC candidate,Private,Pai Hotel Network,19.3620,98.4370,Pai,unknown,unknown,seed_estimate,seed_needs_verification,low,Many Pai hotels may offer guest EV charging; verify actual availability.
+lotus_mhs_ac,Lotus's Mae Hong Son AC candidate,CP Group,Lotus's,19.2900,97.9650,Mueang Mae Hong Son,unknown,unknown,seed_estimate,seed_needs_verification,low,Lotus's supermarket destination charging candidate.

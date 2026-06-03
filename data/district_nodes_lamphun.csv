@@ -1,0 +1,5 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+ln_mueang,Mueang Lamphun,Lamphun city core,district_center,18.5758,99.0090,4.2,1.0,Provincial capital adjacent to Chiang Mai corridor.
+ln_pa_sang,Pa Sang,Pa Sang district center,district_center,18.5263,98.9395,3.4,0.8,Southwest community node in the Lamphun plain.
+ln_li,Li,Li district center,transport_junction,17.8014,98.9512,4.0,0.76,Remote south district on the Lampang-Tak side corridor.
+ln_ban_hong,Ban Hong,Ban Hong district center,coverage_anchor,18.2927,98.8134,3.4,0.74,Community coverage node in western Lamphun.

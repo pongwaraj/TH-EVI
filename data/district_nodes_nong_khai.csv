@@ -1,0 +1,10 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+nk_mueang,Mueang Nong Khai,Nong Khai city and Mekong riverfront,district_center,17.8750,102.7450,4.5,1.0,"Provincial capital and Thai-Lao border gateway; Friendship Bridge, bus terminal, riverfront demand."
+nk_phon_phisai,Phon Phisai,Phon Phisai district center,district_center,17.6900,103.0650,3.8,0.86,"East district with 66,387 population; Mekong riverfront and Route 211 corridor."
+nk_thabo,Tha Bo,Tha Bo district center,district_center,17.8400,102.5800,3.8,0.84,"West district with 53,547 population; Route 2 west corridor and Mekong trade node."
+nk_fao_rai,Fao Rai,Fao Rai district center,coverage_anchor,17.9700,103.2500,3.4,0.76,"East district with 34,730 population; agricultural coverage node."
+nk_rattanawapi,Rattanawapi,Rattanawapi district center,coverage_anchor,18.2100,103.1800,3.2,0.74,"North-east district with 25,527 population; Mekong coverage node."
+nk_sakhrai,Sakhrai,Sakhrai district center,coverage_anchor,17.6800,102.3600,3.0,0.72,"West district with 19,049 population; Route 227 corridor coverage."
+nk_sangkhom,Sangkhom,Sangkhom district center,coverage_anchor,18.0300,102.1600,3.2,0.72,"Far west district with 17,221 population; Mekong river tourism and coverage node."
+nk_si_chiang_mai,Si Chiang Mai,Si Chiang Mai district center,coverage_anchor,17.9600,102.5900,3.0,0.72,"West district with 17,514 population; Mekong riverfront coverage node."
+nk_pho_tak,Pho Tak,Pho Tak district center,coverage_anchor,17.7800,102.5500,2.8,0.68,"South-west district with 10,095 population; rural coverage anchor."

@@ -1,0 +1,6 @@
+zone_id,name,center_lat,center_lon,radius_km,heat_rank,demand_pool_conservative,demand_pool_base,demand_pool_upside,competition_pressure,capture_notes,confidence,last_verified_date
+nan_city_core_route101,Nan city / Route 101 urban corridor,18.7800,100.7700,4.0,1,160,230,340,medium,"Nan city core with retail (Big C/Lotus), hospital, bus terminal, airport, and tourism anchors. Route 101 main corridor."
+wiang_sa_route101_corridor,Wiang Sa / Route 101 south corridor,18.5850,100.7350,4.5,2,110,170,260,low,"Wiang Sa district town on Route 101; important south Nan corridor stop with intercity and local demand."
+pua_doiphukha_tourism,Pua / Doi Phu Kha tourism corridor,19.1750,100.9150,5.0,3,90,140,220,low,"North Nan tourism gateway with Doi Phu Kha National Park; seasonal tourism and Route 1081/1148 corridor."
+tha_wang_pha_route1081,Tha Wang Pha / Route 1081 corridor,18.8500,100.7800,4.0,4,70,110,170,low,"Tha Wang Pha district on Route 1081 north of Nan city; moderate local and corridor demand."
+na_noi_route101_south,Na Noi / Route 101 south gateway,18.3300,100.7100,4.5,5,60,95,150,low,"Na Noi district on Route 101 south approach; important corridor stop for travelers from Phrae/Den Chai."

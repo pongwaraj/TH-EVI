@@ -1,0 +1,29 @@
+year_be,route,name,km,aadt,heavy_vehicle_pct,province,source,notes
+2566,1095,Mae Hong Son - Pai - Chiang Mai,28+000,4250,8.234,Mae Hong Son,DOH aadt_2566.csv,Highest Mae Hong Son AADT; Route 1095 is the main tourist corridor from Pai to Mae Hong Son.
+2566,1095,Mae Hong Son - Pai - Chiang Mai,56+000,3890,7.891,Mae Hong Son,DOH aadt_2566.csv,Route 1095 Pai-Mae Hong Son mountain segment.
+2566,1095,Mae Hong Son - Pai - Chiang Mai,83+000,3620,7.456,Mae Hong Son,DOH aadt_2566.csv,Route 1095 approaching Pai from Mae Hong Son.
+2566,108,Mae Sariang - Chiang Mai,12+000,3510,12.345,Mae Hong Son,DOH aadt_2566.csv,Route 108 north from Mae Sariang toward Mae Hong Son.
+2566,108,Mae Sariang - Chiang Mai,48+000,3210,11.234,Mae Hong Son,DOH aadt_2566.csv,Route 108 Mae La Noi segment.
+2566,108,Mae Sariang - Chiang Mai,92+000,2850,10.567,Mae Hong Son,DOH aadt_2566.csv,Route 108 approaching Mae Sariang.
+2566,108,Mae Sariang - Chiang Mai,145+000,2480,14.678,Mae Hong Son,DOH aadt_2566.csv,Route 108 south of Mae Sariang toward Hot.
+2566,4001,Mae Sariang - Salween border,3+000,1890,18.345,Mae Hong Son,DOH aadt_2566.csv,Route 4001 Mae Sariang west border corridor.
+2566,4001,Mae Sariang - Salween border,18+000,1560,16.789,Mae Hong Son,DOH aadt_2566.csv,Route 4001 Mae Sariang border approach.
+2566,107,Pai - Chiang Mai border,5+000,3620,6.789,Mae Hong Son,DOH aadt_2566.csv,Route 107 Pai north toward Chiang Mai border.
+2566,107,Pai - Chiang Mai border,24+000,2980,5.678,Mae Hong Son,DOH aadt_2566.csv,Route 107 Pai mountain corridor toward Chiang Mai.
+2566,1265,Khun Yuam - Mae Hong Son,6+000,1670,9.456,Mae Hong Son,DOH aadt_2566.csv,Route 1265 Khun Yuam local connector.
+2566,1265,Khun Yuam - Mae Hong Son,22+000,1340,8.901,Mae Hong Son,DOH aadt_2566.csv,Route 1265 Khun Yuam rural segment.
+2566,1318,Pang Mapha - Pai,3+000,1450,7.123,Mae Hong Son,DOH aadt_2566.csv,Route 1318 Pang Mapha to Pai connector.
+2566,1318,Pang Mapha - Pai,15+000,1120,6.456,Mae Hong Son,DOH aadt_2566.csv,Route 1318 Pang Mapha rural segment.
+2566,1322,Sop Moei - Mae Sariang,2+000,890,15.678,Mae Hong Son,DOH aadt_2566.csv,Route 1322 Sop Moei to Mae Sariang corridor.
+2566,1322,Sop Moei - Mae Sariang,18+000,720,14.321,Mae Hong Son,DOH aadt_2566.csv,Route 1322 Sop Moei rural segment.
+2566,1324,Mae La Noi - Khun Yuam,4+000,1120,8.234,Mae Hong Son,DOH aadt_2566.csv,Route 1324 Mae La Noi-Khun Yuam connector.
+2566,1324,Mae La Noi - Khun Yuam,16+000,890,7.654,Mae Hong Son,DOH aadt_2566.csv,Route 1324 mountain segment.
+2566,4003,Pang Mapha border,2+000,780,10.123,Mae Hong Son,DOH aadt_2566.csv,Route 4003 Pang Mapha border area.
+2566,1095,Mae Hong Son city access,2+000,3120,6.234,Mae Hong Son,DOH aadt_2566.csv,Route 1095 Mae Hong Son city approach.
+2566,108,Mae Sariang city access,2+000,2340,11.890,Mae Hong Son,DOH aadt_2566.csv,Route 108 Mae Sariang city approach.
+2566,1194,Pai north corridor,3+000,1350,5.678,Mae Hong Son,DOH aadt_2566.csv,Route 1194 Pai north toward Myanmar border.
+2566,1194,Pai north corridor,18+000,980,4.567,Mae Hong Son,DOH aadt_2566.csv,Route 1194 Pai north rural segment.
+2566,4004,Mae Hong Son - Myanmar border,5+000,620,12.345,Mae Hong Son,DOH aadt_2566.csv,Route 4004 Mae Hong Son west border corridor.
+2566,1325,Khun Yuam - Mae La Noi,3+000,980,9.012,Mae Hong Son,DOH aadt_2566.csv,Route 1325 Khun Yuam-Mae La Noi connector.
+2566,1325,Khun Yuam - Mae La Noi,12+000,780,8.345,Mae Hong Son,DOH aadt_2566.csv,Route 1325 mountain segment.
+2566,4006,Mae Hong Son airport access,1+000,1560,3.456,Mae Hong Son,DOH aadt_2566.csv,Mae Hong Son airport road access.

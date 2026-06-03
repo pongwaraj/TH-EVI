@@ -30,7 +30,7 @@ from .db import (
     get_database_url,
     session_scope,
 )
-from .heatmap import generate_chiang_mai_heatmap
+from .heatmap import generate_chiang_mai_heatmap, generate_province_heatmap
 from .location import LANDMARK_DB, LocationDemandModel, StationDemandModel
 from .site import (
     CompetitiveCaptureModel,
@@ -115,9 +115,10 @@ class SiteAnalysisRequest(BaseModel):
 class ClickAnalysisRequest(BaseModel):
     lat: float
     lon: float
-    province: str = "เชียงใหม่"
+    province: str = "Chiang Mai"
     year: int = Field(2030, ge=2025, le=2050)
     scenario: str = Field("base", pattern="^(conservative|base|upside)$")
+    mode: str = Field("urban", pattern="^(urban|community)$")
     avg_kwh_per_session: float = Field(32.0, gt=0)
     price_per_kwh: float = Field(6.8, gt=0)
 
@@ -350,6 +351,7 @@ def click_analysis(req: ClickAnalysisRequest):
         province=req.province,
         year=req.year,
         scenario=req.scenario,
+        mode=req.mode,
         avg_kwh_per_session=req.avg_kwh_per_session,
         price_per_kwh=req.price_per_kwh,
     )
@@ -450,14 +452,37 @@ def scenario(year: int = Query(2035, ge=2025, le=2050)):
 def chiang_mai_heatmap(
     year: int = Query(2030, ge=2025, le=2050),
     scenario: str = Query("base", pattern="^(conservative|base|upside)$"),
+    mode: str = Query("urban", pattern="^(urban|community)$"),
     resolution_km: float = Query(1.0, gt=0, le=5),
 ):
     """Return Chiang Mai area-demand heat-map points."""
     return generate_chiang_mai_heatmap(
         year=year,
         scenario=scenario,
+        mode=mode,
         resolution_km=resolution_km,
     )
+
+
+@app.get("/api/heatmap")
+def province_heatmap(
+    province: str = Query(..., min_length=1),
+    year: int = Query(2030, ge=2025, le=2050),
+    scenario: str = Query("base", pattern="^(conservative|base|upside)$"),
+    mode: str = Query("urban", pattern="^(urban|community)$"),
+    resolution_km: float = Query(1.0, gt=0, le=5),
+):
+    """Return province heat-map points clipped to urban activity fields."""
+    try:
+        return generate_province_heatmap(
+            province=province,
+            year=year,
+            scenario=scenario,
+            mode=mode,
+            resolution_km=resolution_km,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/station")

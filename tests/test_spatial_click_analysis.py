@@ -1,14 +1,17 @@
 from fastapi.testclient import TestClient
 
 from th_evi.api import app
+import th_evi.spatial as spatial
 from th_evi.spatial import (
     analyze_click_location,
+    assess_surface_access,
     competitor_penalty_field,
     poi_attraction_field,
     zone_influence_field,
 )
 
 UDON_THANI = "\u0e2d\u0e38\u0e14\u0e23\u0e18\u0e32\u0e19\u0e35"
+CHIANG_MAI = "Chiang Mai"
 
 
 def test_poi_attraction_decays_with_distance():
@@ -94,11 +97,245 @@ def test_click_analysis_combines_base_poi_and_competitor_fields():
         result["zone_boost_sessions"],
         result["poi_boost_sessions"],
     )
+    assert result["gross_area_demand_sessions"] >= result["net_sessions_per_day"]
     assert result["competitor_penalty_sessions"] <= result["raw_competitor_penalty_sessions"]
     assert result["net_sessions_per_day"] > result["base_sessions"]
     assert result["daily_kwh"] == round(result["net_sessions_per_day"] * 28, 1)
     assert result["top_pois"]
     assert result["top_zones"]
+    assert result["eligibility_status"] == "eligible"
+    assert result["access_ok"] is True
+    assert result["urban_eligible"] is True
+
+
+def test_click_analysis_rejects_isolated_point_without_access_signal():
+    result = analyze_click_location(
+        lat=17.05,
+        lon=102.15,
+        province=UDON_THANI,
+        year=2030,
+        scenario="base",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["eligibility_status"] == "rejected"
+    assert result["access_ok"] is False
+    assert result["urban_eligible"] is False
+    assert result["surface_type"] == "isolated_land"
+    assert result["net_sessions_per_day"] == 0.0
+    assert result["eligibility_reason"]
+
+
+def test_surface_access_uses_low_relevance_for_weak_but_real_context(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+
+    pois = [
+        {"name": "Remote Mall", "category": "shopping_mall", "lat": "18.0000", "lon": "99.0435"},
+        {"name": "Hospital", "category": "hospital", "lat": "18.0000", "lon": "99.0322"},
+    ]
+    zones = [
+        {"name": "Urban Zone", "center_lat": "18.0000", "center_lon": "99.0438"},
+    ]
+    competitors = [
+        {"name": "Competitor", "lat": "18.0000", "lon": "99.0329"},
+    ]
+
+    result = assess_surface_access(
+        18.0,
+        99.0,
+        pois=pois,
+        competitors=competitors,
+        zones=zones,
+        zone_score=8.0,
+        poi_field_score=6.0,
+    )
+
+    assert result["status"] == "low_relevance"
+    assert result["access_ok"] is False
+    assert result["urban_eligible"] is False
+
+
+def test_click_analysis_scales_down_low_relevance_points(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "assess_surface_access",
+        lambda *args, **kwargs: {
+            "status": "low_relevance",
+            "surface_type": "road_access_candidate",
+            "access_ok": True,
+            "urban_eligible": False,
+            "reason": "Road access looks plausible, but the point is still outside a strong urban demand cluster.",
+            "feature_name": None,
+            "surface_warning": None,
+            "nearest_access_anchor_km": 0.8,
+            "nearest_urban_anchor_km": 1.9,
+            "nearest_competitor_km": None,
+            "nearest_zone_center_km": 2.0,
+        },
+    )
+
+    result = analyze_click_location(
+        lat=17.4058,
+        lon=102.7998,
+        province=UDON_THANI,
+        year=2026,
+        scenario="base",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["eligibility_status"] == "low_relevance"
+    assert result["raw_base_sessions"] > result["base_sessions"]
+    assert result["base_sessions"] <= 6.0
+    assert result["spatial_boost_sessions"] < result["raw_spatial_boost_sessions"]
+    assert result["net_sessions_per_day"] <= 6.0
+
+
+def test_click_analysis_community_mode_uses_district_nodes():
+    result = analyze_click_location(
+        lat=18.5758,
+        lon=99.0090,
+        province="Lamphun",
+        year=2026,
+        scenario="base",
+        mode="community",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["mode"] == "community"
+    assert result["district_boost_sessions"] > 0
+    assert result["top_districts"]
+
+
+def test_click_analysis_rejects_water_surface(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": True,
+            "surface_type": "water",
+            "reason": "Point falls inside an OSM water polygon.",
+            "warning": None,
+            "feature_name": "City Lake",
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+
+    result = analyze_click_location(
+        lat=17.4058,
+        lon=102.7998,
+        province=UDON_THANI,
+        year=2030,
+        scenario="base",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["eligibility_status"] == "rejected"
+    assert result["surface_type"] == "water"
+    assert result["surface_feature_name"] == "City Lake"
+    assert result["net_sessions_per_day"] == 0.0
+
+
+def test_click_analysis_rejects_building_surface(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": True,
+            "surface_type": "building",
+            "reason": "Point falls inside an OSM building footprint.",
+            "warning": None,
+            "feature_name": "Retail Podium",
+        },
+    )
+
+    result = analyze_click_location(
+        lat=17.4058,
+        lon=102.7998,
+        province=UDON_THANI,
+        year=2030,
+        scenario="base",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["eligibility_status"] == "rejected"
+    assert result["surface_type"] == "building"
+    assert result["surface_feature_name"] == "Retail Podium"
+    assert result["net_sessions_per_day"] == 0.0
+
+
+def test_water_lookup_fallback_when_service_unavailable(monkeypatch):
+    def fail(url, data, timeout=4.0):
+        raise OSError("network down")
+
+    spatial.lookup_water_surface.cache_clear()
+    monkeypatch.setattr(spatial, "_post_json", fail)
+
+    result = spatial.lookup_water_surface(18.0, 99.0)
+
+    assert result["is_water"] is False
+    assert result["surface_type"] == "unknown"
+    assert "unavailable" in result["warning"].lower()
+
+
+def test_building_lookup_fallback_when_service_unavailable(monkeypatch):
+    def fail(url, data, timeout=4.0):
+        raise OSError("network down")
+
+    spatial.lookup_building_surface.cache_clear()
+    monkeypatch.setattr(spatial, "_post_json", fail)
+
+    result = spatial.lookup_building_surface(18.0, 99.0)
+
+    assert result["is_building"] is False
+    assert result["surface_type"] == "unknown"
+    assert "unavailable" in result["warning"].lower()
 
 
 def test_click_analysis_api_returns_explainable_components():
@@ -118,11 +355,22 @@ def test_click_analysis_api_returns_explainable_components():
     assert response.status_code == 200
     payload = response.json()
     assert "base_sessions" in payload
+    assert "raw_base_sessions" in payload
+    assert "gross_area_demand_sessions" in payload
+    assert "aadt_used" in payload
+    assert "fleet_ev_share_pct" in payload
+    assert "charge_probability_pct" in payload
     assert "zone_boost_sessions" in payload
     assert "poi_boost_sessions" in payload
+    assert "district_boost_sessions" in payload
+    assert "raw_spatial_boost_sessions" in payload
     assert "spatial_boost_sessions" in payload
     assert "raw_competitor_penalty_sessions" in payload
     assert "competitor_penalty_sessions" in payload
     assert "top_zones" in payload
     assert "top_pois" in payload
+    assert "top_districts" in payload
     assert "top_competitors" in payload
+    assert "eligibility_status" in payload
+    assert "surface_type" in payload
+    assert "access_ok" in payload

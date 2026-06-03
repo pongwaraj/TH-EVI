@@ -1,0 +1,8 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+mhs_mueang,Mueang Mae Hong Son,Mae Hong Son city core,district_center,19.3017,97.9689,4.0,1.0,Provincial capital and primary urban node in the Mae Hong Son valley.
+mhs_pai,Pai,Pai tourism town,district_center,19.3617,98.4386,3.8,0.88,Popular tourism district along Route 1095; backpacker and nature tourism hub.
+mhs_mae_sariang,Mae Sariang,Mae Sariang district center,district_center,18.1619,97.9333,3.6,0.78,South district center on the Salween River corridor.
+mhs_khun_yuam,Khun Yuam,Khun Yuam district junction,transport_junction,18.8283,97.9389,3.4,0.72,Mid-province junction between Mueang and Mae Sariang.
+mhs_mae_la_noi,Mae La Noi,Mae La Noi district center,coverage_anchor,18.3881,97.9325,3.2,0.68,Community coverage node on Route 108 south corridor.
+mhs_pang_mapha,Pang Mapha,Pang Mapha district center / Soppong,tourism_town,19.4594,98.2592,3.5,0.74,Northern tourism node near Tham Lot cave and nature attractions.
+mhs_sop_moei,Sop Moei,Sop Moei district coverage,coverage_anchor,17.9856,97.9156,3.0,0.65,Southernmost district on the Myanmar border.

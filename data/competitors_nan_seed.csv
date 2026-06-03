@@ -1,0 +1,6 @@
+station_id,name,operator,network,lat,lon,district,connector_summary,power_summary,source_type,verification_status,confidence,notes
+pea_volta_nan_city,PEA VOLTA Nan city candidate,PEA,PEA VOLTA,18.7750,100.7680,Mueang Nan,unknown,unknown,seed_estimate,seed_needs_verification,low,"PEA VOLTA likely has Nan coverage; verify in PEA VOLTA app for exact pin, guns, and power."
+ea_anywhere_nan_route101,EA Anywhere Nan / Route 101 candidate,EA Anywhere,EA Anywhere,18.7700,100.7600,Mueang Nan,unknown,unknown,seed_estimate,seed_needs_verification,low,"EA Anywhere may have Nan city coverage; verify in EA Anywhere app."
+big_c_nan_ac,Big C Nan destination AC candidate,unknown,unknown,18.7700,100.7550,Mueang Nan,unknown,unknown,seed_estimate,seed_needs_verification,low,"Retail anchor may have destination AC charging; verify via Google Maps."
+pea_volta_wiang_sa,PEA VOLTA Wiang Sa candidate,PEA,PEA VOLTA,18.5850,100.7350,Wiang Sa,unknown,unknown,seed_estimate,seed_needs_verification,low,"Wiang Sa district along Route 101 corridor; verify in PEA VOLTA app."
+pea_volta_pua,PEA VOLTA Pua candidate,PEA,PEA VOLTA,19.1750,100.9150,Pua,unknown,unknown,seed_estimate,seed_needs_verification,low,"Pua district near Doi Phu Kha tourism area; verify in PEA VOLTA app."

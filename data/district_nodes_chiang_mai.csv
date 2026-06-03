@@ -1,0 +1,20 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+cm_mueang,Mueang Chiang Mai,Chiang Mai city and inner ring,district_center,18.7904,98.9847,4.8,1.0,Provincial capital and strongest urban demand node.
+cm_hang_dong,Hang Dong,Hang Dong and Mae Hia corridor,district_center,18.6872,98.9190,4.0,0.92,Southwest suburban growth and mall corridor node.
+cm_mae_rim,Mae Rim,Mae Rim community and tourism node,tourism_town,18.9130,98.9478,3.8,0.9,Northbound lifestyle and tourism district.
+cm_mae_taeng,Mae Taeng,Mae Taeng district center,coverage_anchor,19.1447,98.8815,3.8,0.8,Northern district service and highway node.
+cm_mae_ai,Mae Ai,Mae Ai district center,coverage_anchor,20.0286,99.2985,3.9,0.76,Far north district service node.
+cm_doi_saket,Doi Saket,Doi Saket junction and district center,transport_junction,18.8768,99.1398,3.6,0.82,Eastern community node on Route 118 side.
+cm_san_sai,San Sai,San Sai district and Route 1001 node,district_center,18.8485,99.0412,3.8,0.9,Major northeast suburban growth corridor.
+cm_saraphi,Saraphi,Saraphi district and ring-road fringe,district_center,18.7134,99.0368,3.6,0.86,Southeast suburban node close to city spillover.
+cm_san_kamphaeng,San Kamphaeng,San Kamphaeng new road district node,district_center,18.7448,99.1195,3.6,0.82,Residential and roadside district growth area.
+cm_mae_on,Mae On,Mae On district tourism and corridor node,tourism_town,18.7729,99.3191,3.8,0.78,Mountain tourism and eastern corridor node.
+cm_san_pa_tong,San Pa Tong,San Pa Tong district center and market,district_center,18.6283,98.8959,3.7,0.8,Southwest coverage node on Route 108 corridor.
+cm_mae_wang,Mae Wang,Mae Wang district center,coverage_anchor,18.5509,98.6717,3.6,0.74,Rural southwest community coverage node.
+cm_chom_thong,Chom Thong,Chom Thong gateway to Doi Inthanon,tourism_town,18.4178,98.6753,4.0,0.86,Tourism and corridor stopover district.
+cm_hot,Hot,Hot district center on Route 108,transport_junction,18.1034,98.6057,4.0,0.82,Southbound corridor node toward Tak/Mae Sariang.
+cm_doi_tao,Doi Tao,Doi Tao district coverage node,coverage_anchor,17.8986,98.6933,3.8,0.7,Far south lake district coverage node.
+cm_chiang_dao,Chiang Dao,Chiang Dao district center,tourism_town,19.3655,98.9648,4.0,0.82,Northern mountain tourism and district service node.
+cm_phrao,Phrao,Phrao district center,coverage_anchor,19.3651,99.2152,3.7,0.78,Northeast valley district service node.
+cm_samoeng,Samoeng,Samoeng district tourism node,tourism_town,18.8486,98.7287,3.6,0.76,Mountain tourism and coverage node west of city.
+cm_fang,Fang,Fang district center and highway town,transport_junction,19.9163,99.2143,4.2,0.84,Far north community and corridor node toward Tha Ton.

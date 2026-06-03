@@ -1,0 +1,6 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+lp_mueang,Mueang Lampang,Lampang city core,district_center,18.2888,99.4926,4.5,1.0,Provincial capital and primary urban node.
+lp_ko_kha,Ko Kha,Ko Kha district and city fringe,district_center,18.1976,99.3941,3.6,0.8,Southwest district adjacent to the city corridor.
+lp_thoen,Thoen,Thoen district center on Route 1,transport_junction,17.6122,99.2182,4.0,0.84,Important long-distance corridor stop.
+lp_ngao,Ngao,Ngao district junction,transport_junction,18.7812,99.9758,3.8,0.8,Northeast corridor node toward Phayao.
+lp_wang_nuea,Wang Nuea,Wang Nuea district center,coverage_anchor,19.1575,99.6178,3.4,0.72,Remote district coverage node.

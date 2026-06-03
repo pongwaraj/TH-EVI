@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import json
+from functools import lru_cache
 from pathlib import Path
 import warnings
 
@@ -388,6 +389,41 @@ def load_doh_aadt(year_be=None, province="เชียงใหม่"):
             return prov_data
 
     return pd.DataFrame()
+
+
+@lru_cache(maxsize=32)
+def _load_adm2_district_population() -> dict[str, int]:
+    """Cache ADM2 population as {province|district: population}."""
+    path = DATA_DIR / "tha_pop_adm2_2023.csv"
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    result = {}
+    for _, row in df.iterrows():
+        key = f"{row['ADM1_EN']}|{row['ADM2_EN']}"
+        pop = int(str(row["T_TL"]).replace(",", ""))
+        result[key] = pop
+    return result
+
+
+@lru_cache(maxsize=32)
+def load_district_population_for_province(province_en: str) -> pd.DataFrame:
+    """Load district population for a province from ADM2 data.
+
+    Returns DataFrame with columns: district (English), population (int).
+    Returns empty DataFrame if province not found or file missing.
+    """
+    all_pop = _load_adm2_district_population()
+    records = []
+    for key, pop in all_pop.items():
+        prov, dist = key.split("|", 1)
+        if prov == province_en:
+            records.append({"district": dist, "population": pop})
+    if not records:
+        return pd.DataFrame()
+    result = pd.DataFrame(records).sort_values("district").reset_index(drop=True)
+    result["population"] = pd.to_numeric(result["population"], errors="coerce").fillna(0).astype(int)
+    return result
 
 
 def get_cm_highway_aadt(year_be=2566):

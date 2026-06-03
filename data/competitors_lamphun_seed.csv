@@ -1,0 +1,5 @@
+station_id,name,operator,network,lat,lon,district,connector_summary,power_summary,source_type,verification_status,confidence,notes
+pea_volta_lamphun_city,PEA VOLTA Lamphun city candidate,PEA,PEA VOLTA,18.5700,99.0050,Mueang Lamphun,unknown,unknown,seed_estimate,seed_needs_verification,low,"PEA VOLTA likely has Lamphun coverage; verify in PEA VOLTA app for exact pin, guns, and power."
+ea_anywhere_lamphun_106,EA Anywhere Route 106 Lamphun candidate,EA Anywhere,EA Anywhere,18.5600,99.0150,Mueang Lamphun,unknown,unknown,seed_estimate,seed_needs_verification,low,"EA Anywhere likely has city coverage; verify in EA Anywhere app."
+big_c_lamphun_ac,Big C Lamphun destination AC candidate,unknown,unknown,18.5550,99.0200,Mueang Lamphun,unknown,unknown,seed_estimate,seed_needs_verification,low,"Retail anchor may have destination AC charging; verify via Google Maps."
+ev_station_pluz_lamphun,EV Station PluZ Lamphun candidate,OR,EV Station PluZ,18.5650,99.0080,Mueang Lamphun,unknown,unknown,seed_estimate,seed_needs_verification,low,"Verify in EV Station PluZ app or Google Maps for Lamphun coverage."

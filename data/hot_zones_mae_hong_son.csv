@@ -1,0 +1,6 @@
+zone_id,name,center_lat,center_lon,radius_km,heat_rank,demand_pool_conservative,demand_pool_base,demand_pool_upside,competition_pressure,capture_notes,confidence,last_verified_date
+mhs_city_core,Mae Hong Son city / Route 1095 corridor,19.3017,97.9689,4.0,1,95,140,210,low,City center around provincial hall and airport; tourist gateway to Pai and mountain attractions.
+pai_tourism_core,Pai tourism town / Route 1095,19.3617,98.4386,4.5,2,110,160,240,low,Pai is a major backpacker and nature tourism hub with high seasonal traffic; walking street, cafes, and accommodation zone.
+mae_sariang_route108,Mae Sariang / Route 108 south corridor,18.1619,97.9333,4.0,3,60,90,135,low,Southern district center on Route 108 toward Chiang Mai; hospital, market, and government services hub.
+khun_yuam_junction,Khun Yuam / Route 1265 junction,18.8283,97.9389,3.5,4,45,65,100,low,Mid-province junction connecting Mae Hong Son to Mae Sariang; local services and petrol station area.
+pang_mapha_soppong,Pang Mapha / Tham Lot tourism,19.4594,98.2592,4.0,5,50,75,115,low,Tham Lot cave area with guesthouses and nature tourism; lower volume but strategic coverage node.

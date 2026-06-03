@@ -1,0 +1,5 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+pr_mueang,Mueang Phrae,Phrae city core,district_center,18.1459,100.1410,4.3,1.0,Provincial capital and strongest urban node.
+pr_den_chai,Den Chai,Den Chai rail and corridor junction,transport_junction,17.9820,100.0521,4.1,0.88,Southbound corridor and rail gateway node.
+pr_long,Long,Long district center,coverage_anchor,18.0691,99.8308,3.6,0.76,Western district coverage and community node.
+pr_sung_men,Sung Men,Sung Men district center,district_center,18.0494,100.1174,3.5,0.78,Near-city district service node.

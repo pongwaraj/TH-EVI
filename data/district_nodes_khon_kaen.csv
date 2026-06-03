@@ -1,0 +1,27 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+kk_mueang,Mueang Khon Kaen,Khon Kaen city and downtown core,district_center,16.4338,102.8257,5.0,1.0,Provincial capital with largest population (661,992); Central Khon Kaen, KKU, and hospital cluster.
+kk_chum_phae,Chum Phae,Chum Phae district center,district_center,16.5401,102.0952,4.5,0.9,Major west district with 84,332 population; Route 12 corridor hub toward Phetchabun/Loei.
+kk_nam_phong,Nam Phong,Nam Phong district center,district_center,16.6981,102.8568,4.0,0.88,Northern district with 74,432 population; Route 2 north corridor and Nam Phong area.
+kk_phon,Phon,Phon district center,district_center,15.8103,102.6052,4.0,0.86,Southern district with 67,870 population; Route 2 south corridor agricultural hub.
+kk_ban_phai,Ban Phai,Ban Phai district center,district_center,16.0571,102.7302,4.0,0.86,East-south district with 68,152 population; Route 2 and rail corridor junction.
+kk_nong_ruea,Nong Ruea,Nong Ruea district center,district_center,16.4896,102.4341,3.8,0.84,West district with 65,640 population; Route 12 corridor.
+kk_nong_song_hong,Nong Song Hong,Nong Song Hong district center,district_center,15.7272,102.6345,4.0,0.84,Southern district with 58,182 population; agricultural and Route 2 corridor area.
+kk_phu_wiang,Phu Wiang,Phu Wiang district center,district_center,16.6512,102.3728,3.8,0.82,West-north district with 50,851 population; Phu Wiang dinosaur museum tourist anchor.
+kk_mancha_khiri,Mancha Khiri,Mancha Khiri district center,district_center,16.1425,102.5439,3.6,0.8,West district with 46,367 population; Route 229 corridor.
+kk_si_chomphu,Si Chomphu,Si Chomphu district center,district_center,16.0078,102.0539,3.6,0.8,Far west district with 42,865 population; mountain corridor toward Chaiyaphum.
+kk_kranuan,Kranuan,Kranuan district center,district_center,16.7051,103.0775,3.8,0.8,East-north district with 42,120 population; Route 213 corridor.
+kk_ban_fang,Ban Fang,Ban Fang district center,coverage_anchor,16.4567,102.6398,3.2,0.76,East district with 31,270 population; Route 12 corridor coverage.
+kk_chonnabot,Chonnabot,Chonnabot district center,coverage_anchor,16.0805,102.6128,3.2,0.76,South-west district with 31,222 population; agricultural coverage node.
+kk_waeng_noi,Waeng Noi,Waeng Noi district center,coverage_anchor,15.8070,102.4268,3.2,0.76,Far south district with 28,470 population; Route 23 corridor node.
+kk_ubolratana,Ubolratana,Ubolratana district center,coverage_anchor,16.7496,102.6334,3.4,0.76,North district with 26,824 population; Ubolratana Dam tourism and coverage node.
+kk_khao_suan_kwang,Khao Suan Kwang,Khao Suan Kwang district center,coverage_anchor,16.6270,102.7179,3.0,0.74,East-north district with 24,077 population; Route 2063 corridor coverage.
+kk_waeng_yai,Waeng Yai,Waeng Yai district center,coverage_anchor,15.6277,102.5477,3.2,0.74,Far south district with 21,572 population; southern coverage node.
+kk_phra_yuen,Phra Yuen,Phra Yuen district center,coverage_anchor,16.3295,102.6527,3.0,0.74,Central-east district with 20,927 population; Route 2039 corridor.
+kk_phu_pha_man,Phu Pha Man,Phu Pha Man district center,coverage_anchor,16.6106,102.0099,3.0,0.72,Far west district with 18,859 population; mountain tourism corridor node.
+kk_non_sila,Non Sila,Non Sila district center,coverage_anchor,15.9725,102.6704,3.0,0.72,South-central district with 17,755 population; Route 2 coverage node.
+kk_nong_na_kham,Nong Na Kham,Nong Na Kham district center,coverage_anchor,16.1830,102.5220,3.0,0.72,West district with 17,773 population; community coverage anchor.
+kk_ban_haet,Ban Haet,Ban Haet district center,coverage_anchor,16.2057,102.7708,3.0,0.72,East district with 17,451 population; Route 23 corridor coverage.
+kk_sam_sung,Sam Sung,Sam Sung district center,coverage_anchor,16.5402,103.0683,3.0,0.7,East district with 15,913 population; Route 213 corridor coverage.
+kk_wiang_kao,Wiang Kao,Wiang Kao district center,coverage_anchor,16.7313,102.2534,3.0,0.7,West-north district with 14,946 population; mountain corridor coverage.
+kk_khok_pho_chai,Khok Pho Chai,Khok Pho Chai district center,coverage_anchor,16.0876,102.4100,2.8,0.68,West district with 10,480 population; rural coverage node.
+kk_pueai_noi,Pueai Noi,Pueai Noi district center,coverage_anchor,16.1256,102.9191,2.8,0.68,Far east district with 9,197 population; remote coverage anchor.

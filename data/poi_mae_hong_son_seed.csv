@@ -1,0 +1,19 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+mhs_city_center,Mae Hong Son city center,city_center,19.3017,97.9689,OpenStreetMap + public facts,high,Provincial capital in the Mae Hong Son valley.
+pai_city_center,Pai city center,city_center,19.3617,98.4386,OpenStreetMap + public facts,high,Major tourism town on Route 1095.
+mhs_airport,Mae Hong Son Airport,airport,19.3058,97.9736,OpenStreetMap,high,Nok Air and Bangkok Airways service to Mae Hong Son.
+doi_kong_mu,WAT Phra That Doi Kong Mu,tourism,19.3217,97.9636,OpenStreetMap,high,Famous temple overlooking Mae Hong Son city.
+tham_pla,Tham Pla National Park / Fish Cave,tourism,19.3933,97.8528,OpenStreetMap,medium_high,Freshwater spring and fish cave attraction north of Mae Hong Son.
+pai_canyon,Pai Canyon,tourism,19.3183,98.4450,OpenStreetMap,high,Famous red-rock canyon viewpoint near Pai.
+tham_lot,Tham Lot Cave Nature Park,tourism,19.4619,98.2642,OpenStreetMap,medium_high,Large limestone cave system in Pang Mapha district.
+mae_sariang_center,Mae Sariang city center,district_center,18.1619,97.9333,OpenStreetMap,medium,South district center on Route 108.
+mhs_hospital,Mae Hong Son Hospital,hospital,19.2947,97.9631,OpenStreetMap,high,Main provincial hospital in Mae Hong Son city.
+pai_hospital,Pai Hospital,hospital,19.3592,98.4317,OpenStreetMap,high,District hospital serving Pai area.
+mhs_bus_terminal,Mae Hong Son Bus Terminal,bus_station,19.2983,97.9706,OpenStreetMap,medium_high,Interprovincial bus terminal connecting to Chiang Mai.
+pai_bus_terminal,Pai Bus Terminal,bus_station,19.3597,98.4350,OpenStreetMap,medium,Local and tourist bus terminal in Pai.
+lotus_mhs,Lotus's Mae Hong Son,supermarket,19.2900,97.9650,Public facts,medium,Main supermarket in Mae Hong Son city.
+mhs_education,Mae Hong Son College,education,19.2989,97.9589,OpenStreetMap,medium,Post-secondary education institution.
+mae_sariang_hospital,Mae Sariang Hospital,hospital,18.1589,97.9311,OpenStreetMap,high,District hospital in Mae Sariang.
+pai_walking_street,Pai Walking Street Market,market_tourism,19.3611,98.4389,Public facts,medium_high,Popular night market and tourism walking street in Pai.
+ban_jabo,Thung Bua Tong fields / Doi Mae U Kho,tourism,19.2250,97.9083,OpenStreetMap,medium_high,Sunflower fields near Khun Yuam; seasonal tourism magnet.
+mhs_municipal_market,Mae Hong Son municipal market,market_tourism,19.3011,97.9669,Public facts,medium,Local fresh market in Mae Hong Son city center.

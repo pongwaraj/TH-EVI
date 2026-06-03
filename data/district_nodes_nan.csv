@@ -1,0 +1,5 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+nn_mueang,Mueang Nan,Nan city core,district_center,18.7756,100.7730,4.4,1.0,Provincial capital and primary urban node.
+nn_pua,Pua,Pua tourism and district center,tourism_town,19.1728,100.9236,3.8,0.84,Popular tourism district in the northern valley.
+nn_wiang_sa,Wiang Sa,Wiang Sa district junction,transport_junction,18.5732,100.7388,3.8,0.8,South corridor junction for provincial movement.
+nn_thung_chang,Thung Chang,Thung Chang district center,coverage_anchor,19.3868,100.8768,3.5,0.72,Northern mountain district coverage node.

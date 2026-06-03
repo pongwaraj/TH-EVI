@@ -15,6 +15,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     create_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, sessionmaker
@@ -230,6 +231,136 @@ class EVFleetMix(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     ev_model: Mapped[EVModel | None] = relationship(back_populates="fleet_mix_rows")
+
+
+class ReferenceSource(Base):
+    __tablename__ = "reference_sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_name: Mapped[str] = mapped_column(String(160), nullable=False, unique=True)
+    source_type: Mapped[str] = mapped_column(String(40), default="official", nullable=False)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    retrieved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    license_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ProvinceIngestionRun(Base):
+    __tablename__ = "province_ingestion_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    province_slug: Mapped[str] = mapped_column(String(80), nullable=False)
+    agent_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    model_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="planned", nullable=False)
+    git_commit: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class DistrictPopulation(Base):
+    __tablename__ = "district_population"
+    __table_args__ = (
+        UniqueConstraint("province", "district_name_en", "year_be", name="uq_district_population"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    district_name_th: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    district_name_en: Mapped[str] = mapped_column(String(120), nullable=False)
+    district_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    year_be: Mapped[int] = mapped_column(Integer, nullable=False)
+    population: Mapped[int] = mapped_column(Integer, nullable=False)
+    male_population: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    female_population: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    households: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="high", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class AADTSegment(Base):
+    __tablename__ = "aadt_segments"
+    __table_args__ = (
+        UniqueConstraint("province", "route_number", "segment_name", "km_start", "year_be", name="uq_aadt_segment"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    route_number: Mapped[str] = mapped_column(String(20), nullable=False)
+    segment_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    km_start: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    km_end: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lon: Mapped[float | None] = mapped_column(Float, nullable=True)
+    aadt: Mapped[int] = mapped_column(Integer, nullable=False)
+    heavy_vehicle_share_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    year_be: Mapped[int] = mapped_column(Integer, nullable=False)
+    direction: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class POIReference(Base):
+    __tablename__ = "poi_reference"
+    __table_args__ = (
+        UniqueConstraint("province", "poi_id", name="uq_poi_reference"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    poi_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    district: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    category: Mapped[str] = mapped_column(String(60), nullable=False)
+    lat: Mapped[float] = mapped_column(Float, nullable=False)
+    lon: Mapped[float] = mapped_column(Float, nullable=False)
+    demand_role: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    radius_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weight: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    verification_status: Mapped[str] = mapped_column(String(40), default="seed_needs_verification", nullable=False)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ChargerCompetitor(Base):
+    __tablename__ = "charger_competitors"
+    __table_args__ = (
+        UniqueConstraint("province", "station_id", name="uq_charger_competitor"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    station_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    district: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    network: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    operator: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    lat: Mapped[float] = mapped_column(Float, nullable=False)
+    lon: Mapped[float] = mapped_column(Float, nullable=False)
+    plug_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gun_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_kw: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_site_kw: Mapped[float | None] = mapped_column(Float, nullable=True)
+    dc_fast: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    price_per_kwh: Mapped[float | None] = mapped_column(Float, nullable=True)
+    open_hours: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    verification_status: Mapped[str] = mapped_column(String(40), default="seed_needs_verification", nullable=False)
+    confidence: Mapped[str] = mapped_column(String(40), default="low", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 def get_database_url() -> str:
