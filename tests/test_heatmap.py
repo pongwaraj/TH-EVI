@@ -35,3 +35,21 @@ def test_community_heatmap_supports_district_node_only_province():
     assert result["metadata"]["heatmap_mode"] == "community"
     assert result["metadata"]["urban_mask"] == "district_poi_zone_competitor"
     assert max(point["district_score"] for point in result["points"]) > 0
+
+
+def test_district_heatmap_normalizes_within_each_district():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=2.0,
+        mode="district",
+    )
+
+    assert result["metadata"]["normalization"] == "within_district_weighted_by_province_potential"
+    assert result["district_summaries"]
+    assert all(summary["lat"] is not None for summary in result["district_summaries"])
+    assert all(summary["lon"] is not None for summary in result["district_summaries"])
+    fang_points = [point for point in result["points"] if point["district_name"] == "Fang"]
+    assert fang_points
+    assert max(point["local_intensity"] for point in fang_points) == 1.0
+    assert max(point["display_intensity"] for point in fang_points) >= 0.55

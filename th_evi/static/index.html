@@ -107,10 +107,11 @@ a { color: #0b65c2; text-decoration: none; }
       </label>
     </div>
     <div class="grid" style="margin-top:8px">
-      <label><span>Heat Map Mode</span>
+      <label><span data-i18n="heatmapMode">รูปแบบ Heat Map</span>
         <select id="heatmap_mode">
-          <option value="urban">Urban Hot Zones</option>
-          <option value="community">Community Coverage</option>
+          <option value="urban" data-i18n-option="urbanHotZones">พื้นที่เมืองและการค้า</option>
+          <option value="community" data-i18n-option="communityCoverage">พื้นที่บริการชุมชน</option>
+          <option value="district" data-i18n-option="districtPotential">ศักยภาพรายอำเภอ</option>
         </select>
       </label>
     </div>
@@ -310,6 +311,10 @@ const translations = {
     analyzeSave: "วิเคราะห์และบันทึก",
     refreshSites: "โหลดรายการใหม่",
     loadHeatmap: "โหลด Heat Map",
+    heatmapMode: "รูปแบบ Heat Map",
+    urbanHotZones: "พื้นที่เมืองและการค้า",
+    communityCoverage: "พื้นที่บริการชุมชน",
+    districtPotential: "ศักยภาพรายอำเภอ",
     heat: "Heat",
     notLoaded: "ยังไม่ได้โหลด",
     latestResult: "ผลวิเคราะห์ล่าสุด",
@@ -400,6 +405,10 @@ const translations = {
     analyzeSave: "Analyze & Save",
     refreshSites: "Refresh Saved Sites",
     loadHeatmap: "Load Heat Map",
+    heatmapMode: "Heat Map Mode",
+    urbanHotZones: "Urban and Commercial",
+    communityCoverage: "Community Coverage",
+    districtPotential: "District Potential",
     heat: "Heat",
     notLoaded: "Not loaded",
     latestResult: "Latest Result",
@@ -888,9 +897,10 @@ async function loadHeatMap() {
     const halfLat = latStep > 0 ? latStep / 2 : 0.0045;
     const halfLon = lonStep > 0 ? lonStep / 2 : 0.0045;
     data.points.forEach(point => {
-      if ((point.intensity || 0) < HEATMAP_MIN_VISIBLE_INTENSITY) return;
-      const color = heatColor(point.intensity);
-      const cellOpacity = Math.max(0.35, Math.min(0.82, 0.30 + 0.60 * point.intensity));
+      const displayIntensity = point.display_intensity ?? point.intensity ?? 0;
+      if (displayIntensity < HEATMAP_MIN_VISIBLE_INTENSITY) return;
+      const color = heatColor(displayIntensity);
+      const cellOpacity = Math.max(0.35, Math.min(0.82, 0.30 + 0.60 * displayIntensity));
 
       const heatCell = L.rectangle([
         [point.lat - halfLat, point.lon - halfLon],
@@ -908,6 +918,26 @@ async function loadHeatMap() {
         quickEstimate(e.latlng.lat, e.latlng.lng);
       });
     });
+    if (mode === "district") {
+      (data.district_summaries || []).forEach(district => {
+        if (district.lat == null || district.lon == null) return;
+        const potentialPct = Math.round(Number(district.potential_score || 0) * 100);
+        L.circleMarker([district.lat, district.lon], {
+          radius: 5,
+          color: "#12395b",
+          weight: 2,
+          fillColor: heatColor(district.potential_score || 0),
+          fillOpacity: 0.95
+        }).bindTooltip(`${district.district_name} · ${potentialPct}%`, {
+          direction: "top",
+          opacity: 0.9
+        }).bindPopup(
+          `<b>${district.name || district.district_name}</b><br>` +
+          `${t("districtPotential")}: ${potentialPct}%<br>` +
+          `${t("heatScore")}: ${fmt(district.max_heat_score)}`
+        ).addTo(heatmapLayer);
+      });
+    }
 
     // อัปเดต metadata
     if (!data.point_count) {
@@ -917,12 +947,18 @@ async function loadHeatMap() {
       return;
     }
 
-    const modeLabel = mode === "community" ? "Community" : "Urban";
+    const modeLabel = mode === "district" ? "District" : (mode === "community" ? "Community" : "Urban");
     const metaText = `${data.point_count} cells | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${data.year} ${t(data.scenario)}`;
     $("heatmap-meta").textContent = metaText;
     $("heatmap-meta").style.color = "#2c7bb6";
     $("status").textContent = `✓ ${t("heatmapLoaded")}`;
     $("status").style.color = "#2f855a";
+    if (mode === "district" && data.bounds) {
+      map.fitBounds([
+        [data.bounds.lat_min, data.bounds.lon_min],
+        [data.bounds.lat_max, data.bounds.lon_max]
+      ], { padding: [18, 18] });
+    }
   } catch (err) {
     heatmapLayer.clearLayers();
     $("heatmap-meta").textContent = t("heatmapUnavailable");

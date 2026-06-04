@@ -22,7 +22,7 @@ from .spatial import (
 
 
 VALID_HEATMAP_SCENARIOS = {"conservative", "base", "upside"}
-VALID_HEATMAP_MODES = {"urban", "community"}
+VALID_HEATMAP_MODES = {"urban", "community", "district"}
 HEATMAP_MAX_RESOLUTION_KM = 5.0
 HEATMAP_PADDING_KM = 2.0
 HEATMAP_MAX_COMPETITOR_SIGNAL_SHARE = 0.55
@@ -187,12 +187,13 @@ def district_node_field(
         )
         radius = _float_or_none(node.get("radius_km")) or default_radius
         confidence = _float_or_none(node.get("confidence_multiplier")) or 1.0
+        population_weight = _float_or_none(node.get("population_weight")) or 1.0
         distance = km_between(lat, lon, node_lat, node_lon)
         if distance > radius * COMMUNITY_DISTANCE_FACTOR:
             continue
 
         weight = exp(-((distance / max(radius, 0.1)) ** 2))
-        sessions = base_sessions * confidence * weight
+        sessions = base_sessions * confidence * population_weight * weight
         if sessions <= 0.15:
             continue
 
@@ -204,6 +205,8 @@ def district_node_field(
             "distance_km": round(distance, 2),
             "radius_km": round(radius, 1),
             "sessions": round(sessions, 1),
+            "population": node.get("population"),
+            "population_weight": round(population_weight, 3),
             "suggested_location_type": suggested_location_type,
         })
 
@@ -212,7 +215,7 @@ def district_node_field(
 
 
 def _heatmap_thresholds(mode: str) -> tuple[float, float]:
-    if mode == "community":
+    if mode in {"community", "district"}:
         return COMMUNITY_MIN_CONTEXT_SESSIONS, COMMUNITY_MIN_HEAT_SCORE
     return URBAN_MIN_CONTEXT_SESSIONS, URBAN_MIN_HEAT_SCORE
 
@@ -246,7 +249,7 @@ def _heatmap_mask_passes(
     near_district = nearest_district is not None and nearest_district <= HEATMAP_MAX_ANCHOR_DISTANCE_KM
     near_any_anchor = near_poi or near_zone or near_competitor or near_district
 
-    if mode == "community":
+    if mode in {"community", "district"}:
         return near_any_anchor and (near_district or near_poi or near_zone)
     return near_any_anchor and (near_poi or near_zone or near_competitor)
 
@@ -256,7 +259,7 @@ def generate_province_heatmap(
     year: int = 2030,
     scenario: Literal["conservative", "base", "upside"] = "base",
     resolution_km: float = 1.0,
-    mode: Literal["urban", "community"] = "urban",
+    mode: Literal["urban", "community", "district"] = "urban",
 ) -> dict[str, Any]:
     """Generate a province heat map for urban hotspots or community coverage."""
     if scenario not in VALID_HEATMAP_SCENARIOS:
@@ -336,6 +339,9 @@ def generate_province_heatmap(
                     "zones": [item["name"] for item in zone_contributions[:3]],
                     "pois": [item["name"] for item in poi_contributions[:3]],
                     "districts": [item["name"] for item in district_contributions[:3]],
+                    "district_name": (
+                        district_contributions[0]["district_name"] if district_contributions else None
+                    ),
                     "competitors": [item["name"] for item in competitor_contributions[:3]],
                 })
             lon += lon_step
@@ -344,6 +350,55 @@ def generate_province_heatmap(
     max_heat = max((p["heat_score"] for p in points), default=1.0)
     for point in points:
         point["intensity"] = round(point["heat_score"] / max_heat, 4)
+
+    district_summaries: list[dict[str, Any]] = []
+    if mode == "district":
+        district_node_lookup = {
+            str(node.get("district_name") or ""): node
+            for node in district_nodes
+            if node.get("district_name")
+        }
+        district_max_heat: dict[str, float] = {}
+        for point in points:
+            district_name = point.get("district_name")
+            if district_name:
+                district_max_heat[district_name] = max(
+                    district_max_heat.get(district_name, 0.0),
+                    point["heat_score"],
+                )
+
+        province_district_max = max(district_max_heat.values(), default=1.0)
+        for point in points:
+            district_name = point.get("district_name")
+            local_max = district_max_heat.get(district_name, point["heat_score"])
+            district_potential = local_max / province_district_max
+            local_intensity = point["heat_score"] / max(local_max, 0.1)
+            point["district_potential"] = round(district_potential, 4)
+            point["local_intensity"] = round(local_intensity, 4)
+            point["display_intensity"] = round(
+                local_intensity * (0.55 + 0.45 * district_potential),
+                4,
+            )
+
+        for district_name, district_heat in sorted(
+            district_max_heat.items(),
+            key=lambda item: item[1],
+            reverse=True,
+        ):
+            node = district_node_lookup.get(district_name, {})
+            district_summaries.append({
+                "district_name": district_name,
+                "name": node.get("name") or district_name,
+                "lat": _float_or_none(node.get("lat")),
+                "lon": _float_or_none(node.get("lon")),
+                "node_type": node.get("node_type"),
+                "population": node.get("population"),
+                "max_heat_score": round(district_heat, 1),
+                "potential_score": round(district_heat / province_district_max, 4),
+            })
+    else:
+        for point in points:
+            point["display_intensity"] = point["intensity"]
 
     return {
         "province": province,
@@ -364,8 +419,10 @@ def generate_province_heatmap(
             "competitor_count": len(competitors),
             "district_node_count": len(district_nodes),
             "heatmap_mode": mode,
-            "urban_mask": "district_poi_zone_competitor" if mode == "community" else "poi_zone_competitor",
+            "urban_mask": "district_poi_zone_competitor" if mode in {"community", "district"} else "poi_zone_competitor",
+            "normalization": "within_district_weighted_by_province_potential" if mode == "district" else "province_max",
         },
+        "district_summaries": district_summaries,
     }
 
 
@@ -373,7 +430,7 @@ def generate_chiang_mai_heatmap(
     year: int = 2030,
     scenario: Literal["conservative", "base", "upside"] = "base",
     resolution_km: float = 1.0,
-    mode: Literal["urban", "community"] = "urban",
+    mode: Literal["urban", "community", "district"] = "urban",
 ) -> dict[str, Any]:
     """Backward-compatible wrapper for the Chiang Mai heat map."""
     return generate_province_heatmap(

@@ -60,7 +60,7 @@ SCENARIO_FACTORS = {
     "base": 1.0,
     "upside": 1.25,
 }
-HEATMAP_MODES = {"urban", "community"}
+HEATMAP_MODES = {"urban", "community", "district"}
 
 # A clicked charger site never captures the full demand field of every POI in
 # the radius. This factor converts surrounding POI demand pools into first-pass
@@ -567,12 +567,13 @@ def district_node_field(
         )
         radius = _float_or_none(node.get("radius_km")) or default_radius
         confidence = _float_or_none(node.get("confidence_multiplier")) or 1.0
+        population_weight = _float_or_none(node.get("population_weight")) or 1.0
         distance = km_between(lat, lon, node_lat, node_lon)
         if distance > radius * 1.5:
             continue
 
         weight = exp(-((distance / max(radius, 0.1)) ** 2))
-        sessions = base_sessions * confidence * weight
+        sessions = base_sessions * confidence * population_weight * weight
         if sessions <= 0.15:
             continue
 
@@ -584,6 +585,8 @@ def district_node_field(
             "distance_km": round(distance, 2),
             "radius_km": round(radius, 1),
             "sessions": round(sessions, 1),
+            "population": node.get("population"),
+            "population_weight": round(population_weight, 3),
             "suggested_location_type": suggested_location_type,
         })
 
@@ -883,10 +886,10 @@ def analyze_click_location(
         max(capturable_zone_sessions, capturable_poi_sessions)
         + min(capturable_zone_sessions, capturable_poi_sessions) * SPATIAL_OVERLAP_SHARE
     )
-    if mode == "community":
+    if mode in {"community", "district"}:
         spatial_boost += capturable_district_sessions
     gross_area_demand = raw_base_sessions + (zone_score * factor) + (poi_boost * factor)
-    if mode == "community":
+    if mode in {"community", "district"}:
         gross_area_demand += district_boost * factor
     demand_share = 1.0
     if surface["status"] == "low_relevance":
@@ -917,7 +920,7 @@ def analyze_click_location(
         warnings.append("No POI seed file found for this province.")
     if not zones:
         warnings.append("No hot-zone seed file found for this province.")
-    if mode == "community" and not district_nodes:
+    if mode in {"community", "district"} and not district_nodes:
         warnings.append("No district-node seed file found for this province.")
     if skipped_competitors:
         warnings.append(f"{skipped_competitors} competitor rows skipped because coordinates are missing.")

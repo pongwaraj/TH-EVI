@@ -230,6 +230,27 @@ def test_click_analysis_community_mode_uses_district_nodes():
     assert result["top_districts"]
 
 
+def test_click_analysis_fang_uses_new_pois_and_verified_competitor():
+    result = analyze_click_location(
+        lat=19.9163,
+        lon=99.2143,
+        province=CHIANG_MAI,
+        year=2026,
+        scenario="base",
+        mode="district",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["eligibility_status"] == "eligible"
+    assert result["access_ok"] is True
+    assert result["net_sessions_per_day"] > 0
+    assert result["top_pois"]
+    assert any("Fang" in item["name"] for item in result["top_pois"])
+    assert result["top_competitors"]
+    assert "PEA Electric vehicle charging station VOLTA" in result["top_competitors"][0]["name"]
+
+
 def test_click_analysis_rejects_water_surface(monkeypatch):
     monkeypatch.setattr(
         spatial,

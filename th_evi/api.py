@@ -118,7 +118,7 @@ class ClickAnalysisRequest(BaseModel):
     province: str = "Chiang Mai"
     year: int = Field(2030, ge=2025, le=2050)
     scenario: str = Field("base", pattern="^(conservative|base|upside)$")
-    mode: str = Field("urban", pattern="^(urban|community)$")
+    mode: str = Field("urban", pattern="^(urban|community|district)$")
     avg_kwh_per_session: float = Field(32.0, gt=0)
     price_per_kwh: float = Field(6.8, gt=0)
 
@@ -452,7 +452,7 @@ def scenario(year: int = Query(2035, ge=2025, le=2050)):
 def chiang_mai_heatmap(
     year: int = Query(2030, ge=2025, le=2050),
     scenario: str = Query("base", pattern="^(conservative|base|upside)$"),
-    mode: str = Query("urban", pattern="^(urban|community)$"),
+    mode: str = Query("urban", pattern="^(urban|community|district)$"),
     resolution_km: float = Query(1.0, gt=0, le=5),
 ):
     """Return Chiang Mai area-demand heat-map points."""
@@ -469,7 +469,7 @@ def province_heatmap(
     province: str = Query(..., min_length=1),
     year: int = Query(2030, ge=2025, le=2050),
     scenario: str = Query("base", pattern="^(conservative|base|upside)$"),
-    mode: str = Query("urban", pattern="^(urban|community)$"),
+    mode: str = Query("urban", pattern="^(urban|community|district)$"),
     resolution_km: float = Query(1.0, gt=0, le=5),
 ):
     """Return province heat-map points clipped to urban activity fields."""
