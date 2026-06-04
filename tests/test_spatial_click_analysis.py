@@ -6,6 +6,8 @@ from th_evi.spatial import (
     analyze_click_location,
     assess_surface_access,
     competitor_penalty_field,
+    load_competitors_for_province,
+    load_pois_for_province,
     poi_attraction_field,
     zone_influence_field,
 )
@@ -249,6 +251,56 @@ def test_click_analysis_fang_uses_new_pois_and_verified_competitor():
     assert any("Fang" in item["name"] for item in result["top_pois"])
     assert result["top_competitors"]
     assert "PEA Electric vehicle charging station VOLTA" in result["top_competitors"][0]["name"]
+
+
+def test_chiang_mai_poi_loader_covers_ring_road_anchor_areas():
+    pois = load_pois_for_province(CHIANG_MAI)
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "cmu_main_campus",
+        "maya_lifestyle_mall",
+        "big_c_mae_hia",
+        "kad_farang_village",
+        "meechok_plaza",
+        "theppanya_hospital",
+    }.issubset(poi_ids)
+
+
+def test_chiang_mai_poi_loader_covers_west_121_anchor_areas():
+    pois = load_pois_for_province(CHIANG_MAI)
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "cmu_main_campus",
+        "maya_lifestyle_mall",
+        "chiang_mai_zoo",
+        "chiang_mai_convention_center",
+        "chiang_mai_700_stadium",
+        "ton_payom_market",
+        "big_c_mae_hia",
+        "mae_hia_market",
+    }.issubset(poi_ids)
+
+
+def test_chiang_mai_competitor_loader_dedupes_known_duplicate_sites():
+    competitors = load_competitors_for_province(CHIANG_MAI)
+    station_ids = {row["station_id"] for row in competitors}
+
+    assert "green_bus_thailand_chiangmai" not in station_ids
+    assert "pea_volta_nong_hoi_cmh" not in station_ids
+    assert len({
+        "pea_volta_hub_chiang_mai",
+        "pea_volta_hub_chiangmai_gmaps",
+    } & station_ids) == 1
+    assert len({
+        "charging_station_cmu",
+        "egat_cmu_area_osm",
+    } & station_ids) == 1
+    assert len({
+        "pea_volta_doi_saket",
+        "pea_volta_doi_saket_side_osm",
+    } & station_ids) == 1
 
 
 def test_click_analysis_rejects_water_surface(monkeypatch):

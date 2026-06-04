@@ -15,6 +15,12 @@ cm_chom_thong,Chom Thong,Chom Thong gateway to Doi Inthanon,tourism_town,18.4178
 cm_hot,Hot,Hot district center on Route 108,transport_junction,18.1034,98.6057,4.0,0.82,Southbound corridor node toward Tak/Mae Sariang.
 cm_doi_tao,Doi Tao,Doi Tao district coverage node,coverage_anchor,17.8986,98.6933,3.8,0.7,Far south lake district coverage node.
 cm_chiang_dao,Chiang Dao,Chiang Dao district center,tourism_town,19.3655,98.9648,4.0,0.82,Northern mountain tourism and district service node.
+cm_chai_prakan,Chai Prakan,Chai Prakan corridor town,transport_junction,19.7017,99.1392,3.9,0.78,North corridor service town between Chiang Dao and Fang on the Route 107 catchment.
 cm_phrao,Phrao,Phrao district center,coverage_anchor,19.3651,99.2152,3.7,0.78,Northeast valley district service node.
+cm_wiang_haeng,Wiang Haeng,Wiang Haeng mountain border town,border_town,19.5672,98.6418,4.2,0.72,Far northwestern border district and mountain service center with long travel gaps to larger charging hubs.
 cm_samoeng,Samoeng,Samoeng district tourism node,tourism_town,18.8486,98.7287,3.6,0.76,Mountain tourism and coverage node west of city.
 cm_fang,Fang,Fang district center and highway town,transport_junction,19.9163,99.2143,4.2,0.84,Far north community and corridor node toward Tha Ton.
+cm_doi_lo,Doi Lo,Doi Lo district center and corridor junction,coverage_anchor,18.4602,98.7783,3.5,0.74,Southwestern district node linking San Pa Tong side demand toward Hot and Lamphun-adjacent catchments.
+cm_mae_chaem,Mae Chaem,Mae Chaem tourism and district center,tourism_town,18.4867,98.3664,4.0,0.76,Western mountain district center and Doi Inthanon-side tourism service town.
+cm_galyani_vadhana,Galyani Vadhana,Galyani Vadhana mountain coverage node,coverage_anchor,18.3316,98.2866,3.7,0.68,Remote highland district west of Chom Thong and Samoeng with sparse charger alternatives.
+cm_omkoi,Omkoi,Omkoi district center,coverage_anchor,17.8014,98.3654,4.0,0.66,Remote southern border district with long travel distance to Hot and Chom Thong corridors.

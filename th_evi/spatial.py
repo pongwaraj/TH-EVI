@@ -207,6 +207,72 @@ def _read_csv(path: Path) -> list[dict[str, Any]]:
         return list(csv.DictReader(f))
 
 
+def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep one row per real Chiang Mai station and drop context-only duplicates.
+
+    The Chiang Mai loader combines seed, detailed, Google-verified, and OSM-like
+    rows. Some represent the same station from different sources, while a few are
+    context anchors rather than actual charging competitors.
+    """
+    alias_groups = [
+        {
+            "pea_volta_hub_chiang_mai",
+            "pea_volta_nong_hoi_cmh",
+            "pea_volta_hub_chiangmai_gmaps",
+        },
+        {
+            "charging_station_cmu",
+            "egat_cmu_area_osm",
+        },
+        {
+            "pea_volta_doi_saket_side_osm",
+            "pea_volta_doi_saket",
+        },
+        {
+            "ev_station_pluz_green_park",
+            "greenbus_fair_super_charge",
+        },
+    ]
+    alias_lookup = {
+        station_id: min(group)
+        for group in alias_groups
+        for station_id in group
+    }
+
+    def priority(row: dict[str, Any]) -> tuple[int, int, int]:
+        status = str(row.get("verification_status") or "").strip().lower()
+        source_type = str(row.get("source_type") or "").strip().lower()
+        source = str(row.get("source") or "").strip().lower()
+        status_rank = {
+            "verified": 5,
+            "partial": 4,
+            "public_listing_verified_ac_only": 3,
+            "public_listing_needs_operator_verification": 2,
+            "operator_app_verification_needed": 2,
+            "seed_needs_verification": 1,
+        }.get(status, 0)
+        source_rank = 1 if source_type in {"official", "directory", "news", "website"} or source == "cmhy.city" else 0
+        power_rank = int(_parse_power_kw(row))
+        return (status_rank, source_rank, power_rank)
+
+    best_by_key: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if str(row.get("verification_status") or "").strip().lower() == "context":
+            continue
+        if str(row.get("connector_summary") or "").strip().lower() == "not_charger":
+            continue
+
+        station_id = str(row.get("station_id") or "").strip()
+        if not station_id:
+            continue
+        key = alias_lookup.get(station_id, station_id)
+        current = best_by_key.get(key)
+        if current is None or priority(row) > priority(current):
+            best_by_key[key] = row
+
+    return list(best_by_key.values())
+
+
 @lru_cache(maxsize=32)
 def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
@@ -237,6 +303,7 @@ def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
         rows.extend(_read_csv(detailed))
     if slug == "chiang_mai":
         rows.extend(_read_csv(DATA_DIR / "competitors_chiang_mai_google_verified.csv"))
+        rows = _filter_and_dedupe_chiang_mai_competitors(rows)
     return rows
 
 

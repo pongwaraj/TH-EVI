@@ -6,6 +6,7 @@
 <title>TH-EVI | EV Charging Site Analysis</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <style>
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #17202a; background: #f4f6f8; }
@@ -103,6 +104,12 @@ a { color: #0b65c2; text-decoration: none; }
           <option value="conservative" data-i18n-option="conservative">ระมัดระวัง</option>
           <option value="base" selected data-i18n-option="base">ฐาน</option>
           <option value="upside" data-i18n-option="upside">เติบโตสูง</option>
+        </select>
+      </label>
+      <label><span data-i18n="heatmapView">Heat Map View</span>
+        <select id="heatmap_view">
+          <option value="grid" data-i18n-option="gridView">Grid Cells</option>
+          <option value="classic" data-i18n-option="classicView">Classic Heat</option>
         </select>
       </label>
     </div>
@@ -312,9 +319,12 @@ const translations = {
     refreshSites: "โหลดรายการใหม่",
     loadHeatmap: "โหลด Heat Map",
     heatmapMode: "รูปแบบ Heat Map",
+    heatmapView: "มุมมอง Heat Map",
     urbanHotZones: "พื้นที่เมืองและการค้า",
     communityCoverage: "พื้นที่บริการชุมชน",
     districtPotential: "ศักยภาพรายอำเภอ",
+    gridView: "เซลล์สี่เหลี่ยม",
+    classicView: "แบบฟุ้งมาตรฐาน",
     heat: "Heat",
     notLoaded: "ยังไม่ได้โหลด",
     latestResult: "ผลวิเคราะห์ล่าสุด",
@@ -406,9 +416,12 @@ const translations = {
     refreshSites: "Refresh Saved Sites",
     loadHeatmap: "Load Heat Map",
     heatmapMode: "Heat Map Mode",
+    heatmapView: "Heat Map View",
     urbanHotZones: "Urban and Commercial",
     communityCoverage: "Community Coverage",
     districtPotential: "District Potential",
+    gridView: "Grid Cells",
+    classicView: "Classic Heat",
     heat: "Heat",
     notLoaded: "Not loaded",
     latestResult: "Latest Result",
@@ -513,6 +526,22 @@ const num = id => {
 const bool = id => $(id).checked;
 const fmt = value => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
 const HEATMAP_MIN_VISIBLE_INTENSITY = 0.30;
+const HEATMAP_COLOR_STOPS = [
+  { at: 0.30, color: "#fff3bf" },
+  { at: 0.45, color: "#ffd166" },
+  { at: 0.60, color: "#f8961e" },
+  { at: 0.75, color: "#ef476f" },
+  { at: 0.90, color: "#b5179e" },
+  { at: 1.00, color: "#7b2cbf" }
+];
+const CLASSIC_HEAT_GRADIENT = {
+  0.30: "#fff3bf",
+  0.45: "#ffd166",
+  0.60: "#f8961e",
+  0.75: "#ef476f",
+  0.90: "#b5179e",
+  1.00: "#7b2cbf"
+};
 
 function apiProvinceValue() {
   return PROVINCE_API_VALUES[$("province").value] || $("province").value;
@@ -558,13 +587,108 @@ function restoreCandidateState() {
   return true;
 }
 
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "");
+  const value = parseInt(clean, 16);
+  return {
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255
+  };
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+}
+
 function heatColor(intensity) {
-  // Visible heat only: yellow to red.
-  if (intensity >= 0.9) return "#8B0000";      // Dark red - very hot
-  if (intensity >= 0.75) return "#d7191c";     // Red - hot
-  if (intensity >= 0.60) return "#f46d43";     // Orange-red - warm
-  if (intensity >= 0.45) return "#fdae61";     // Orange - moderate
-  return "#ffff8c";                            // Yellow - minimum visible heat
+  const clamped = Math.max(HEATMAP_MIN_VISIBLE_INTENSITY, Math.min(1, Number(intensity || 0)));
+  for (let i = 1; i < HEATMAP_COLOR_STOPS.length; i++) {
+    const prev = HEATMAP_COLOR_STOPS[i - 1];
+    const next = HEATMAP_COLOR_STOPS[i];
+    if (clamped <= next.at) {
+      const ratio = (clamped - prev.at) / Math.max(next.at - prev.at, 0.0001);
+      const start = hexToRgb(prev.color);
+      const end = hexToRgb(next.color);
+      return rgbToHex(
+        start.r + (end.r - start.r) * ratio,
+        start.g + (end.g - start.g) * ratio,
+        start.b + (end.b - start.b) * ratio
+      );
+    }
+  }
+  return HEATMAP_COLOR_STOPS[HEATMAP_COLOR_STOPS.length - 1].color;
+}
+
+function addDistrictSummaryMarkers(data) {
+  (data.district_summaries || []).forEach(district => {
+    if (district.lat == null || district.lon == null) return;
+    const potentialPct = Math.round(Number(district.potential_score || 0) * 100);
+    L.circleMarker([district.lat, district.lon], {
+      radius: 5,
+      color: "#12395b",
+      weight: 2,
+      fillColor: heatColor(district.potential_score || 0),
+      fillOpacity: 0.95
+    }).bindTooltip(`${district.district_name} ยท ${potentialPct}%`, {
+      direction: "top",
+      opacity: 0.9
+    }).bindPopup(
+      `<b>${district.name || district.district_name}</b><br>` +
+      `${t("districtPotential")}: ${potentialPct}%<br>` +
+      `${t("heatScore")}: ${fmt(district.max_heat_score)}`
+    ).addTo(heatmapLayer);
+  });
+}
+
+function drawGridHeat(data) {
+  const latStep = Number(data.lat_step_deg || 0);
+  const lonStep = Number(data.lon_step_deg || 0);
+  const halfLat = latStep > 0 ? latStep / 2 : 0.0045;
+  const halfLon = lonStep > 0 ? lonStep / 2 : 0.0045;
+  data.points.forEach(point => {
+    const displayIntensity = point.display_intensity ?? point.intensity ?? 0;
+    if (displayIntensity < HEATMAP_MIN_VISIBLE_INTENSITY) return;
+    const color = heatColor(displayIntensity);
+    const cellOpacity = Math.max(0.32, Math.min(0.78, 0.24 + 0.58 * displayIntensity));
+
+    const heatCell = L.rectangle([
+      [point.lat - halfLat, point.lon - halfLon],
+      [point.lat + halfLat, point.lon + halfLon]
+    ], {
+      stroke: false,
+      fillColor: color,
+      fillOpacity: cellOpacity
+    }).addTo(heatmapLayer);
+
+    heatCell.on("click", e => {
+      dismissMapHint();
+      quickEstimate(e.latlng.lat, e.latlng.lng);
+    });
+  });
+}
+
+function drawClassicHeat(data) {
+  const heatPoints = [];
+  data.points.forEach(point => {
+    const displayIntensity = point.display_intensity ?? point.intensity ?? 0;
+    if (displayIntensity < HEATMAP_MIN_VISIBLE_INTENSITY) return;
+    heatPoints.push([point.lat, point.lon, Math.max(0.2, Math.min(1, displayIntensity))]);
+  });
+
+  if (!heatPoints.length || typeof L.heatLayer !== "function") {
+    drawGridHeat(data);
+    return;
+  }
+
+  const classicLayer = L.heatLayer(heatPoints, {
+    radius: 24,
+    blur: 18,
+    maxZoom: 12,
+    minOpacity: 0.38,
+    gradient: CLASSIC_HEAT_GRADIENT
+  });
+  heatmapLayer.addLayer(classicLayer);
 }
 
 function payload() {
@@ -880,6 +1004,7 @@ async function loadReferenceLayers() {
 async function loadHeatMap() {
   const province = apiProvinceValue();
   const mode = $("heatmap_mode").value || "urban";
+  const view = $("heatmap_view").value || "grid";
   $("heatmap-btn").disabled = true;
   $("status").textContent = t("loadingHeatmap");
   $("status").className = "status";
@@ -891,55 +1016,13 @@ async function loadHeatMap() {
     const data = await resp.json();
     heatmapLayer.clearLayers();
 
-    // Draw heat as grid cells that match the backend screening resolution.
-    const latStep = Number(data.lat_step_deg || 0);
-    const lonStep = Number(data.lon_step_deg || 0);
-    const halfLat = latStep > 0 ? latStep / 2 : 0.0045;
-    const halfLon = lonStep > 0 ? lonStep / 2 : 0.0045;
-    data.points.forEach(point => {
-      const displayIntensity = point.display_intensity ?? point.intensity ?? 0;
-      if (displayIntensity < HEATMAP_MIN_VISIBLE_INTENSITY) return;
-      const color = heatColor(displayIntensity);
-      const cellOpacity = Math.max(0.35, Math.min(0.82, 0.30 + 0.60 * displayIntensity));
-
-      const heatCell = L.rectangle([
-        [point.lat - halfLat, point.lon - halfLon],
-        [point.lat + halfLat, point.lon + halfLon]
-      ], {
-        stroke: true,
-        color: color,
-        weight: 1,
-        fillColor: color,
-        fillOpacity: cellOpacity
-      }).addTo(heatmapLayer);
-
-      heatCell.on("click", e => {
-        dismissMapHint();
-        quickEstimate(e.latlng.lat, e.latlng.lng);
-      });
-    });
-    if (mode === "district") {
-      (data.district_summaries || []).forEach(district => {
-        if (district.lat == null || district.lon == null) return;
-        const potentialPct = Math.round(Number(district.potential_score || 0) * 100);
-        L.circleMarker([district.lat, district.lon], {
-          radius: 5,
-          color: "#12395b",
-          weight: 2,
-          fillColor: heatColor(district.potential_score || 0),
-          fillOpacity: 0.95
-        }).bindTooltip(`${district.district_name} · ${potentialPct}%`, {
-          direction: "top",
-          opacity: 0.9
-        }).bindPopup(
-          `<b>${district.name || district.district_name}</b><br>` +
-          `${t("districtPotential")}: ${potentialPct}%<br>` +
-          `${t("heatScore")}: ${fmt(district.max_heat_score)}`
-        ).addTo(heatmapLayer);
-      });
+    if (view === "classic") {
+      drawClassicHeat(data);
+    } else {
+      drawGridHeat(data);
     }
+    if (mode === "district") addDistrictSummaryMarkers(data);
 
-    // อัปเดต metadata
     if (!data.point_count) {
       $("status").textContent = t("heatmapUnavailable");
       $("status").className = "status";
@@ -948,7 +1031,8 @@ async function loadHeatMap() {
     }
 
     const modeLabel = mode === "district" ? "District" : (mode === "community" ? "Community" : "Urban");
-    const metaText = `${data.point_count} cells | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${data.year} ${t(data.scenario)}`;
+    const viewLabel = view === "classic" ? t("classicView") : t("gridView");
+    const metaText = `${data.point_count} cells | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${viewLabel} | ${data.year} ${t(data.scenario)}`;
     $("heatmap-meta").textContent = metaText;
     $("heatmap-meta").style.color = "#2c7bb6";
     $("status").textContent = `✓ ${t("heatmapLoaded")}`;
@@ -997,6 +1081,9 @@ $("year").addEventListener("change", () => {
   loadHeatMap();
 });
 $("heatmap_mode").addEventListener("change", () => {
+  loadHeatMap();
+});
+$("heatmap_view").addEventListener("change", () => {
   loadHeatMap();
 });
 

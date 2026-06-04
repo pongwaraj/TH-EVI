@@ -53,3 +53,34 @@ def test_district_heatmap_normalizes_within_each_district():
     assert fang_points
     assert max(point["local_intensity"] for point in fang_points) == 1.0
     assert max(point["display_intensity"] for point in fang_points) >= 0.55
+
+
+def test_chiang_mai_district_mode_covers_all_25_districts():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=2.0,
+        mode="district",
+    )
+
+    district_names = {summary["district_name"] for summary in result["district_summaries"]}
+    assert len(district_names) == 25
+    assert {
+        "Chai Prakan",
+        "Galyani Vadhana",
+        "Mae Chaem",
+        "Omkoi",
+        "Wiang Haeng",
+    }.issubset(district_names)
+
+
+def test_chiang_mai_urban_mode_reaches_key_border_corridors():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=2.0,
+        mode="urban",
+    )
+
+    district_names = {point["district_name"] for point in result["points"] if point.get("district_name")}
+    assert {"Doi Saket", "Saraphi", "Chai Prakan", "Chiang Dao", "Mae Ai", "Phrao"}.issubset(district_names)
