@@ -221,6 +221,18 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
             "pea_volta_hub_chiangmai_gmaps",
         },
         {
+            "ptt_ev_don_chan_osm",
+            "ptt_ev_station_nong_hoi",
+        },
+        {
+            "ptt_ev_city_osm",
+            "ptt_ev_station_mahidon",
+        },
+        {
+            "mg_supercharge_south_osm",
+            "shell_recharge_mahidol",
+        },
+        {
             "charging_station_cmu",
             "egat_cmu_area_osm",
         },
@@ -231,6 +243,7 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
         {
             "ev_station_pluz_green_park",
             "greenbus_fair_super_charge",
+            "fair_super_charge_greenbus",
         },
     ]
     alias_lookup = {
@@ -261,8 +274,17 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
             continue
         if str(row.get("connector_summary") or "").strip().lower() == "not_charger":
             continue
-
         station_id = str(row.get("station_id") or "").strip()
+        if station_id in {"byd_city_osm", "mg_supercharge_city_osm"}:
+            continue
+        source_type = str(row.get("source_type") or "").strip().lower()
+        operator = str(row.get("operator") or "").strip().lower()
+        network = str(row.get("network") or "").strip().lower()
+        if source_type == "osm" and operator in {"", "unknown"} and network in {"", "unknown"}:
+            continue
+        if network == "private / hotel" and str(row.get("verification_status") or "").strip().lower() not in {"verified", "partial"}:
+            continue
+
         if not station_id:
             continue
         key = alias_lookup.get(station_id, station_id)
@@ -281,13 +303,6 @@ def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     rows = _read_csv(DATA_DIR / f"poi_{slug}_seed.csv")
     if slug == "lampang" and not rows:
         rows.extend(_read_csv(DATA_DIR / "poi_lampang_city_seed.csv"))
-    if slug == "chiang_mai":
-        for extra in (
-            "poi_central_airport_seed.csv",
-            "poi_mahachok_park_seed.csv",
-            "poi_punn_suk_sankamphaeng_seed.csv",
-        ):
-            rows.extend(_read_csv(DATA_DIR / extra))
     return rows
 
 

@@ -264,6 +264,42 @@ def test_chiang_mai_poi_loader_covers_ring_road_anchor_areas():
         "kad_farang_village",
         "meechok_plaza",
         "theppanya_hospital",
+        "central_chiangmai_airport",
+        "chiang_mai_airport",
+        "chiang_mai_airport_arrivals_pickup",
+        "chiang_mai_airport_rental_car_cluster",
+        "mahidol_airport_frontage",
+        "rajavej_hospital",
+        "mahachok_park",
+        "punn_suk_park",
+    }.issubset(poi_ids)
+
+
+def test_chiang_mai_poi_loader_covers_city_core_and_inner_ring_anchors():
+    pois = load_pois_for_province(CHIANG_MAI)
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "nimman_commercial_spine",
+        "kad_na_mor_market",
+        "chiang_mai_ram_hospital",
+        "chiang_mai_gate_market",
+        "warorot_market",
+        "chiang_mai_night_bazaar",
+        "anusarn_market",
+        "thapae_gate",
+        "airport_operations_support_cluster",
+        "bangkok_hospital_chiang_mai",
+        "chiang_mai_business_park",
+        "chiang_mai_bus_terminal_3",
+        "central_festival_chiangmai",
+        "big_c_extra_chiang_mai",
+        "lanna_hospital",
+        "nakornping_hospital",
+        "lotus_kham_tiang",
+        "makro_chiang_mai",
+        "mccormick_hospital",
+        "prince_royal_college",
     }.issubset(poi_ids)
 
 
@@ -283,6 +319,16 @@ def test_chiang_mai_poi_loader_covers_west_121_anchor_areas():
     }.issubset(poi_ids)
 
 
+def test_chiang_mai_poi_loader_excludes_site_specific_noise_categories():
+    pois = load_pois_for_province(CHIANG_MAI)
+    categories = {str(row["category"]).strip() for row in pois}
+
+    assert "residential" not in categories
+    assert "restaurant" not in categories
+    assert "hotel" not in categories
+    assert "hotel_condo" not in categories
+
+
 def test_chiang_mai_competitor_loader_dedupes_known_duplicate_sites():
     competitors = load_competitors_for_province(CHIANG_MAI)
     station_ids = {row["station_id"] for row in competitors}
@@ -298,9 +344,84 @@ def test_chiang_mai_competitor_loader_dedupes_known_duplicate_sites():
         "egat_cmu_area_osm",
     } & station_ids) == 1
     assert len({
+        "greenbus_fair_super_charge",
+        "fair_super_charge_greenbus",
+        "ev_station_pluz_green_park",
+    } & station_ids) == 1
+    assert len({
         "pea_volta_doi_saket",
         "pea_volta_doi_saket_side_osm",
     } & station_ids) == 1
+
+
+def test_chiang_mai_competitor_loader_keeps_verified_city_fast_charge_sites():
+    competitors = load_competitors_for_province(CHIANG_MAI)
+    station_ids = {row["station_id"] for row in competitors}
+
+    assert {
+        "pea_volta_hub_chiangmai_gmaps",
+        "tesla_supercharger_big_c_extra",
+        "ea_anywhere_my_hip_condo",
+        "fair_super_charge_greenbus",
+        "elexa_pt_chiangmai8",
+    }.issubset(station_ids)
+
+
+def test_chiang_mai_competitor_loader_keeps_named_city_sites_beyond_google_verified():
+    competitors = load_competitors_for_province(CHIANG_MAI)
+    station_ids = {row["station_id"] for row in competitors}
+
+    assert {
+        "ptt_ev_station_mahidon",
+        "ptt_ev_station_nong_hoi",
+        "ptt_ev_station_don_jan",
+        "ptt_ev_station_ruamchock",
+        "chargenow_airport_plaza",
+        "super_ev_hub_cultural_center",
+        "elex_max_chiangmai_ram",
+        "ev_egat_one_nimman",
+        "onion_maya",
+        "ginka_star_avenue",
+        "onion_centralfestival",
+        "shell_recharge_mahidol",
+        "pea_volta_bangchak_superhighway",
+        "altervim_lotus_khamtieng",
+        "ea_anywhere_chanasin",
+        "ea_anywhere_cbp",
+        "evolt_thung_hotel",
+        "ev_charger_wasabi_parkc",
+        "ptt_ev_station_payap",
+    }.issubset(station_ids)
+
+
+def test_chiang_mai_competitor_loader_drops_generic_unknown_osm_points():
+    competitors = load_competitors_for_province(CHIANG_MAI)
+    station_ids = {row["station_id"] for row in competitors}
+
+    assert "osm_ev_charging_sansai_near_1" not in station_ids
+    assert "osm_ev_charging_faham_near_1" not in station_ids
+    assert "osm_ev_station_north_1" not in station_ids
+    assert "moose_hotel_ac" not in station_ids
+    assert "ptt_ev_city_osm" not in station_ids
+    assert "ptt_ev_don_chan_osm" not in station_ids
+    assert "byd_city_osm" not in station_ids
+    assert "mg_supercharge_city_osm" not in station_ids
+
+
+def test_airport_core_competitors_include_super_ev_hub():
+    result = analyze_click_location(
+        lat=18.7682469,
+        lon=98.9760292,
+        province=CHIANG_MAI,
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    competitor_names = {item["name"] for item in result["top_competitors"]}
+    assert "Super EV Hub Chiang Mai Cultural Center" in competitor_names
 
 
 def test_click_analysis_rejects_water_surface(monkeypatch):
