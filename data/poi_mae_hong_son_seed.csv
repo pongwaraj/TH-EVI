@@ -7,6 +7,10 @@ tham_pla,Tham Pla National Park / Fish Cave,tourism,19.3933,97.8528,OpenStreetMa
 pai_canyon,Pai Canyon,tourism,19.3183,98.4450,OpenStreetMap,high,Famous red-rock canyon viewpoint near Pai.
 tham_lot,Tham Lot Cave Nature Park,tourism,19.4619,98.2642,OpenStreetMap,medium_high,Large limestone cave system in Pang Mapha district.
 mae_sariang_center,Mae Sariang city center,district_center,18.1619,97.9333,OpenStreetMap,medium,South district center on Route 108.
+khun_yuam_center,Khun Yuam town center,district_center,18.8283,97.9389,seed_estimate + district context,medium,Mid-province junction town between Mueang and Mae Sariang on the main corridor.
+khun_yuam_hospital,Khun Yuam Hospital,hospital,18.8288,97.9405,seed_estimate + district context,medium,Healthcare anchor helping Khun Yuam read as year-round service demand rather than pass-through only.
+mae_la_noi_center,Mae La Noi district center,district_center,18.3881,97.9325,seed_estimate + district context,medium,Community town on Route 108 south corridor.
+mae_la_noi_hospital,Mae La Noi Hospital,hospital,18.3890,97.9340,seed_estimate + district context,medium,Healthcare anchor for the Mae La Noi corridor catchment.
 mhs_hospital,Mae Hong Son Hospital,hospital,19.2947,97.9631,OpenStreetMap,high,Main provincial hospital in Mae Hong Son city.
 pai_hospital,Pai Hospital,hospital,19.3592,98.4317,OpenStreetMap,high,District hospital serving Pai area.
 mhs_bus_terminal,Mae Hong Son Bus Terminal,bus_station,19.2983,97.9706,OpenStreetMap,medium_high,Interprovincial bus terminal connecting to Chiang Mai.

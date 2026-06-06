@@ -1,0 +1,3 @@
+exclusion_id,name,center_lat,center_lon,radius_km,exclusion_type,confidence,reason,last_verified_date
+lp_mae_moh_lignite_mine,Mae Moh lignite mine core,18.3000,99.6700,5.8,mine,high,"Open-pit lignite mine area where public EV station siting is not plausible; exclude entirely from Lampang heat map.",2026-06-05
+lp_chae_son_forest_core,Chae Son forest and mountain core,18.8330,99.5750,7.0,forest,medium,"Protected forest/highland core where public EV charging demand is not suitable for fixed-station rollout.",2026-06-05

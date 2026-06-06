@@ -4,6 +4,8 @@ lamphun_bus_terminal,Lamphun Bus Terminal,bus_station,18.5680,99.0040,seed_estim
 mueang_lamphun_market,Mueang Lamphun Market,market_tourism,18.5740,99.0100,seed_estimate,low_medium,"City center market and fresh-food destination."
 big_c_lamphun,Big C Lamphun,supermarket,18.5550,99.0200,public listing + seed coordinate,medium,"Major retail anchor on Route 106 south of city center."
 lotus_lamphun,Lotus's Lamphun,supermarket,18.5450,99.0220,public listing + seed coordinate,medium,"Supermarket anchor on Route 106 south side."
+jampha_shopping_mall_lamphun,Jampha Shopping Mall Lamphun,shopping_mall,18.5485,99.0285,public listing + local retail context,medium_high,"Major Lamphun mall and cinema destination in Wiang Yong; should carry stronger destination weight than a generic city-market anchor."
+lamphun_chatuchak_market,Lamphun Chatuchak Market,market_tourism,18.5470,99.0310,public market listing + local context,medium_high,"Large market cluster beside the Jampha retail area in Pa Sak/Wiang Yong catchment; strong evening and weekend activity."
 lamphun_hospital,Lamphun Hospital,hospital,18.5650,99.0050,public facts,high,"Major provincial hospital near city center."
 hariphunchai_temple,Wat Phra That Hariphunchai,tourism,18.5765,99.0090,OpenStreetMap,high,"Major tourism and cultural anchor in Lamphun city."
 phra_that_hariphunchai_park,Hariphunchai National Museum / park,tourism_museum,18.5760,99.0080,OpenStreetMap,medium_high,"Historical museum and cultural park in city center."

@@ -5,7 +5,9 @@ import th_evi.spatial as spatial
 from th_evi.spatial import (
     analyze_click_location,
     assess_surface_access,
+    business_area_field,
     competitor_penalty_field,
+    load_business_areas_for_province,
     load_competitors_for_province,
     load_pois_for_province,
     poi_attraction_field,
@@ -79,6 +81,26 @@ def test_zone_influence_decays_and_feeds_click_sessions():
 
     assert near_score > far_score
     assert near_rows[0]["name"] == "Hot Retail Zone"
+
+
+def test_business_area_field_supports_urban_fringe_and_corridor_context():
+    areas = [
+        {
+            "name": "Ring 2 urban fringe",
+            "area_type": "urban_fringe",
+            "center_lat": "18.74",
+            "center_lon": "98.94",
+            "radius_km": "4.0",
+            "demand_pool_base": "120",
+            "confidence": "high",
+        }
+    ]
+
+    near_score, near_rows = business_area_field(18.74, 98.94, areas, scenario="base")
+    far_score, _ = business_area_field(18.84, 99.14, areas, scenario="base")
+
+    assert near_score > far_score
+    assert near_rows[0]["area_type"] == "urban_fringe"
 
 
 def test_click_analysis_combines_base_poi_and_competitor_fields():
@@ -170,7 +192,9 @@ def test_surface_access_uses_low_relevance_for_weak_but_real_context(monkeypatch
         pois=pois,
         competitors=competitors,
         zones=zones,
+        business_areas=[],
         zone_score=8.0,
+        business_area_score=0.0,
         poi_field_score=6.0,
     )
 
@@ -265,6 +289,37 @@ def test_chiang_mai_poi_loader_covers_ring_road_anchor_areas():
         "meechok_plaza",
         "theppanya_hospital",
     }.issubset(poi_ids)
+
+
+def test_chiang_mai_business_area_loader_covers_ring2_and_ring3():
+    business_areas = load_business_areas_for_province(CHIANG_MAI)
+    business_area_ids = {row["business_area_id"] for row in business_areas}
+
+    assert {
+        "cm_ring2_mae_hia_hang_dong",
+        "cm_ring2_fa_ham_san_sai",
+        "cm_ring2_sankamphaeng_saraphi",
+        "cm_ring3_hang_dong_saraphi",
+        "cm_ring3_doi_saket_sankamphaeng",
+        "cm_ring3_sansai_maerim",
+    }.issubset(business_area_ids)
+
+
+def test_click_analysis_ring3_corridor_keeps_business_area_signal():
+    result = analyze_click_location(
+        lat=18.8275,
+        lon=99.1595,
+        province=CHIANG_MAI,
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["business_area_boost_sessions"] > 0
+    assert result["top_business_areas"]
+    assert any("Ring 3" in item["name"] for item in result["top_business_areas"])
 
 
 def test_chiang_mai_poi_loader_covers_west_121_anchor_areas():
@@ -409,6 +464,105 @@ def test_building_lookup_fallback_when_service_unavailable(monkeypatch):
     assert result["is_building"] is False
     assert result["surface_type"] == "unknown"
     assert "unavailable" in result["warning"].lower()
+
+
+def test_chiang_rai_poi_loader_prioritizes_ban_du_and_mae_chan_growth_areas():
+    pois = load_pois_for_province("Chiang Rai")
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "ban_du_growth_axis",
+        "ban_du_municipal_market",
+        "chiang_rai_rajabhat_university",
+        "mae_fah_luang_university",
+        "mae_chan_town_center",
+        "lotus_mae_chan",
+        "mae_chan_hospital",
+    }.issubset(poi_ids)
+
+
+def test_chiang_rai_competitor_loader_includes_confirmed_central_tesla():
+    competitors = load_competitors_for_province("Chiang Rai")
+    stations = {row["station_id"]: row for row in competitors}
+
+    assert "tesla_supercharger_central_chiang_rai" in stations
+    assert stations["tesla_supercharger_central_chiang_rai"]["verification_status"] == "verified"
+    assert stations["tesla_supercharger_central_chiang_rai"]["network"] == "Tesla Supercharger"
+
+
+def test_lampang_poi_loader_covers_retail_gateway_and_mae_mo_growth_areas():
+    pois = load_pois_for_province("Lampang")
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "lotus_lampang",
+        "makro_lampang",
+        "lampang_superhighway_gateway",
+        "hang_chat_town_center",
+        "mae_mo_town_center",
+        "mae_mo_hospital",
+    }.issubset(poi_ids)
+
+
+def test_phayao_poi_loader_covers_city_retail_route1_and_chiang_kham():
+    pois = load_pois_for_province("Phayao")
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "tops_plaza_phayao",
+        "lotus_phayao",
+        "phayao_university_medical_center",
+        "chiang_kham_hospital",
+        "lotus_chiang_kham",
+    }.issubset(poi_ids)
+
+
+def test_lamphun_poi_loader_includes_jampha_and_chatuchak_market():
+    pois = load_pois_for_province("Lamphun")
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "jampha_shopping_mall_lamphun",
+        "lamphun_chatuchak_market",
+    }.issubset(poi_ids)
+
+
+def test_phrae_poi_loader_covers_city_retail_and_den_chai_gateway():
+    pois = load_pois_for_province("Phrae")
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "big_c_supercenter_phrae",
+        "global_house_phrae",
+        "makro_phrae",
+        "den_chai_yupparaj_hospital",
+        "ptt_den_chai_gateway",
+    }.issubset(poi_ids)
+
+
+def test_nan_poi_loader_covers_city_retail_and_north_service_towns():
+    pois = load_pois_for_province("Nan")
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "makro_nan",
+        "cad_nan_lifestyle",
+        "wiang_sa_hospital",
+        "lotus_pua",
+        "tha_wang_pha_hospital",
+    }.issubset(poi_ids)
+
+
+def test_mae_hong_son_poi_loader_covers_mid_and_south_service_towns():
+    pois = load_pois_for_province("Mae Hong Son")
+    poi_ids = {row["poi_id"] for row in pois}
+
+    assert {
+        "khun_yuam_center",
+        "khun_yuam_hospital",
+        "mae_la_noi_center",
+        "mae_la_noi_hospital",
+    }.issubset(poi_ids)
 
 
 def test_click_analysis_api_returns_explainable_components():

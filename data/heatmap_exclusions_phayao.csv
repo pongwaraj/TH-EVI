@@ -1,0 +1,4 @@
+exclusion_id,name,center_lat,center_lon,radius_km,exclusion_type,confidence,reason,last_verified_date
+py_kwan_phayao_open_water_north,Kwan Phayao open-water north,19.1880,99.9180,3.0,water,high,"Open-water surface where fixed public EV charging demand is impossible; exclude heat-map points in the northern lake body.",2026-06-05
+py_kwan_phayao_open_water_central,Kwan Phayao open-water central,19.1710,99.9210,3.4,water,high,"Open-water surface where fixed public EV charging demand is impossible; exclude heat-map points in the central lake body.",2026-06-05
+py_kwan_phayao_open_water_south,Kwan Phayao open-water south,19.1530,99.9210,2.8,water,high,"Open-water surface where fixed public EV charging demand is impossible; exclude heat-map points in the southern lake body.",2026-06-05

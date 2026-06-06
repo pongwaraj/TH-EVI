@@ -112,6 +112,13 @@ a { color: #0b65c2; text-decoration: none; }
           <option value="classic" data-i18n-option="classicView">Classic Heat</option>
         </select>
       </label>
+<label><span data-i18n="heatmapResolution">ความละเอียด Heat Map</span>
+<select id="heatmap_resolution">
+<option value="0.25" data-i18n-option="resolution025">0.25 km</option>
+<option value="0.5" data-i18n-option="resolution05">0.5 km</option>
+<option value="1.0" selected data-i18n-option="resolution10">1.0 km</option>
+</select>
+</label>
     </div>
     <div class="grid" style="margin-top:8px">
       <label><span data-i18n="heatmapMode">รูปแบบ Heat Map</span>
@@ -128,10 +135,10 @@ a { color: #0b65c2; text-decoration: none; }
   <form id="analysis-form">
     <div class="section">
       <h2 data-i18n="candidateSite">พื้นที่ที่จะวิเคราะห์</h2>
-      <label><span data-i18n="siteName">ชื่อสถานที่</span><input id="name" required value="TCE Project Headquarters"></label>
+      <label><span data-i18n="siteName">ชื่อสถานที่</span><input id="name" required placeholder="เช่น Lotus's ลำพูน / PTT เด่นชัย"></label>
       <div class="grid">
-        <label><span data-i18n="latitude">ละติจูด</span><input id="lat" type="number" step="0.000001" required value="18.754992"></label>
-        <label><span data-i18n="longitude">ลองจิจูด</span><input id="lon" type="number" step="0.000001" required value="99.036817"></label>
+        <label><span data-i18n="latitude">ละติจูด</span><input id="lat" type="number" step="0.000001" required placeholder="คลิกบนแผนที่หรือวางพิกัด"></label>
+        <label><span data-i18n="longitude">ลองจิจูด</span><input id="lon" type="number" step="0.000001" required placeholder="คลิกบนแผนที่หรือวางพิกัด"></label>
       </div>
       <div class="grid">
         <label><span data-i18n="province">จังหวัด</span>
@@ -149,9 +156,9 @@ a { color: #0b65c2; text-decoration: none; }
             <option value="อุบลราชธานี">อุบลราชธานี</option>
           </select>
         </label>
-        <label><span data-i18n="zone">โซน/ย่าน</span><input id="zone" value="TCE Project HQ / Chiang Mai"></label>
+        <label><span data-i18n="zone">โซน/ย่าน</span><input id="zone" placeholder="เช่น เมืองชั้นใน / Route 11 / บ้านดู่"></label>
       </div>
-      <label><span data-i18n="notes">หมายเหตุ</span><textarea id="notes">TCE Project headquarters with SINEXEL 30 kW single-gun charger.</textarea></label>
+      <label><span data-i18n="notes">หมายเหตุ</span><textarea id="notes" placeholder="เช่น retail cluster, community mall, travel corridor"></textarea></label>
       <div class="muted" style="margin-top:6px" data-i18n="coordinateHelp">&#128205; คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps</div>
     </div>
 
@@ -320,11 +327,15 @@ const translations = {
     loadHeatmap: "โหลด Heat Map",
     heatmapMode: "รูปแบบ Heat Map",
     heatmapView: "มุมมอง Heat Map",
+    heatmapResolution: "ความละเอียด Heat Map",
     urbanHotZones: "พื้นที่เมืองและการค้า",
     communityCoverage: "พื้นที่บริการชุมชน",
     districtPotential: "ศักยภาพรายอำเภอ",
     gridView: "เซลล์สี่เหลี่ยม",
     classicView: "แบบฟุ้งมาตรฐาน",
+    resolution025: "ละเอียดสูง 0.25 กม.",
+    resolution05: "มาตรฐาน 0.5 กม.",
+    resolution10: "กว้าง 1.0 กม.",
     heat: "Heat",
     notLoaded: "ยังไม่ได้โหลด",
     latestResult: "ผลวิเคราะห์ล่าสุด",
@@ -417,11 +428,15 @@ const translations = {
     loadHeatmap: "Load Heat Map",
     heatmapMode: "Heat Map Mode",
     heatmapView: "Heat Map View",
+    heatmapResolution: "Heat Map Resolution",
     urbanHotZones: "Urban and Commercial",
     communityCoverage: "Community Coverage",
     districtPotential: "District Potential",
     gridView: "Grid Cells",
     classicView: "Classic Heat",
+    resolution025: "Fine 0.25 km",
+    resolution05: "Standard 0.5 km",
+    resolution10: "Wide 1.0 km",
     heat: "Heat",
     notLoaded: "Not loaded",
     latestResult: "Latest Result",
@@ -526,6 +541,8 @@ const num = id => {
 const bool = id => $(id).checked;
 const fmt = value => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
 const HEATMAP_MIN_VISIBLE_INTENSITY = 0.30;
+let activeHeatmapRequestId = 0;
+let activeHeatmapController = null;
 const HEATMAP_COLOR_STOPS = [
   { at: 0.30, color: "#fff3bf" },
   { at: 0.45, color: "#ffd166" },
@@ -559,6 +576,22 @@ function readCandidateState() {
   }
 }
 
+function isLegacyCandidateState(state) {
+  if (!state || typeof state !== "object") return false;
+  const name = (state.name || "").trim();
+  const zone = (state.zone || "").trim();
+  const notes = (state.notes || "").trim();
+  const lat = String(state.lat || "").trim();
+  const lon = String(state.lon || "").trim();
+  return (
+    name === "TCE Project Headquarters" ||
+    name === "Smoke Test Central Airport" ||
+    zone === "TCE Project HQ / Chiang Mai" ||
+    notes === "TCE Project headquarters with SINEXEL 30 kW single-gun charger." ||
+    (lat === "18.754992" && lon === "99.036817" && !name && !zone && !notes)
+  );
+}
+
 function saveCandidateState() {
   try {
     const state = {
@@ -578,6 +611,14 @@ function saveCandidateState() {
 function restoreCandidateState() {
   const state = readCandidateState();
   if (!state) return false;
+  if (isLegacyCandidateState(state)) {
+    try {
+      window.localStorage.removeItem(CANDIDATE_STATE_KEY);
+    } catch (err) {
+      // Ignore storage errors; stale drafts should never block the app.
+    }
+    return false;
+  }
   if (state.name) $("name").value = state.name;
   if (state.lat) $("lat").value = state.lat;
   if (state.lon) $("lon").value = state.lon;
@@ -735,6 +776,7 @@ function payload() {
 }
 
 function setDraftMarker(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
   if (draftMarker) draftMarker.remove();
   draftMarker = L.marker([lat, lon], { draggable: true }).addTo(map);
   draftMarker.bindPopup(t("candidatePoint")).openPopup();
@@ -1005,15 +1047,23 @@ async function loadHeatMap() {
   const province = apiProvinceValue();
   const mode = $("heatmap_mode").value || "urban";
   const view = $("heatmap_view").value || "grid";
+  const resolution = parseFloat($("heatmap_resolution").value || "0.5") || 0.5;
+  const requestId = ++activeHeatmapRequestId;
+  if (activeHeatmapController) activeHeatmapController.abort();
+  activeHeatmapController = new AbortController();
   $("heatmap-btn").disabled = true;
   $("status").textContent = t("loadingHeatmap");
   $("status").className = "status";
   try {
     const year = num("year") || new Date().getFullYear();
     const scenario = $("scenario").value || "base";
-    const resp = await fetch(`/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=${scenario}&mode=${mode}&resolution_km=1.0`);
+    const resp = await fetch(
+      `/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=${scenario}&mode=${mode}&resolution_km=${encodeURIComponent(resolution)}`,
+      { signal: activeHeatmapController.signal }
+    );
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
+    if (requestId !== activeHeatmapRequestId) return;
     heatmapLayer.clearLayers();
 
     if (view === "classic") {
@@ -1032,24 +1082,28 @@ async function loadHeatMap() {
 
     const modeLabel = mode === "district" ? "District" : (mode === "community" ? "Community" : "Urban");
     const viewLabel = view === "classic" ? t("classicView") : t("gridView");
-    const metaText = `${data.point_count} cells | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${viewLabel} | ${data.year} ${t(data.scenario)}`;
+    const metaText = `${data.point_count} cells | ${resolution.toFixed(2)} km | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${viewLabel} | ${data.year} ${t(data.scenario)}`;
     $("heatmap-meta").textContent = metaText;
     $("heatmap-meta").style.color = "#2c7bb6";
     $("status").textContent = `✓ ${t("heatmapLoaded")}`;
     $("status").style.color = "#2f855a";
-    if (mode === "district" && data.bounds) {
+    if (data.bounds) {
       map.fitBounds([
         [data.bounds.lat_min, data.bounds.lon_min],
         [data.bounds.lat_max, data.bounds.lon_max]
       ], { padding: [18, 18] });
     }
   } catch (err) {
+    if (err && err.name === "AbortError") return;
     heatmapLayer.clearLayers();
     $("heatmap-meta").textContent = t("heatmapUnavailable");
     $("status").textContent = `⚠ ${err.message}`;
     $("status").className = "status danger";
   } finally {
-    $("heatmap-btn").disabled = false;
+    if (requestId === activeHeatmapRequestId) {
+      $("heatmap-btn").disabled = false;
+      activeHeatmapController = null;
+    }
   }
 }
 
@@ -1086,6 +1140,9 @@ $("heatmap_mode").addEventListener("change", () => {
 $("heatmap_view").addEventListener("change", () => {
   loadHeatMap();
 });
+$("heatmap_resolution").addEventListener("change", () => {
+  loadHeatMap();
+});
 
 $("province").addEventListener("change", () => {
   loadHeatMap();
@@ -1110,14 +1167,14 @@ try {
   applyLanguage(currentLang);
   $("year").value = new Date().getFullYear();
   restoreCandidateState();
-  setDraftMarker(Number($("lat").value), Number($("lon").value));
-  map.setView([Number($("lat").value), Number($("lon").value)], 15);
+  const draftLat = Number($("lat").value);
+  const draftLon = Number($("lon").value);
+  if (Number.isFinite(draftLat) && Number.isFinite(draftLon)) {
+    setDraftMarker(draftLat, draftLon);
+    map.setView([draftLat, draftLon], 15);
+  }
   loadReferenceLayers();
   loadSavedSites();
-
-  setTimeout(function() {
-    try { loadHeatMap(); } catch (err) { console.error("Heat map load error:", err); }
-  }, 500);
 } catch (err) {
   console.error("Initialization error:", err);
 }

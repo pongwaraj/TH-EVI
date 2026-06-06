@@ -71,6 +71,7 @@ POI_CAPTURE_FACTOR = 0.22
 # capture only a slice of the zone field, so this sits below the POI capture
 # factor but still makes click sessions respond to visible heat/zone scores.
 ZONE_CAPTURE_FACTOR = 0.10
+BUSINESS_AREA_CAPTURE_FACTOR = 0.12
 SECONDARY_ZONE_SHARE = 0.25
 SPATIAL_OVERLAP_SHARE = 0.35
 MAX_COMPETITOR_PENALTY_SHARE = 0.62
@@ -80,6 +81,7 @@ SURFACE_REJECT_DISTANCE_KM = 2.8
 SURFACE_LOW_RELEVANCE_DISTANCE_KM = 1.6
 ZONE_ACCESS_DISTANCE_KM = 2.2
 ZONE_URBAN_SCORE_THRESHOLD = 18.0
+BUSINESS_AREA_URBAN_SCORE_THRESHOLD = 12.0
 POI_URBAN_SCORE_THRESHOLD = 16.0
 LOW_RELEVANCE_CONTEXT_DISTANCE_KM = 4.5
 LOW_RELEVANCE_CONTEXT_SCORE = 4.0
@@ -105,6 +107,17 @@ ACCESS_SUPPORT_CATEGORIES = {
     "tourism",
     "transport",
     "transport_corridor",
+}
+
+BUSINESS_AREA_TYPE_RULES = {
+    "urban_fringe": {
+        "suggested_location_type": "destination",
+        "access_distance_km": 3.0,
+    },
+    "periurban_connector": {
+        "suggested_location_type": "highway",
+        "access_distance_km": 3.6,
+    },
 }
 
 URBAN_SIGNAL_CATEGORIES = {
@@ -313,6 +326,22 @@ def load_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
     if not slug:
         return []
     return _read_csv(DATA_DIR / f"hot_zones_{slug}.csv")
+
+
+@lru_cache(maxsize=32)
+def load_business_areas_for_province(province: str) -> list[dict[str, Any]]:
+    slug = _slug_for_province(province)
+    if not slug:
+        return []
+    return _read_csv(DATA_DIR / f"business_areas_{slug}.csv")
+
+
+@lru_cache(maxsize=32)
+def load_heatmap_exclusions_for_province(province: str) -> list[dict[str, Any]]:
+    slug = _slug_for_province(province)
+    if not slug:
+        return []
+    return _read_csv(DATA_DIR / f"heatmap_exclusions_{slug}.csv")
 
 
 @lru_cache(maxsize=32)
@@ -614,6 +643,54 @@ def zone_influence_field(
     return round(total, 1), contributions
 
 
+def business_area_field(
+    lat: float,
+    lon: float,
+    business_areas: list[dict[str, Any]],
+    scenario: str = "base",
+) -> tuple[float, list[dict[str, Any]]]:
+    total = 0.0
+    contributions = []
+    scenario_key = f"demand_pool_{scenario}"
+    for area in business_areas:
+        area_lat = _float_or_none(area.get("center_lat"))
+        area_lon = _float_or_none(area.get("center_lon"))
+        radius = _float_or_none(area.get("radius_km"))
+        demand_pool = _float_or_none(area.get(scenario_key))
+        if area_lat is None or area_lon is None or radius is None or demand_pool is None:
+            continue
+
+        area_type = str(area.get("area_type") or "urban_fringe").strip()
+        rules = BUSINESS_AREA_TYPE_RULES.get(area_type, BUSINESS_AREA_TYPE_RULES["urban_fringe"])
+        radius = max(radius, 0.1)
+        distance = km_between(lat, lon, area_lat, area_lon)
+        if distance > radius * 1.7:
+            continue
+
+        weight = max(0.0, 1.0 - distance / (radius * 1.7)) ** 2
+        score = demand_pool * weight
+        if score <= 0.2:
+            continue
+
+        total += score
+        contributions.append({
+            "name": area.get("name") or area.get("business_area_id") or "Business area",
+            "area_type": area_type,
+            "distance_km": round(distance, 2),
+            "radius_km": round(radius, 1),
+            "area_score": round(score, 1),
+            "confidence": area.get("confidence") or "medium",
+            "suggested_location_type": rules["suggested_location_type"],
+        })
+
+    contributions.sort(key=lambda item: item["area_score"], reverse=True)
+    if contributions:
+        primary = contributions[0]["area_score"]
+        secondary = max(0.0, total - primary) * SECONDARY_ZONE_SHARE
+        total = primary + secondary
+    return round(total, 1), contributions
+
+
 def district_node_field(
     lat: float,
     lon: float,
@@ -746,6 +823,7 @@ def competitor_penalty_field(
 
 def _spatial_location_type(
     top_pois: list[dict[str, Any]],
+    top_business_areas: list[dict[str, Any]] | None = None,
     top_districts: list[dict[str, Any]] | None = None,
 ) -> str:
     categories = {item["category"] for item in top_pois[:3]}
@@ -753,6 +831,10 @@ def _spatial_location_type(
         return "highway"
     if "city_center" in categories:
         return "city_center"
+    for item in (top_business_areas or [])[:2]:
+        suggested = item.get("suggested_location_type")
+        if suggested in {"highway", "city_center", "destination", "suburban"}:
+            return str(suggested)
     for item in (top_districts or [])[:2]:
         suggested = item.get("suggested_location_type")
         if suggested in {"highway", "city_center", "destination", "suburban"}:
@@ -769,7 +851,9 @@ def assess_surface_access(
     pois: list[dict[str, Any]],
     competitors: list[dict[str, Any]],
     zones: list[dict[str, Any]],
+    business_areas: list[dict[str, Any]],
     zone_score: float,
+    business_area_score: float,
     poi_field_score: float,
 ) -> dict[str, Any]:
     water = lookup_water_surface(lat, lon)
@@ -824,6 +908,13 @@ def assess_surface_access(
         lat_key="center_lat",
         lon_key="center_lon",
     )
+    business_area_km = _nearest_distance_km(
+        lat,
+        lon,
+        business_areas,
+        lat_key="center_lat",
+        lon_key="center_lon",
+    )
 
     access_ok = any(
         value is not None and value <= threshold
@@ -831,14 +922,16 @@ def assess_surface_access(
             (access_anchor_km, SURFACE_REJECT_DISTANCE_KM),
             (competitor_km, SURFACE_LOW_RELEVANCE_DISTANCE_KM),
             (zone_km, ZONE_ACCESS_DISTANCE_KM),
+            (business_area_km, SURFACE_REJECT_DISTANCE_KM),
         )
     )
     weak_context_present = any(
         value is not None and value <= LOW_RELEVANCE_CONTEXT_DISTANCE_KM
         for value in (urban_anchor_km, competitor_km, zone_km)
-    ) or zone_score >= LOW_RELEVANCE_CONTEXT_SCORE or poi_field_score >= LOW_RELEVANCE_CONTEXT_SCORE
+    ) or zone_score >= LOW_RELEVANCE_CONTEXT_SCORE or business_area_score >= LOW_RELEVANCE_CONTEXT_SCORE or poi_field_score >= LOW_RELEVANCE_CONTEXT_SCORE
     urban_eligible = (
         zone_score >= ZONE_URBAN_SCORE_THRESHOLD
+        or business_area_score >= BUSINESS_AREA_URBAN_SCORE_THRESHOLD
         or poi_field_score >= POI_URBAN_SCORE_THRESHOLD
         or (urban_anchor_km is not None and urban_anchor_km <= SURFACE_LOW_RELEVANCE_DISTANCE_KM)
     )
@@ -918,9 +1011,16 @@ def analyze_click_location(
     pois = load_pois_for_province(province)
     competitors = load_competitors_for_province(province)
     zones = load_hot_zones_for_province(province)
+    business_areas = load_business_areas_for_province(province)
     district_nodes = load_enriched_district_nodes(province)
 
     zone_score, zone_contributions = zone_influence_field(lat, lon, zones, scenario=scenario)
+    business_area_score, business_area_contributions = business_area_field(
+        lat,
+        lon,
+        business_areas,
+        scenario=scenario,
+    )
     poi_boost, poi_contributions = poi_attraction_field(lat, lon, pois)
     district_boost, district_contributions = district_node_field(lat, lon, district_nodes)
     competitor_penalty, competitor_contributions, skipped_competitors = competitor_penalty_field(
@@ -934,10 +1034,16 @@ def analyze_click_location(
         pois=pois,
         competitors=competitors,
         zones=zones,
+        business_areas=business_areas,
         zone_score=zone_score,
+        business_area_score=business_area_score,
         poi_field_score=poi_boost,
     )
-    location_type = _spatial_location_type(poi_contributions, district_contributions)
+    location_type = _spatial_location_type(
+        poi_contributions,
+        business_area_contributions,
+        district_contributions,
+    )
     location_result = LocationDemandModel(province=province).estimate(
         lat,
         lon,
@@ -947,15 +1053,20 @@ def analyze_click_location(
 
     raw_base_sessions = location_result["charging_sessions_per_day"] * factor
     capturable_zone_sessions = zone_score * ZONE_CAPTURE_FACTOR
+    capturable_business_area_sessions = business_area_score * BUSINESS_AREA_CAPTURE_FACTOR
     capturable_poi_sessions = poi_boost * POI_CAPTURE_FACTOR * factor
     capturable_district_sessions = district_boost * DISTRICT_NODE_CAPTURE_FACTOR * factor
-    spatial_boost = (
-        max(capturable_zone_sessions, capturable_poi_sessions)
-        + min(capturable_zone_sessions, capturable_poi_sessions) * SPATIAL_OVERLAP_SHARE
-    )
+    spatial_components = [
+        capturable_zone_sessions,
+        capturable_business_area_sessions,
+        capturable_poi_sessions,
+    ]
+    primary_spatial = max(spatial_components, default=0.0)
+    secondary_spatial = max(0.0, sum(spatial_components) - primary_spatial)
+    spatial_boost = primary_spatial + secondary_spatial * SPATIAL_OVERLAP_SHARE
     if mode in {"community", "district"}:
         spatial_boost += capturable_district_sessions
-    gross_area_demand = raw_base_sessions + (zone_score * factor) + (poi_boost * factor)
+    gross_area_demand = raw_base_sessions + (zone_score * factor) + (business_area_score * factor) + (poi_boost * factor)
     if mode in {"community", "district"}:
         gross_area_demand += district_boost * factor
     demand_share = 1.0
@@ -987,6 +1098,8 @@ def analyze_click_location(
         warnings.append("No POI seed file found for this province.")
     if not zones:
         warnings.append("No hot-zone seed file found for this province.")
+    if not business_areas:
+        warnings.append("No business-area seed file found for this province.")
     if mode in {"community", "district"} and not district_nodes:
         warnings.append("No district-node seed file found for this province.")
     if skipped_competitors:
@@ -1022,6 +1135,8 @@ def analyze_click_location(
         "gross_area_demand_sessions": round(gross_area_demand, 1),
         "raw_zone_score": round(zone_score, 1),
         "zone_boost_sessions": round(capturable_zone_sessions, 1),
+        "raw_business_area_score": round(business_area_score, 1),
+        "business_area_boost_sessions": round(capturable_business_area_sessions, 1),
         "raw_poi_field_sessions": round(poi_boost * factor, 1),
         "poi_boost_sessions": round(capturable_poi_sessions, 1),
         "raw_district_field_sessions": round(district_boost * factor, 1),
@@ -1037,9 +1152,11 @@ def analyze_click_location(
         "price_per_kwh": price_per_kwh,
         "top_pois": poi_contributions[:5],
         "top_zones": zone_contributions[:5],
+        "top_business_areas": business_area_contributions[:5],
         "top_districts": district_contributions[:5],
         "top_competitors": competitor_contributions[:5],
         "zone_count": len(zone_contributions),
+        "business_area_count": len(business_area_contributions),
         "poi_count": len(poi_contributions),
         "district_count": len(district_contributions),
         "competitor_count": len(competitor_contributions),

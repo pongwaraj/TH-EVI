@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from math import cos, exp, radians
 from typing import Any, Literal
 
 from .location import LocationDemandModel
 from .spatial import (
+    BUSINESS_AREA_CAPTURE_FACTOR,
     POI_CAPTURE_FACTOR,
     SCENARIO_FACTORS,
     ZONE_CAPTURE_FACTOR,
+    business_area_field,
     competitor_penalty_field,
     km_between,
+    load_business_areas_for_province,
     load_competitors_for_province,
     load_enriched_district_nodes,
+    load_heatmap_exclusions_for_province,
     load_hot_zones_for_province,
     load_pois_for_province,
     poi_attraction_field,
@@ -36,6 +41,31 @@ COMMUNITY_MIN_CONTEXT_SESSIONS = 2.4
 COMMUNITY_MIN_HEAT_SCORE = 4.0
 COMMUNITY_DISTANCE_FACTOR = 1.5
 DISTRICT_NODE_CAPTURE_FACTOR = 0.28
+SEASONAL_TOURISM_CATEGORIES = {
+    "tourism",
+    "tourism_museum",
+    "recreation",
+}
+COMMUNITY_SUPPORT_POI_CATEGORIES = {
+    "airport",
+    "bus_station",
+    "city_center",
+    "district_center",
+    "education",
+    "gas_station",
+    "hospital",
+    "hotel",
+    "hotel_condo",
+    "lifestyle",
+    "market_tourism",
+    "office",
+    "shopping_mall",
+    "supermarket",
+    "target_site",
+    "transport",
+    "transport_corridor",
+}
+SUPPORTIVE_POI_MAX_DISTANCE_KM = 4.5
 
 DISTRICT_NODE_RULES: dict[str, tuple[float, float, str]] = {
     "district_center": (18.0, 3.6, "destination"),
@@ -59,6 +89,7 @@ def _float_or_none(value: Any) -> float | None:
 
 def _location_type_for_heat(
     top_pois: list[dict[str, Any]],
+    top_business_areas: list[dict[str, Any]],
     top_districts: list[dict[str, Any]],
 ) -> str:
     categories = {item.get("category") for item in top_pois[:3]}
@@ -66,6 +97,10 @@ def _location_type_for_heat(
         return "highway"
     if "city_center" in categories:
         return "city_center"
+    for item in top_business_areas[:2]:
+        suggested = item.get("suggested_location_type")
+        if suggested in {"highway", "city_center", "destination", "suburban"}:
+            return str(suggested)
     for item in top_districts[:2]:
         suggested = item.get("suggested_location_type")
         if suggested in {"highway", "city_center", "destination", "suburban"}:
@@ -78,6 +113,7 @@ def _location_type_for_heat(
 def _iter_anchor_points(
     pois: list[dict[str, Any]],
     zones: list[dict[str, Any]],
+    business_areas: list[dict[str, Any]],
     competitors: list[dict[str, Any]],
     district_nodes: list[dict[str, Any]],
 ) -> list[tuple[float, float]]:
@@ -90,6 +126,11 @@ def _iter_anchor_points(
     for zone in zones:
         lat = _float_or_none(zone.get("center_lat"))
         lon = _float_or_none(zone.get("center_lon"))
+        if lat is not None and lon is not None:
+            anchors.append((lat, lon))
+    for area in business_areas:
+        lat = _float_or_none(area.get("center_lat"))
+        lon = _float_or_none(area.get("center_lon"))
         if lat is not None and lon is not None:
             anchors.append((lat, lon))
     for competitor in competitors:
@@ -108,11 +149,12 @@ def _iter_anchor_points(
 def _province_bounds(
     pois: list[dict[str, Any]],
     zones: list[dict[str, Any]],
+    business_areas: list[dict[str, Any]],
     competitors: list[dict[str, Any]],
     district_nodes: list[dict[str, Any]],
     resolution_km: float,
 ) -> dict[str, float]:
-    anchors = _iter_anchor_points(pois, zones, competitors, district_nodes)
+    anchors = _iter_anchor_points(pois, zones, business_areas, competitors, district_nodes)
     if not anchors:
         raise ValueError("No POI, hot-zone, competitor, or district node coordinates found for this province.")
 
@@ -165,6 +207,40 @@ def _nearest_zone_ratio(
         if best_ratio is None or ratio < best_ratio:
             best_ratio = ratio
     return best_ratio
+
+
+def _nearest_business_area_ratio(
+    lat: float,
+    lon: float,
+    business_areas: list[dict[str, Any]],
+) -> float | None:
+    best_ratio = None
+    for area in business_areas:
+        area_lat = _float_or_none(area.get("center_lat"))
+        area_lon = _float_or_none(area.get("center_lon"))
+        radius = _float_or_none(area.get("radius_km"))
+        if area_lat is None or area_lon is None or radius is None or radius <= 0:
+            continue
+        ratio = km_between(lat, lon, area_lat, area_lon) / radius
+        if best_ratio is None or ratio < best_ratio:
+            best_ratio = ratio
+    return best_ratio
+
+
+def _point_hits_heatmap_exclusion(
+    lat: float,
+    lon: float,
+    exclusions: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    for exclusion in exclusions:
+        center_lat = _float_or_none(exclusion.get("center_lat"))
+        center_lon = _float_or_none(exclusion.get("center_lon"))
+        radius = _float_or_none(exclusion.get("radius_km"))
+        if center_lat is None or center_lon is None or radius is None or radius <= 0:
+            continue
+        if km_between(lat, lon, center_lat, center_lon) <= radius:
+            return exclusion
+    return None
 
 
 def district_node_field(
@@ -220,6 +296,91 @@ def _heatmap_thresholds(mode: str) -> tuple[float, float]:
     return URBAN_MIN_CONTEXT_SESSIONS, URBAN_MIN_HEAT_SCORE
 
 
+def _ratio_within_limit(
+    contributions: list[dict[str, Any]],
+    *,
+    max_ratio: float,
+) -> bool:
+    if not contributions:
+        return False
+    distance = _float_or_none(contributions[0].get("distance_km"))
+    radius = _float_or_none(contributions[0].get("radius_km"))
+    if distance is None or radius is None or radius <= 0:
+        return False
+    return (distance / radius) <= max_ratio
+
+
+def _distance_within_limit(
+    contributions: list[dict[str, Any]],
+    *,
+    max_distance_km: float,
+) -> bool:
+    if not contributions:
+        return False
+    distance = _float_or_none(contributions[0].get("distance_km"))
+    return distance is not None and distance <= max_distance_km
+
+
+def _heatmap_supports_candidate(
+    *,
+    top_pois: list[dict[str, Any]],
+    top_zones: list[dict[str, Any]],
+    top_business_areas: list[dict[str, Any]],
+    top_districts: list[dict[str, Any]],
+    top_competitors: list[dict[str, Any]],
+    mode: str,
+) -> bool:
+    near_poi = _distance_within_limit(top_pois, max_distance_km=HEATMAP_MAX_POI_DISTANCE_KM)
+    near_zone = _ratio_within_limit(top_zones, max_ratio=HEATMAP_MAX_ZONE_DISTANCE_FACTOR)
+    near_business_area = _ratio_within_limit(
+        top_business_areas,
+        max_ratio=HEATMAP_MAX_ZONE_DISTANCE_FACTOR,
+    )
+    near_competitor = _distance_within_limit(
+        top_competitors,
+        max_distance_km=HEATMAP_MAX_COMPETITOR_DISTANCE_KM,
+    )
+    near_district = _distance_within_limit(
+        top_districts,
+        max_distance_km=HEATMAP_MAX_ANCHOR_DISTANCE_KM,
+    )
+
+    near_any_anchor = near_poi or near_zone or near_business_area or near_competitor or near_district
+    if not near_any_anchor:
+        return False
+
+    has_built_support = bool(top_business_areas or top_districts or top_competitors)
+    nearby_poi_categories: set[str] = set()
+    nearby_supportive_poi = False
+    nearby_seasonal_tourism_poi = False
+    for item in top_pois[:3]:
+        category = str(item.get("category") or "").strip()
+        distance = _float_or_none(item.get("distance_km"))
+        if not category or distance is None:
+            continue
+        if distance <= HEATMAP_MAX_POI_DISTANCE_KM:
+            nearby_poi_categories.add(category)
+            if category in SEASONAL_TOURISM_CATEGORIES:
+                nearby_seasonal_tourism_poi = True
+        if distance <= SUPPORTIVE_POI_MAX_DISTANCE_KM and category in COMMUNITY_SUPPORT_POI_CATEGORIES:
+            nearby_supportive_poi = True
+
+    has_only_seasonal_tourism_poi = (
+        bool(nearby_poi_categories)
+        and nearby_poi_categories <= SEASONAL_TOURISM_CATEGORIES
+        and nearby_seasonal_tourism_poi
+    )
+
+    if near_zone and not (near_poi or near_business_area or near_competitor or near_district):
+        return False
+    if has_only_seasonal_tourism_poi and not (has_built_support or nearby_supportive_poi):
+        return False
+
+    if mode in {"community", "district"}:
+        return near_any_anchor and (near_district or near_poi or near_zone or near_business_area)
+    return near_any_anchor and (near_poi or near_zone or near_business_area or near_competitor)
+
+
 def _heatmap_mask_passes(
     *,
     lat: float,
@@ -228,8 +389,13 @@ def _heatmap_mask_passes(
     heat_score: float,
     pois: list[dict[str, Any]],
     zones: list[dict[str, Any]],
+    business_areas: list[dict[str, Any]],
     competitors: list[dict[str, Any]],
     district_nodes: list[dict[str, Any]],
+    top_pois: list[dict[str, Any]],
+    top_business_areas: list[dict[str, Any]],
+    top_districts: list[dict[str, Any]],
+    top_competitors: list[dict[str, Any]],
     mode: str,
 ) -> bool:
     min_context, min_heat = _heatmap_thresholds(mode)
@@ -238,22 +404,55 @@ def _heatmap_mask_passes(
 
     nearest_poi = _nearest_row_distance_km(lat, lon, pois)
     nearest_zone_ratio = _nearest_zone_ratio(lat, lon, zones)
+    nearest_business_area_ratio = _nearest_business_area_ratio(lat, lon, business_areas)
     nearest_competitor = _nearest_row_distance_km(lat, lon, competitors)
     nearest_district = _nearest_row_distance_km(lat, lon, district_nodes)
 
     near_poi = nearest_poi is not None and nearest_poi <= HEATMAP_MAX_POI_DISTANCE_KM
     near_zone = nearest_zone_ratio is not None and nearest_zone_ratio <= HEATMAP_MAX_ZONE_DISTANCE_FACTOR
+    near_business_area = (
+        nearest_business_area_ratio is not None and nearest_business_area_ratio <= HEATMAP_MAX_ZONE_DISTANCE_FACTOR
+    )
     near_competitor = (
         nearest_competitor is not None and nearest_competitor <= HEATMAP_MAX_COMPETITOR_DISTANCE_KM
     )
     near_district = nearest_district is not None and nearest_district <= HEATMAP_MAX_ANCHOR_DISTANCE_KM
-    near_any_anchor = near_poi or near_zone or near_competitor or near_district
+    near_any_anchor = near_poi or near_zone or near_business_area or near_competitor or near_district
+    has_built_support = bool(top_business_areas or top_districts or top_competitors)
+    nearby_poi_categories: set[str] = set()
+    nearby_supportive_poi = False
+    nearby_seasonal_tourism_poi = False
+    for item in top_pois[:3]:
+        category = str(item.get("category") or "").strip()
+        distance = _float_or_none(item.get("distance_km"))
+        if not category or distance is None:
+            continue
+        if distance <= HEATMAP_MAX_POI_DISTANCE_KM:
+            nearby_poi_categories.add(category)
+            if category in SEASONAL_TOURISM_CATEGORIES:
+                nearby_seasonal_tourism_poi = True
+        if distance <= SUPPORTIVE_POI_MAX_DISTANCE_KM and category in COMMUNITY_SUPPORT_POI_CATEGORIES:
+            nearby_supportive_poi = True
+    has_only_seasonal_tourism_poi = (
+        bool(nearby_poi_categories)
+        and nearby_poi_categories <= SEASONAL_TOURISM_CATEGORIES
+        and nearby_seasonal_tourism_poi
+    )
+
+    # Do not allow hot-zone spillover to create heat over implausible surfaces
+    # or remote mountain tourism points when there is no nearby town, district,
+    # business-area, or charger context to support a year-round station.
+    if near_zone and not (near_poi or near_business_area or near_competitor or near_district):
+        return False
+    if has_only_seasonal_tourism_poi and not (has_built_support or nearby_supportive_poi):
+        return False
 
     if mode in {"community", "district"}:
-        return near_any_anchor and (near_district or near_poi or near_zone)
-    return near_any_anchor and (near_poi or near_zone or near_competitor)
+        return near_any_anchor and (near_district or near_poi or near_zone or near_business_area)
+    return near_any_anchor and (near_poi or near_zone or near_business_area or near_competitor)
 
 
+@lru_cache(maxsize=96)
 def generate_province_heatmap(
     province: str,
     year: int = 2030,
@@ -271,10 +470,13 @@ def generate_province_heatmap(
 
     pois = load_pois_for_province(province)
     zones = load_hot_zones_for_province(province)
+    business_areas = load_business_areas_for_province(province)
     competitors = load_competitors_for_province(province)
     district_nodes = load_enriched_district_nodes(province)
-    bounds = _province_bounds(pois, zones, competitors, district_nodes, resolution_km)
+    exclusions = load_heatmap_exclusions_for_province(province)
+    bounds = _province_bounds(pois, zones, business_areas, competitors, district_nodes, resolution_km)
     scenario_factor = SCENARIO_FACTORS.get(scenario, 1.0)
+    min_context, min_heat = _heatmap_thresholds(mode)
 
     lat_step = resolution_km / 111.0
     mid_lat = (bounds["lat_min"] + bounds["lat_max"]) / 2
@@ -286,7 +488,16 @@ def generate_province_heatmap(
     while lat <= bounds["lat_max"] + 1e-9:
         lon = bounds["lon_min"]
         while lon <= bounds["lon_max"] + 1e-9:
+            if _point_hits_heatmap_exclusion(lat, lon, exclusions):
+                lon += lon_step
+                continue
             zone_score, zone_contributions = zone_influence_field(lat, lon, zones, scenario=scenario)
+            business_area_score, business_area_contributions = business_area_field(
+                lat,
+                lon,
+                business_areas,
+                scenario=scenario,
+            )
             poi_score, poi_contributions = poi_attraction_field(lat, lon, pois)
             district_score, district_contributions = district_node_field(lat, lon, district_nodes)
             competitor_signal_raw, competitor_contributions, _ = competitor_penalty_field(
@@ -296,54 +507,69 @@ def generate_province_heatmap(
             )
 
             zone_sessions = zone_score * ZONE_CAPTURE_FACTOR
+            business_area_sessions = business_area_score * BUSINESS_AREA_CAPTURE_FACTOR
             poi_sessions = poi_score * POI_CAPTURE_FACTOR * scenario_factor
             district_sessions = district_score * DISTRICT_NODE_CAPTURE_FACTOR * scenario_factor
             competitor_signal_sessions = min(
                 competitor_signal_raw * HEATMAP_MAX_COMPETITOR_SIGNAL_SHARE,
-                max(zone_sessions + poi_sessions + district_sessions, competitor_signal_raw * 0.35),
+                max(zone_sessions + business_area_sessions + poi_sessions + district_sessions, competitor_signal_raw * 0.35),
             )
             if mode == "urban":
-                context_sessions = zone_sessions + poi_sessions + competitor_signal_sessions
+                context_sessions = zone_sessions + business_area_sessions + poi_sessions + competitor_signal_sessions
             else:
-                context_sessions = zone_sessions + poi_sessions + district_sessions + competitor_signal_sessions
+                context_sessions = zone_sessions + business_area_sessions + poi_sessions + district_sessions + competitor_signal_sessions
 
-            location_type = _location_type_for_heat(poi_contributions, district_contributions)
+            if context_sessions < min_context:
+                lon += lon_step
+                continue
+
+            if not _heatmap_supports_candidate(
+                top_pois=poi_contributions,
+                top_zones=zone_contributions,
+                top_business_areas=business_area_contributions,
+                top_districts=district_contributions,
+                top_competitors=competitor_contributions,
+                mode=mode,
+            ):
+                lon += lon_step
+                continue
+
+            location_type = _location_type_for_heat(
+                poi_contributions,
+                business_area_contributions,
+                district_contributions,
+            )
             estimate = demand.estimate(lat, lon, year, location_type=location_type)
             model_sessions = estimate["charging_sessions_per_day"] * scenario_factor
             heat_score = model_sessions + context_sessions
 
-            if _heatmap_mask_passes(
-                lat=lat,
-                lon=lon,
-                context_sessions=context_sessions,
-                heat_score=heat_score,
-                pois=pois,
-                zones=zones,
-                competitors=competitors,
-                district_nodes=district_nodes,
-                mode=mode,
-            ):
-                points.append({
-                    "lat": round(lat, 6),
-                    "lon": round(lon, 6),
-                    "location_type": location_type,
-                    "aadt_used": estimate["aadt_used"],
-                    "model_sessions": round(model_sessions, 1),
-                    "poi_score": round(poi_sessions, 1),
-                    "zone_score": round(zone_sessions, 1),
-                    "district_score": round(district_sessions, 1),
-                    "competitor_signal_score": round(competitor_signal_sessions, 1),
-                    "context_score": round(context_sessions, 1),
-                    "heat_score": round(heat_score, 1),
-                    "daily_kwh": round(heat_score * 24.0, 1),
-                    "zones": [item["name"] for item in zone_contributions[:3]],
-                    "pois": [item["name"] for item in poi_contributions[:3]],
-                    "districts": [item["name"] for item in district_contributions[:3]],
-                    "district_name": (
-                        district_contributions[0]["district_name"] if district_contributions else None
-                    ),
-                    "competitors": [item["name"] for item in competitor_contributions[:3]],
-                })
+            if heat_score < min_heat:
+                lon += lon_step
+                continue
+
+            points.append({
+                "lat": round(lat, 6),
+                "lon": round(lon, 6),
+                "location_type": location_type,
+                "aadt_used": estimate["aadt_used"],
+                "model_sessions": round(model_sessions, 1),
+                "poi_score": round(poi_sessions, 1),
+                "zone_score": round(zone_sessions, 1),
+                "business_area_score": round(business_area_sessions, 1),
+                "district_score": round(district_sessions, 1),
+                "competitor_signal_score": round(competitor_signal_sessions, 1),
+                "context_score": round(context_sessions, 1),
+                "heat_score": round(heat_score, 1),
+                "daily_kwh": round(heat_score * 24.0, 1),
+                "zones": [item["name"] for item in zone_contributions[:3]],
+                "business_areas": [item["name"] for item in business_area_contributions[:3]],
+                "pois": [item["name"] for item in poi_contributions[:3]],
+                "districts": [item["name"] for item in district_contributions[:3]],
+                "district_name": (
+                    district_contributions[0]["district_name"] if district_contributions else None
+                ),
+                "competitors": [item["name"] for item in competitor_contributions[:3]],
+            })
             lon += lon_step
         lat += lat_step
 
@@ -416,6 +642,8 @@ def generate_province_heatmap(
         "metadata": {
             "poi_count": len(pois),
             "zone_count": len(zones),
+            "business_area_count": len(business_areas),
+            "heatmap_exclusion_count": len(exclusions),
             "competitor_count": len(competitors),
             "district_node_count": len(district_nodes),
             "heatmap_mode": mode,
