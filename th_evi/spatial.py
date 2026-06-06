@@ -12,6 +12,15 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 from typing import Any
 
+from .db import (
+    BusinessAreaReference,
+    ChargerCompetitor,
+    DistrictNodeReference,
+    HeatmapExclusionReference,
+    HotZoneReference,
+    POIReference,
+    get_session_factory,
+)
 from .location import LocationDemandModel
 from .data import load_district_population_for_province
 
@@ -46,6 +55,12 @@ PROVINCE_SLUGS = {
     "อุบลราชธานี": "ubon_ratchathani",
     "Ubon Ratchathani": "ubon_ratchathani",
     "\u0e2d\u0e38\u0e1a\u0e25\u0e23\u0e32\u0e0a\u0e18\u0e32\u0e19\u0e35": "ubon_ratchathani",
+    "สมุทรปราการ": "samut_prakan",
+    "Samut Prakan": "samut_prakan",
+    "\u0e2a\u0e21\u0e38\u0e17\u0e23\u0e1b\u0e23\u0e32\u0e01\u0e32\u0e23": "samut_prakan",
+    "ระยอง": "rayong",
+    "Rayong": "rayong",
+    "\u0e23\u0e30\u0e22\u0e2d\u0e07": "rayong",
     "Lamphun": "lamphun",
     "\u0e25\u0e33\u0e1e\u0e39\u0e19": "lamphun",
     "Nan": "nan",
@@ -53,6 +68,23 @@ PROVINCE_SLUGS = {
     "Mae Hong Son": "mae_hong_son",
     "\u0e41\u0e21\u0e48\u0e2e\u0e48\u0e2d\u0e07\u0e2a\u0e2d\u0e19": "mae_hong_son",
     "\u004d\u0061\u0065\u0020\u0048\u006f\u006e\u0067\u0020\u0053\u006f\u006e": "mae_hong_son",
+}
+
+SLUG_TO_CANONICAL_PROVINCE = {
+    "chiang_mai": "Chiang Mai",
+    "chiang_rai": "Chiang Rai",
+    "lampang": "Lampang",
+    "lamphun": "Lamphun",
+    "nan": "Nan",
+    "phayao": "Phayao",
+    "phrae": "Phrae",
+    "nong_khai": "Nong Khai",
+    "udon_thani": "Udon Thani",
+    "khon_kaen": "Khon Kaen",
+    "ubon_ratchathani": "Ubon Ratchathani",
+    "mae_hong_son": "Mae Hong Son",
+    "samut_prakan": "Samut Prakan",
+    "rayong": "Rayong",
 }
 
 SCENARIO_FACTORS = {
@@ -220,6 +252,218 @@ def _read_csv(path: Path) -> list[dict[str, Any]]:
         return list(csv.DictReader(f))
 
 
+def _canonical_province_names(province: str) -> list[str]:
+    slug = _slug_for_province(province)
+    names = {province}
+    if slug:
+        names.add(SLUG_TO_CANONICAL_PROVINCE.get(slug, province))
+    return [name for name in names if name]
+
+
+def _merge_rows(
+    primary_rows: list[dict[str, Any]],
+    secondary_rows: list[dict[str, Any]],
+    id_key: str,
+) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    ordered: list[dict[str, Any]] = []
+    for row in primary_rows + secondary_rows:
+        row_id = str(row.get(id_key) or "").strip()
+        if not row_id:
+            ordered.append(row)
+            continue
+        if row_id in merged:
+            current = merged[row_id]
+            for key, value in row.items():
+                if current.get(key) in (None, "") and value not in (None, ""):
+                    current[key] = value
+            continue
+        merged[row_id] = dict(row)
+        ordered.append(merged[row_id])
+    return ordered
+
+
+def _load_db_pois_for_province(province: str) -> list[dict[str, Any]]:
+    names = _canonical_province_names(province)
+    try:
+        with get_session_factory()() as session:
+            rows = session.query(POIReference).filter(POIReference.province.in_(names)).all()
+    except Exception:
+        return []
+    return [
+        {
+            "poi_id": row.poi_id,
+            "province": row.province,
+            "district": row.district,
+            "name": row.name,
+            "category": row.category,
+            "lat": row.lat,
+            "lon": row.lon,
+            "demand_role": row.demand_role,
+            "radius_km": row.radius_km,
+            "weight": row.weight,
+            "verification_status": row.verification_status,
+            "confidence": row.confidence,
+            "notes": row.notes,
+        }
+        for row in rows
+    ]
+
+
+def _load_db_competitors_for_province(province: str) -> list[dict[str, Any]]:
+    names = _canonical_province_names(province)
+    try:
+        with get_session_factory()() as session:
+            rows = session.query(ChargerCompetitor).filter(ChargerCompetitor.province.in_(names)).all()
+    except Exception:
+        return []
+    return [
+        {
+            "station_id": row.station_id,
+            "province": row.province,
+            "district": row.district,
+            "name": row.name,
+            "operator": row.operator,
+            "network": row.network,
+            "lat": row.lat,
+            "lon": row.lon,
+            "plug_count": row.plug_count,
+            "gun_count": row.gun_count,
+            "guns": row.gun_count,
+            "max_kw": row.max_kw,
+            "opening_hours": row.open_hours,
+            "verification_status": row.verification_status,
+            "confidence": row.confidence,
+            "notes": row.notes,
+        }
+        for row in rows
+    ]
+
+
+def _load_db_business_areas_for_province(province: str) -> list[dict[str, Any]]:
+    names = _canonical_province_names(province)
+    try:
+        with get_session_factory()() as session:
+            rows = (
+                session.query(BusinessAreaReference)
+                .filter(BusinessAreaReference.province.in_(names), BusinessAreaReference.active.is_(True))
+                .all()
+            )
+    except Exception:
+        return []
+    return [
+        {
+            "business_area_id": row.business_area_id,
+            "province": row.province,
+            "name": row.name,
+            "area_type": row.area_type,
+            "center_lat": row.center_lat,
+            "center_lon": row.center_lon,
+            "radius_km": row.radius_km,
+            "demand_pool_conservative": row.demand_pool_conservative,
+            "demand_pool_base": row.demand_pool_base,
+            "demand_pool_upside": row.demand_pool_upside,
+            "location_type": row.location_type,
+            "confidence": row.confidence,
+            "notes": row.notes,
+            "last_verified_date": row.last_verified_date,
+        }
+        for row in rows
+    ]
+
+
+def _load_db_heatmap_exclusions_for_province(province: str) -> list[dict[str, Any]]:
+    names = _canonical_province_names(province)
+    try:
+        with get_session_factory()() as session:
+            rows = (
+                session.query(HeatmapExclusionReference)
+                .filter(
+                    HeatmapExclusionReference.province.in_(names),
+                    HeatmapExclusionReference.active.is_(True),
+                )
+                .all()
+            )
+    except Exception:
+        return []
+    return [
+        {
+            "exclusion_id": row.exclusion_id,
+            "province": row.province,
+            "name": row.name,
+            "center_lat": row.center_lat,
+            "center_lon": row.center_lon,
+            "radius_km": row.radius_km,
+            "exclusion_type": row.exclusion_type,
+            "confidence": row.confidence,
+            "reason": row.reason,
+            "last_verified_date": row.last_verified_date,
+        }
+        for row in rows
+    ]
+
+
+def _load_db_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
+    names = _canonical_province_names(province)
+    try:
+        with get_session_factory()() as session:
+            rows = (
+                session.query(HotZoneReference)
+                .filter(HotZoneReference.province.in_(names), HotZoneReference.active.is_(True))
+                .all()
+            )
+    except Exception:
+        return []
+    return [
+        {
+            "zone_id": row.zone_id,
+            "province": row.province,
+            "name": row.name,
+            "center_lat": row.center_lat,
+            "center_lon": row.center_lon,
+            "radius_km": row.radius_km,
+            "heat_rank": row.heat_rank,
+            "demand_pool_conservative": row.demand_pool_conservative,
+            "demand_pool_base": row.demand_pool_base,
+            "demand_pool_upside": row.demand_pool_upside,
+            "competition_pressure": row.competition_pressure,
+            "capture_notes": row.capture_notes,
+            "confidence": row.confidence,
+            "last_verified_date": row.last_verified_date,
+        }
+        for row in rows
+    ]
+
+
+def _load_db_district_nodes_for_province(province: str) -> list[dict[str, Any]]:
+    names = _canonical_province_names(province)
+    try:
+        with get_session_factory()() as session:
+            rows = (
+                session.query(DistrictNodeReference)
+                .filter(DistrictNodeReference.province.in_(names), DistrictNodeReference.active.is_(True))
+                .all()
+            )
+    except Exception:
+        return []
+    return [
+        {
+            "node_id": row.node_id,
+            "province": row.province,
+            "district_name": row.district_name,
+            "name": row.name,
+            "node_type": row.node_type,
+            "lat": row.lat,
+            "lon": row.lon,
+            "radius_km": row.radius_km,
+            "confidence_multiplier": row.confidence_multiplier,
+            "confidence": row.confidence,
+            "notes": row.notes,
+        }
+        for row in rows
+    ]
+
+
 def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Keep one row per real Chiang Mai station and drop context-only duplicates.
 
@@ -293,7 +537,7 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
         source_type = str(row.get("source_type") or "").strip().lower()
         operator = str(row.get("operator") or "").strip().lower()
         network = str(row.get("network") or "").strip().lower()
-        if source_type == "osm" and operator in {"", "unknown"} and network in {"", "unknown"}:
+        if (source_type == "osm" or station_id.startswith("osm_")) and operator in {"", "unknown"} and network in {"", "unknown"}:
             continue
         if network == "private / hotel" and str(row.get("verification_status") or "").strip().lower() not in {"verified", "partial"}:
             continue
@@ -313,10 +557,11 @@ def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
     if not slug:
         return []
-    rows = _read_csv(DATA_DIR / f"poi_{slug}_seed.csv")
-    if slug == "lampang" and not rows:
-        rows.extend(_read_csv(DATA_DIR / "poi_lampang_city_seed.csv"))
-    return rows
+    csv_rows = _read_csv(DATA_DIR / f"poi_{slug}_seed.csv")
+    if slug == "lampang" and not csv_rows:
+        csv_rows.extend(_read_csv(DATA_DIR / "poi_lampang_city_seed.csv"))
+    db_rows = _load_db_pois_for_province(province)
+    return _merge_rows(db_rows, csv_rows, "poi_id")
 
 
 @lru_cache(maxsize=32)
@@ -331,6 +576,8 @@ def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
         rows.extend(_read_csv(detailed))
     if slug == "chiang_mai":
         rows.extend(_read_csv(DATA_DIR / "competitors_chiang_mai_google_verified.csv"))
+    rows = _merge_rows(_load_db_competitors_for_province(province), rows, "station_id")
+    if slug == "chiang_mai":
         rows = _filter_and_dedupe_chiang_mai_competitors(rows)
     return rows
 
@@ -340,7 +587,9 @@ def load_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
     if not slug:
         return []
-    return _read_csv(DATA_DIR / f"hot_zones_{slug}.csv")
+    csv_rows = _read_csv(DATA_DIR / f"hot_zones_{slug}.csv")
+    db_rows = _load_db_hot_zones_for_province(province)
+    return _merge_rows(db_rows, csv_rows, "zone_id")
 
 
 @lru_cache(maxsize=32)
@@ -348,7 +597,9 @@ def load_business_areas_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
     if not slug:
         return []
-    return _read_csv(DATA_DIR / f"business_areas_{slug}.csv")
+    csv_rows = _read_csv(DATA_DIR / f"business_areas_{slug}.csv")
+    db_rows = _load_db_business_areas_for_province(province)
+    return _merge_rows(db_rows, csv_rows, "business_area_id")
 
 
 @lru_cache(maxsize=32)
@@ -356,7 +607,9 @@ def load_heatmap_exclusions_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
     if not slug:
         return []
-    return _read_csv(DATA_DIR / f"heatmap_exclusions_{slug}.csv")
+    csv_rows = _read_csv(DATA_DIR / f"heatmap_exclusions_{slug}.csv")
+    db_rows = _load_db_heatmap_exclusions_for_province(province)
+    return _merge_rows(db_rows, csv_rows, "exclusion_id")
 
 
 @lru_cache(maxsize=32)
@@ -364,7 +617,9 @@ def load_district_nodes_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
     if not slug:
         return []
-    return _read_csv(DATA_DIR / f"district_nodes_{slug}.csv")
+    csv_rows = _read_csv(DATA_DIR / f"district_nodes_{slug}.csv")
+    db_rows = _load_db_district_nodes_for_province(province)
+    return _merge_rows(db_rows, csv_rows, "node_id")
 
 
 POPULATION_WEIGHT_MIN = 0.75

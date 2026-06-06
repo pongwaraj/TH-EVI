@@ -1,0 +1,9 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+sp_bangpu_industrial_estate,Bangpoo Industrial Estate,office,13.5215,100.6918,IEAT + seed coordinate,medium_high,"Primary industrial employment and logistics anchor for Bang Pu. Important for commuter, shift-work, and fleet-support EV demand."
+sp_bangpu_recreation_center,Bang Pu Recreation Center,tourism,13.5184,100.7435,public destination + seed coordinate,medium,"Coastal recreation destination and landmark; should not dominate by itself without built-support context."
+sp_muang_boran,Muang Boran / Ancient City,tourism_museum,13.5392,100.6228,public destination + seed coordinate,medium_high,"Major destination attraction west of Bang Pu; useful for destination charging and weekend visitation signal."
+sp_kheha_bts,Kheha BTS station,transport,13.5711,100.6048,public transit map + seed coordinate,medium_high,"Eastern BTS terminal for Samut Prakan commuter flow; strong transport and park-and-ride signal."
+sp_robinson_samut_prakan,Robinson Lifestyle Samut Prakan,shopping_mall,13.5993,100.5996,public retail listing + seed coordinate,medium_high,"Regional retail anchor at the western side of the Bang Pu commuter corridor."
+sp_bangpu_municipality,Bang Pu municipality center,district_center,13.5258,100.7089,municipal context + seed coordinate,medium,"Municipal center and urban-service node for Tambon Bang Pu."
+sp_phraeksa_market,Phraeksa market and community core,market_tourism,13.5588,100.6508,local context + seed coordinate,medium,"Dense residential and market activity on the Praksa-Bang Pu side of Mueang Samut Prakan."
+sp_bangpoo_general_hospital,Bangpoo General Hospital,hospital,13.5408,100.6795,public hospital listing + seed coordinate,medium_high,"Hospital and service anchor supporting Bang Pu industrial and residential catchments."

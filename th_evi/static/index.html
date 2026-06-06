@@ -9,10 +9,33 @@
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <style>
 * { box-sizing: border-box; }
+:root { --panel-width: 460px; }
 html, body { height: 100%; margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #17202a; background: #f4f6f8; }
-body { display: grid; grid-template-columns: minmax(400px, 480px) 1fr; }
+body { display: grid; grid-template-columns: clamp(340px, var(--panel-width), 760px) 12px minmax(0, 1fr); }
+body.panel-resizing { cursor: col-resize; user-select: none; }
 button, input, select, textarea { font: inherit; }
 #panel { height: 100vh; overflow-y: auto; border-right: 1px solid #d9e2ec; background: #fff; }
+#panel-resizer {
+  position: relative;
+  height: 100vh;
+  background: #eef2f6;
+  border-left: 1px solid #d9e2ec;
+  border-right: 1px solid #d9e2ec;
+  cursor: col-resize;
+}
+#panel-resizer::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 64px;
+  border-radius: 999px;
+  background: #9aa9b7;
+  transform: translate(-50%, -50%);
+}
+#panel-resizer:hover,
+#panel-resizer:focus-visible { background: #dde7f0; outline: none; }
 #map { height: 100vh; min-width: 0; cursor: crosshair; }
 .section { padding: 14px 16px; border-bottom: 1px solid #e6ebf0; }
 h1 { margin: 0; font-size: 20px; }
@@ -74,6 +97,7 @@ a { color: #0b65c2; text-decoration: none; }
   body { grid-template-columns: 1fr; grid-template-rows: 55vh auto; }
   #map { height: 55vh; order: 1; }
   #panel { height: auto; order: 2; border-right: 0; }
+  #panel-resizer { display: none; }
   #map-hint { bottom: 20px; }
 }
 </style>
@@ -129,6 +153,9 @@ a { color: #0b65c2; text-decoration: none; }
         </select>
       </label>
     </div>
+    <div style="margin-top:8px">
+      <label class="check"><input id="show_point_forecast" type="checkbox"> <span data-i18n="showPointForecast">แสดงค่าพยากรณ์เฉพาะจุด (kW / sessions ลึก)</span></label>
+    </div>
     <div class="hint" data-i18n="quickSettingsHint">&#128073; คลิกบนแผนที่เพื่อดู demand ทันที หรือกรอกข้อมูลด้านล่างแล้วกด "วิเคราะห์และบันทึก"</div>
   </div>
 
@@ -144,6 +171,8 @@ a { color: #0b65c2; text-decoration: none; }
         <label><span data-i18n="province">จังหวัด</span>
           <select id="province">
             <option value="เชียงใหม่">เชียงใหม่</option>
+            <option value="สมุทรปราการ">สมุทรปราการ</option>
+            <option value="ระยอง">ระยอง</option>
             <option value="เชียงราย">เชียงราย</option>
             <option value="ลำปาง">ลำปาง</option>
             <option value="ลำพูน">ลำพูน</option>
@@ -245,11 +274,11 @@ a { color: #0b65c2; text-decoration: none; }
         <span id="heatmap-meta" data-i18n="notLoaded" style="font-weight:600;color:#12395b">ยังไม่ได้โหลด</span>
       </div>
       <div style="margin-top:8px;padding:8px;background:#f9fafb;border-radius:6px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:3px">
-        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#ffff8c;border-radius:2px"></span>Moderate 30-45%</div>
-        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#fdae61;border-radius:2px"></span>Warm 45-60%</div>
-        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#f46d43;border-radius:2px"></span>Hot 60-75%</div>
-        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#d7191c;border-radius:2px"></span>Very Hot &gt;75%</div>
-        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#8B0000;border-radius:2px"></span>Peak &gt;90%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#fff3bf;border-radius:2px"></span>30-45%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#ffd166;border-radius:2px"></span>45-60%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#f8961e;border-radius:2px"></span>60-75%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#ef476f;border-radius:2px"></span>75-90%</div>
+        <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#7b2cbf;border-radius:2px"></span>90-100%</div>
       </div>
     </div>
   </form>
@@ -276,7 +305,61 @@ a { color: #0b65c2; text-decoration: none; }
       <tbody id="sites-body"><tr><td colspan="3" class="muted" data-i18n="loading">กำลังโหลด...</td></tr></tbody>
     </table>
   </div>
+
+  <div class="section">
+    <h2 data-i18n="referenceAdmin">จัดการข้อมูลอ้างอิง</h2>
+    <div class="muted" data-i18n="referenceAdminHint">เปิดหน้าแยกสำหรับจัดการ POI, competitors, hot zones และข้อมูลอ้างอิงอื่น ๆ</div>
+    <div style="margin-top:10px">
+      <a class="btn secondary" href="/admin" data-i18n="openReferenceAdmin" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none">เปิดหน้า Data Admin</a>
+    </div>
+  </div>
+
+  <div class="section" style="display:none">
+    <h2 class="section-toggle collapsed" data-i18n="referenceAdmin" data-target="reference-admin-body">จัดการข้อมูลอ้างอิง</h2>
+    <div id="reference-admin-body" class="section-body" style="max-height:0;overflow:hidden">
+      <div class="grid" style="margin-bottom:8px">
+        <label><span data-i18n="referenceLayer">ชั้นข้อมูล</span>
+          <select id="reference-layer"></select>
+        </label>
+        <label><span data-i18n="referenceProvince">จังหวัด</span>
+          <select id="reference-province"></select>
+        </label>
+      </div>
+      <div class="grid" style="margin-bottom:8px">
+        <label><span data-i18n="referenceSearch">ค้นหา</span><input id="reference-search" placeholder="name / key / operator"></label>
+        <label><span data-i18n="referenceFilter">ตัวกรองสถานะ</span>
+          <select id="reference-active-filter">
+            <option value="all" data-i18n-option="filterAll">ทั้งหมด</option>
+            <option value="active" data-i18n-option="filterActive">เฉพาะที่เปิดใช้งาน</option>
+            <option value="inactive" data-i18n-option="filterInactive">เฉพาะที่ปิดใช้งาน</option>
+          </select>
+        </label>
+      </div>
+      <div class="inline" style="margin-bottom:10px">
+        <button class="btn secondary" id="reference-refresh-btn" type="button" data-i18n="loadReferenceRecords">โหลดรายการ</button>
+        <button class="btn secondary" id="reference-new-btn" type="button" data-i18n="newReferenceRecord">เพิ่มรายการใหม่</button>
+      </div>
+      <div id="reference-status" class="status"></div>
+      <table style="margin-bottom:10px">
+        <thead><tr><th data-i18n="referenceKey">Key</th><th data-i18n="referenceName">ชื่อ</th><th data-i18n="referenceState">สถานะ</th><th data-i18n="referenceAudit">Audit</th><th data-i18n="referenceAction">จัดการ</th></tr></thead>
+        <tbody id="reference-body"><tr><td colspan="5" class="muted" data-i18n="referenceNotLoaded">ยังไม่ได้โหลด</td></tr></tbody>
+      </table>
+      <div id="reference-editor" style="display:none;border:1px solid #dde3ea;border-radius:8px;padding:12px;background:#fbfcfd">
+        <div class="inline" style="justify-content:space-between;margin-bottom:8px">
+          <strong id="reference-editor-title">Editor</strong>
+          <label class="check"><input id="reference-active" type="checkbox" checked> <span data-i18n="referenceActive">เปิดใช้งาน</span></label>
+        </div>
+        <div id="reference-fields" class="grid"></div>
+        <div class="inline" style="margin-top:10px">
+          <button class="btn" id="reference-save-btn" type="button" data-i18n="saveReferenceRecord">บันทึกข้อมูล</button>
+          <button class="btn secondary" id="reference-cancel-btn" type="button" data-i18n="cancelReferenceEdit">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </aside>
+
+<div id="panel-resizer" role="separator" aria-orientation="vertical" aria-label="Resize side panel" tabindex="0"></div>
 
 <div id="map">
   <div id="map-hint" data-i18n="mapClickHint">&#128270; คลิกบนแผนที่เพื่อดู Demand</div>
@@ -336,6 +419,11 @@ const translations = {
     resolution025: "ละเอียดสูง 0.25 กม.",
     resolution05: "มาตรฐาน 0.5 กม.",
     resolution10: "กว้าง 1.0 กม.",
+    showPointForecast: "แสดงค่าพยากรณ์เฉพาะจุด (kW / sessions ลึก)",
+    locationLabel: "พิกัด",
+    cellLabel: "ขนาดเซลล์",
+    useAsCandidate: "ใช้เป็น Candidate",
+    closeLabel: "ปิด",
     heat: "Heat",
     notLoaded: "ยังไม่ได้โหลด",
     latestResult: "ผลวิเคราะห์ล่าสุด",
@@ -383,7 +471,37 @@ const translations = {
     heatScore: "Heat score",
     modelSessions: "ครั้งจากโมเดล",
     zoneScore: "คะแนนโซน",
-    charger: "สถานีชาร์จ"
+    charger: "สถานีชาร์จ",
+    referenceAdmin: "จัดการข้อมูลอ้างอิง",
+    referenceAdminHint: "เปิดหน้าแยกสำหรับจัดการ POI, competitors, hot zones และข้อมูลอ้างอิงอื่น ๆ",
+    openReferenceAdmin: "เปิดหน้า Data Admin",
+    referenceLayer: "ชั้นข้อมูล",
+    referenceProvince: "จังหวัด",
+    referenceSearch: "ค้นหา",
+    referenceFilter: "ตัวกรองสถานะ",
+    loadReferenceRecords: "โหลดรายการ",
+    newReferenceRecord: "เพิ่มรายการใหม่",
+    referenceKey: "Key",
+    referenceName: "ชื่อ",
+    referenceState: "สถานะ",
+    referenceAudit: "Audit",
+    referenceAction: "จัดการ",
+    referenceNotLoaded: "ยังไม่ได้โหลด",
+    referenceActive: "เปิดใช้งาน",
+    saveReferenceRecord: "บันทึกข้อมูล",
+    cancelReferenceEdit: "ยกเลิก",
+    referenceLoading: "กำลังโหลดข้อมูลอ้างอิง...",
+    referenceSaved: "บันทึกข้อมูลอ้างอิงแล้ว",
+    referenceEditorNew: "เพิ่มรายการใหม่",
+    referenceEditorEdit: "แก้ไขรายการ",
+    edit: "แก้ไข",
+    duplicate: "คัดลอก",
+    delete: "ลบ",
+    filterAll: "ทั้งหมด",
+    filterActive: "เฉพาะที่เปิดใช้งาน",
+    filterInactive: "เฉพาะที่ปิดใช้งาน",
+    confirmDelete: "ยืนยันการปิดใช้งานรายการนี้",
+    deletedRecord: "ปิดใช้งานรายการแล้ว"
   },
   en: {
     appSubtitle: "EV charging station demand analysis for Thailand",
@@ -437,6 +555,11 @@ const translations = {
     resolution025: "Fine 0.25 km",
     resolution05: "Standard 0.5 km",
     resolution10: "Wide 1.0 km",
+    showPointForecast: "Show point forecast details (deep kW / session values)",
+    locationLabel: "Location",
+    cellLabel: "Cell",
+    useAsCandidate: "Use as Candidate",
+    closeLabel: "Close",
     heat: "Heat",
     notLoaded: "Not loaded",
     latestResult: "Latest Result",
@@ -484,12 +607,45 @@ const translations = {
     heatScore: "Heat score",
     modelSessions: "Model sessions",
     zoneScore: "Zone score",
-    charger: "Charger"
+    charger: "Charger",
+    referenceAdmin: "Reference Data Admin",
+    referenceAdminHint: "Open a separate page for POI, competitors, hot zones, and other reference data",
+    openReferenceAdmin: "Open Data Admin",
+    referenceLayer: "Layer",
+    referenceProvince: "Province",
+    referenceSearch: "Search",
+    referenceFilter: "Status filter",
+    loadReferenceRecords: "Load records",
+    newReferenceRecord: "Add new record",
+    referenceKey: "Key",
+    referenceName: "Name",
+    referenceState: "Status",
+    referenceAudit: "Audit",
+    referenceAction: "Action",
+    referenceNotLoaded: "Not loaded yet",
+    referenceActive: "Active",
+    saveReferenceRecord: "Save record",
+    cancelReferenceEdit: "Cancel",
+    referenceLoading: "Loading reference data...",
+    referenceSaved: "Reference data saved",
+    referenceEditorNew: "New record",
+    referenceEditorEdit: "Edit record",
+    edit: "Edit",
+    duplicate: "Duplicate",
+    delete: "Delete",
+    filterAll: "All",
+    filterActive: "Active only",
+    filterInactive: "Inactive only",
+    confirmDelete: "Confirm deactivating this record",
+    deletedRecord: "Record deactivated"
   }
 };
 
 let currentLang = localStorage.getItem("thEviLang") || "th";
 const t = key => (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
+const DEFAULT_CENTER = [18.787747, 98.993128];
+const DEFAULT_ZOOM = 11;
+const THAILAND_BOUNDS = [[5.4, 97.2], [20.9, 105.8]];
 
 function applyLanguage(lang) {
   currentLang = lang;
@@ -503,14 +659,22 @@ function applyLanguage(lang) {
   });
   document.getElementById("lang-th").classList.toggle("active", lang === "th");
   document.getElementById("lang-en").classList.toggle("active", lang === "en");
+  if (referenceMeta) fillReferenceProvinceOptions();
   refreshLayerControlLabels();
 }
 
-const DEFAULT_CENTER = [18.754992, 99.036817];
-const map = L.map("map").setView(DEFAULT_CENTER, 15);
+const map = L.map("map", {
+  center: DEFAULT_CENTER,
+  zoom: DEFAULT_ZOOM,
+  worldCopyJump: false,
+  maxBounds: THAILAND_BOUNDS,
+  maxBoundsViscosity: 0.9
+}).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "&copy; OpenStreetMap contributors"
+  attribution: "&copy; OpenStreetMap contributors",
+  noWrap: true
 }).addTo(map);
+map.setMaxBounds(THAILAND_BOUNDS);
 
 const candidateLayer = L.layerGroup().addTo(map);
 const chargerLayer = L.layerGroup().addTo(map);
@@ -518,11 +682,19 @@ const landmarkLayer = L.layerGroup().addTo(map);
 const heatmapLayer = L.layerGroup().addTo(map);
 let draftMarker = null;
 let layerControl = null;
+let latestHeatmapData = null;
 const CANDIDATE_STATE_KEY = "th-evi-candidate-state";
+const PANEL_WIDTH_KEY = "th-evi-panel-width";
+const PANEL_DEFAULT_WIDTH = 460;
+const PANEL_MIN_WIDTH = 340;
+const PANEL_MAX_WIDTH = 760;
+let isPanelResizing = false;
 
 const $ = id => document.getElementById(id);
 const PROVINCE_API_VALUES = {
   "เชียงใหม่": "Chiang Mai",
+  "สมุทรปราการ": "Samut Prakan",
+  "ระยอง": "Rayong",
   "เชียงราย": "Chiang Rai",
   "ลำปาง": "Lampang",
   "ลำพูน": "Lamphun",
@@ -534,6 +706,11 @@ const PROVINCE_API_VALUES = {
   "ขอนแก่น": "Khon Kaen",
   "อุบลราชธานี": "Ubon Ratchathani"
 };
+const REFERENCE_PROVINCES = Object.entries(PROVINCE_API_VALUES).map(([th, en]) => ({ th, en }));
+let referenceMeta = null;
+let currentReferenceItems = [];
+let currentReferenceRecordId = null;
+let currentReferenceMode = "edit";
 const num = id => {
   const value = $(id).value;
   return value === "" ? null : Number(value);
@@ -559,6 +736,87 @@ const CLASSIC_HEAT_GRADIENT = {
   0.90: "#b5179e",
   1.00: "#7b2cbf"
 };
+
+function clampPanelWidth(width) {
+  const viewportMax = Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, Math.floor(window.innerWidth * 0.68)));
+  const numericWidth = Number.isFinite(width) ? width : PANEL_DEFAULT_WIDTH;
+  return Math.max(PANEL_MIN_WIDTH, Math.min(viewportMax, Math.round(numericWidth)));
+}
+
+function currentPanelWidth() {
+  const currentWidth = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue("--panel-width"), 10);
+  return Number.isFinite(currentWidth) ? currentWidth : PANEL_DEFAULT_WIDTH;
+}
+
+function applyPanelWidth(width, persist = true) {
+  if (window.innerWidth <= 980) return;
+  const safeWidth = clampPanelWidth(width);
+  document.documentElement.style.setProperty("--panel-width", `${safeWidth}px`);
+  if (persist) localStorage.setItem(PANEL_WIDTH_KEY, String(safeWidth));
+  window.requestAnimationFrame(() => map.invalidateSize(false));
+}
+
+function startPanelResize(event) {
+  if (window.innerWidth <= 980) return;
+  isPanelResizing = true;
+  document.body.classList.add("panel-resizing");
+  event.currentTarget?.setPointerCapture?.(event.pointerId);
+  event.preventDefault();
+}
+
+function movePanelResize(event) {
+  if (!isPanelResizing) return;
+  applyPanelWidth(event.clientX, true);
+}
+
+function stopPanelResize() {
+  if (!isPanelResizing) return;
+  isPanelResizing = false;
+  document.body.classList.remove("panel-resizing");
+}
+
+function resetPanelWidth() {
+  applyPanelWidth(PANEL_DEFAULT_WIDTH, true);
+}
+
+function handlePanelResizerKey(event) {
+  if (window.innerWidth <= 980) return;
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    applyPanelWidth(currentPanelWidth() - 24, true);
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    applyPanelWidth(currentPanelWidth() + 24, true);
+  } else if (event.key === "Home") {
+    event.preventDefault();
+    applyPanelWidth(PANEL_MIN_WIDTH, true);
+  } else if (event.key === "End") {
+    event.preventDefault();
+    applyPanelWidth(PANEL_MAX_WIDTH, true);
+  } else if (event.key === "Enter") {
+    event.preventDefault();
+    resetPanelWidth();
+  }
+}
+
+function initPanelResizer() {
+  const savedWidth = Number(localStorage.getItem(PANEL_WIDTH_KEY));
+  applyPanelWidth(Number.isFinite(savedWidth) ? savedWidth : PANEL_DEFAULT_WIDTH, false);
+  const resizer = $("panel-resizer");
+  resizer.addEventListener("pointerdown", startPanelResize);
+  window.addEventListener("pointermove", movePanelResize);
+  window.addEventListener("pointerup", stopPanelResize);
+  window.addEventListener("pointercancel", stopPanelResize);
+  window.addEventListener("resize", () => {
+    applyPanelWidth(currentPanelWidth(), false);
+  });
+  resizer.addEventListener("dblclick", resetPanelWidth);
+  resizer.addEventListener("keydown", handlePanelResizerKey);
+}
+
+function apiProvinceFromThai(thaiName) {
+  return PROVINCE_API_VALUES[thaiName] || thaiName;
+}
 
 function apiProvinceValue() {
   return PROVINCE_API_VALUES[$("province").value] || $("province").value;
@@ -619,6 +877,17 @@ function restoreCandidateState() {
     }
     return false;
   }
+  const lat = Number(state.lat);
+  const lon = Number(state.lon);
+  if ((state.lat || state.lon) && !(Number.isFinite(lat) && Number.isFinite(lon) && lat >= 5 && lat <= 21 && lon >= 97 && lon <= 106)) {
+    clearDraftCoordinates();
+    try {
+      window.localStorage.removeItem(CANDIDATE_STATE_KEY);
+    } catch (err) {
+      // Ignore storage errors.
+    }
+    return false;
+  }
   if (state.name) $("name").value = state.name;
   if (state.lat) $("lat").value = state.lat;
   if (state.lon) $("lon").value = state.lon;
@@ -626,6 +895,23 @@ function restoreCandidateState() {
   if (state.zone) $("zone").value = state.zone;
   if (state.notes) $("notes").value = state.notes;
   return true;
+}
+
+function clearDraftCoordinates() {
+  $("lat").value = "";
+  $("lon").value = "";
+}
+
+function hasValidDraftCoordinates() {
+  const draftLat = Number($("lat").value);
+  const draftLon = Number($("lon").value);
+  return Number.isFinite(draftLat) && Number.isFinite(draftLon) && draftLat >= 5 && draftLat <= 21 && draftLon >= 97 && draftLon <= 106;
+}
+
+function ensureDefaultMapView(force = false) {
+  if (!force && hasValidDraftCoordinates()) return;
+  map.invalidateSize(false);
+  map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: false });
 }
 
 function hexToRgb(hex) {
@@ -704,7 +990,7 @@ function drawGridHeat(data) {
 
     heatCell.on("click", e => {
       dismissMapHint();
-      quickEstimate(e.latlng.lat, e.latlng.lng);
+      quickEstimate(e.latlng.lat, e.latlng.lng, point);
     });
   });
 }
@@ -730,6 +1016,50 @@ function drawClassicHeat(data) {
     gradient: CLASSIC_HEAT_GRADIENT
   });
   heatmapLayer.addLayer(classicLayer);
+}
+
+function approxKmBetween(lat1, lon1, lat2, lon2) {
+  const latKm = (lat1 - lat2) * 111.0;
+  const lonKm = (lon1 - lon2) * 111.0 * Math.cos(((lat1 + lat2) / 2) * Math.PI / 180);
+  return Math.sqrt((latKm * latKm) + (lonKm * lonKm));
+}
+
+function nearestHeatPoint(lat, lon) {
+  if (!latestHeatmapData || !Array.isArray(latestHeatmapData.points) || !latestHeatmapData.points.length) {
+    return null;
+  }
+  let nearest = null;
+  let nearestDistance = Infinity;
+  latestHeatmapData.points.forEach(point => {
+    const distance = approxKmBetween(lat, lon, Number(point.lat), Number(point.lon));
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = point;
+    }
+  });
+  const resolutionKm = Number(latestHeatmapData.resolution_km || 1.0);
+  const maxDistanceKm = Math.max(0.8, resolutionKm * 1.2);
+  return nearestDistance <= maxDistanceKm ? nearest : null;
+}
+
+function showAreaDemandPopup(lat, lon, summary) {
+  if (estimateMarker) estimateMarker.remove();
+  estimateMarker = L.marker([lat, lon]).addTo(map);
+  const areaSessions = Number(summary.area_sessions ?? summary.heat_score ?? summary.gross_area_demand_sessions ?? 0);
+  const cellLabel = summary.cell_label || `${fmt(summary.resolution_km || latestHeatmapData?.resolution_km || 1.0)} km`;
+  const popupContent =
+    '<div style="font-size:13px;min-width:190px">' +
+    '<h3 style="margin:0 0 8px;color:#12395b;font-size:14px">' + t("areaDemandHeat") + '</h3>' +
+    '<table style="width:100%;margin-bottom:8px">' +
+    '<tr><td style="padding:4px 0"><b>' + t("locationLabel") + ':</b></td><td style="text-align:right"><b>' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</b></td></tr>' +
+    '<tr style="background:#f0f0f0"><td style="padding:4px">' + t("sessionsDay") + ':</td><td style="text-align:right"><b style="color:#7b2cbf">' + fmt(areaSessions) + '</b></td></tr>' +
+    '<tr><td style="padding:4px">' + t("cellLabel") + ':</td><td style="text-align:right">' + cellLabel + '</td></tr>' +
+    '</table>' +
+    '<div style="display:flex;gap:6px;margin-top:8px">' +
+    '<button onclick="useAsCandidate(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#10003; ' + t("useAsCandidate") + '</button>' +
+    '<button onclick="closeEstimate()" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">&#10005; ' + t("closeLabel") + '</button>' +
+    '</div></div>';
+  estimateMarker.bindPopup(popupContent).openPopup();
 }
 
 function payload() {
@@ -791,13 +1121,23 @@ function setDraftMarker(lat, lon) {
 
 // Quick estimate เมื่อคลิกแผนที่
 let estimateMarker = null;
-async function quickEstimate(lat, lon) {
+async function quickEstimate(lat, lon, heatPoint = null) {
   const year = num("year") || new Date().getFullYear();
   const avgKwh = num("avg_kwh") || 32;
   const price = num("price") || 6.8;
   const scenario = $("scenario").value || "base";
   const province = apiProvinceValue() || "Chiang Mai";
   const mode = $("heatmap_mode").value || "urban";
+  const showPointForecast = bool("show_point_forecast");
+  const nearbyHeatPoint = heatPoint || nearestHeatPoint(lat, lon);
+
+  if (!showPointForecast && nearbyHeatPoint) {
+    showAreaDemandPopup(lat, lon, {
+      area_sessions: nearbyHeatPoint.heat_score,
+      resolution_km: latestHeatmapData?.resolution_km || 1.0
+    });
+    return;
+  }
 
   // แสดง loading marker ระหว่างรอ API
   if (estimateMarker) estimateMarker.remove();
@@ -826,6 +1166,14 @@ async function quickEstimate(lat, lon) {
     });
     if (!resp.ok) throw new Error("Click analysis failed");
     const data = await resp.json();
+
+    if (!showPointForecast) {
+      showAreaDemandPopup(lat, lon, {
+        area_sessions: data.gross_area_demand_sessions,
+        resolution_km: latestHeatmapData?.resolution_km || Number($("heatmap_resolution").value || 1.0)
+      });
+      return;
+    }
 
     const sessions = data.net_sessions_per_day || 0;
     const kwh = data.daily_kwh || (sessions * avgKwh);
@@ -1021,6 +1369,194 @@ async function loadSavedSites() {
   });
 }
 
+function referenceLayerConfig() {
+  if (!referenceMeta) return null;
+  return referenceMeta.layers[$("reference-layer").value] || null;
+}
+
+function fillReferenceProvinceOptions() {
+  $("reference-province").innerHTML = REFERENCE_PROVINCES.map(item =>
+    `<option value="${item.en}">${currentLang === "th" ? item.th : item.en}</option>`
+  ).join("");
+  $("reference-province").value = apiProvinceValue();
+}
+
+async function loadReferenceMeta() {
+  const resp = await fetch("/api/reference/meta");
+  referenceMeta = await resp.json();
+  const layerOptions = Object.entries(referenceMeta.layers).map(([key, config]) =>
+    `<option value="${key}">${config.label_th || key}</option>`
+  ).join("");
+  $("reference-layer").innerHTML = layerOptions;
+  fillReferenceProvinceOptions();
+}
+
+function referenceStatus(message, isError = false) {
+  $("reference-status").textContent = message || "";
+  $("reference-status").className = isError ? "status danger" : "status";
+}
+
+function fmtReferenceTimestamp(value) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString();
+}
+
+function closeReferenceEditor() {
+  currentReferenceRecordId = null;
+  $("reference-editor").style.display = "none";
+}
+
+function renderReferenceField(field, value) {
+  const fieldId = `ref-field-${field.name}`;
+  if (field.type === "textarea") {
+    return `<label><span>${field.label_th || field.name}</span><textarea id="${fieldId}" data-field-name="${field.name}">${value || ""}</textarea></label>`;
+  }
+  const inputType = field.type === "integer" || field.type === "number" ? "number" : "text";
+  const step = field.type === "integer" ? "1" : "any";
+  return `<label><span>${field.label_th || field.name}</span><input id="${fieldId}" data-field-name="${field.name}" type="${inputType}" step="${step}" value="${value ?? ""}"></label>`;
+}
+
+function openReferenceEditor(record = null) {
+  const config = referenceLayerConfig();
+  if (!config) return;
+  currentReferenceMode = record ? "edit" : "new";
+  currentReferenceRecordId = record ? record.id : null;
+  const seed = record || { province: $("reference-province").value, ...(config.defaults || {}) };
+  $("reference-editor-title").textContent = `${record ? t("referenceEditorEdit") : t("referenceEditorNew")} - ${config.label_th}`;
+  $("reference-fields").innerHTML = config.form_fields.map(field => renderReferenceField(field, seed[field.name])).join("");
+  $("reference-active").checked = seed.active !== false;
+  $("reference-editor").style.display = "block";
+}
+
+function collectReferenceValues() {
+  const config = referenceLayerConfig();
+  const values = {};
+  config.form_fields.forEach(field => {
+    const el = document.getElementById(`ref-field-${field.name}`);
+    if (!el) return;
+    values[field.name] = el.value;
+  });
+  values.active = $("reference-active").checked;
+  return values;
+}
+
+function renderReferenceRows(items) {
+  if (!items.length) {
+    $("reference-body").innerHTML = `<tr><td colspan="5" class="muted">${t("referenceNotLoaded")}</td></tr>`;
+    return;
+  }
+  $("reference-body").innerHTML = items.map(item => {
+    const key = item.natural_key || item.poi_id || item.station_id || item.business_area_id || item.zone_id || item.node_id || item.exclusion_id || item.id;
+    const name = item.name || item.district_name || "-";
+    const status = item.active === false ? "inactive" : "active";
+    const audit = `${item.updated_by || "-"}<div class="muted">${fmtReferenceTimestamp(item.updated_at)}</div>`;
+    return `<tr>
+      <td>${key}</td>
+      <td>${name}<div class="muted">${item.province || ""}</div></td>
+      <td>${status}</td>
+      <td>${audit}</td>
+      <td>
+        <div class="inline" style="gap:6px">
+          <button class="btn secondary reference-edit-btn" type="button" data-id="${item.id}">${t("edit")}</button>
+          <button class="btn secondary reference-duplicate-btn" type="button" data-id="${item.id}">${t("duplicate")}</button>
+          <button class="btn secondary reference-delete-btn" type="button" data-id="${item.id}">${t("delete")}</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+  document.querySelectorAll(".reference-edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = currentReferenceItems.find(row => String(row.id) === btn.dataset.id);
+      if (item) openReferenceEditor(item);
+    });
+  });
+  document.querySelectorAll(".reference-duplicate-btn").forEach(btn => {
+    btn.addEventListener("click", () => duplicateReferenceRecord(btn.dataset.id));
+  });
+  document.querySelectorAll(".reference-delete-btn").forEach(btn => {
+    btn.addEventListener("click", () => deleteReferenceRecord(btn.dataset.id));
+  });
+}
+
+async function loadReferenceRecords() {
+  const layer = $("reference-layer").value;
+  const province = $("reference-province").value;
+  const q = $("reference-search").value.trim();
+  const activeState = $("reference-active-filter").value;
+  referenceStatus(t("referenceLoading"));
+  try {
+    const params = new URLSearchParams({ province, limit: "500", active_state: activeState });
+    if (q) params.set("q", q);
+    const resp = await fetch(`/api/reference/${layer}?${params.toString()}`);
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    currentReferenceItems = data.items || [];
+    renderReferenceRows(currentReferenceItems);
+    referenceStatus(`${currentReferenceItems.length} records`);
+  } catch (err) {
+    referenceStatus(err.message, true);
+  }
+}
+
+async function duplicateReferenceRecord(recordId) {
+  const layer = $("reference-layer").value;
+  referenceStatus(t("referenceLoading"));
+  try {
+    const resp = await fetch(`/api/reference/${layer}/${recordId}/duplicate`, { method: "POST" });
+    if (!resp.ok) throw new Error(await resp.text());
+    await resp.json();
+    referenceStatus(t("referenceSaved"));
+    await loadReferenceRecords();
+  } catch (err) {
+    referenceStatus(err.message, true);
+  }
+}
+
+async function deleteReferenceRecord(recordId) {
+  if (!window.confirm(t("confirmDelete"))) return;
+  const layer = $("reference-layer").value;
+  referenceStatus(t("referenceLoading"));
+  try {
+    const resp = await fetch(`/api/reference/${layer}/${recordId}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(await resp.text());
+    await resp.json();
+    referenceStatus(t("deletedRecord"));
+    closeReferenceEditor();
+    await loadReferenceRecords();
+    if (latestHeatmapData) await loadHeatMap();
+  } catch (err) {
+    referenceStatus(err.message, true);
+  }
+}
+
+async function saveReferenceRecord() {
+  const layer = $("reference-layer").value;
+  const values = collectReferenceValues();
+  const method = currentReferenceRecordId ? "PUT" : "POST";
+  const url = currentReferenceRecordId ? `/api/reference/${layer}/${currentReferenceRecordId}` : `/api/reference/${layer}`;
+  referenceStatus(t("referenceLoading"));
+  $("reference-save-btn").disabled = true;
+  try {
+    const resp = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ values })
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    await resp.json();
+    referenceStatus(t("referenceSaved"));
+    closeReferenceEditor();
+    await loadReferenceRecords();
+    if (latestHeatmapData) await loadHeatMap();
+  } catch (err) {
+    referenceStatus(err.message, true);
+  } finally {
+    $("reference-save-btn").disabled = false;
+  }
+}
+
 async function loadReferenceLayers() {
   const [landmarks, chargers] = await Promise.all([
     fetch("/api/landmarks").then(r => r.json()),
@@ -1063,6 +1599,7 @@ async function loadHeatMap() {
     );
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
+    latestHeatmapData = data;
     if (requestId !== activeHeatmapRequestId) return;
     heatmapLayer.clearLayers();
 
@@ -1096,6 +1633,7 @@ async function loadHeatMap() {
   } catch (err) {
     if (err && err.name === "AbortError") return;
     heatmapLayer.clearLayers();
+    latestHeatmapData = null;
     $("heatmap-meta").textContent = t("heatmapUnavailable");
     $("status").textContent = `⚠ ${err.message}`;
     $("status").className = "status danger";
@@ -1120,6 +1658,26 @@ function refreshLayerControlLabels() {
 $("analysis-form").addEventListener("submit", analyze);
 $("refresh-btn").addEventListener("click", loadSavedSites);
 $("heatmap-btn").addEventListener("click", loadHeatMap);
+$("reference-refresh-btn").addEventListener("click", loadReferenceRecords);
+$("reference-new-btn").addEventListener("click", () => openReferenceEditor());
+$("reference-save-btn").addEventListener("click", saveReferenceRecord);
+$("reference-cancel-btn").addEventListener("click", closeReferenceEditor);
+$("reference-layer").addEventListener("change", () => {
+  closeReferenceEditor();
+  loadReferenceRecords();
+});
+$("reference-province").addEventListener("change", () => {
+  closeReferenceEditor();
+  loadReferenceRecords();
+});
+$("reference-search").addEventListener("change", loadReferenceRecords);
+$("reference-search").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    loadReferenceRecords();
+  }
+});
+$("reference-active-filter").addEventListener("change", loadReferenceRecords);
 $("lang-th").addEventListener("click", () => applyLanguage("th"));
 $("lang-en").addEventListener("click", () => applyLanguage("en"));
 ["name", "lat", "lon", "province", "zone", "notes"].forEach(id => {
@@ -1145,6 +1703,7 @@ $("heatmap_resolution").addEventListener("change", () => {
 });
 
 $("province").addEventListener("change", () => {
+  fillReferenceProvinceOptions();
   loadHeatMap();
 });
 
@@ -1163,21 +1722,30 @@ document.querySelectorAll(".section-toggle").forEach(function(h2) {
   });
 });
 
+;(async function initializeApp() {
 try {
   applyLanguage(currentLang);
+  initPanelResizer();
   $("year").value = new Date().getFullYear();
   restoreCandidateState();
+  ensureDefaultMapView(true);
+  await loadReferenceMeta();
+  await loadReferenceRecords();
   const draftLat = Number($("lat").value);
   const draftLon = Number($("lon").value);
   if (Number.isFinite(draftLat) && Number.isFinite(draftLon)) {
     setDraftMarker(draftLat, draftLon);
-    map.setView([draftLat, draftLon], 15);
+  } else {
+    ensureDefaultMapView(true);
   }
   loadReferenceLayers();
   loadSavedSites();
 } catch (err) {
   console.error("Initialization error:", err);
 }
+})();
+
+window.addEventListener("load", () => ensureDefaultMapView(true));
 </script>
 </body>
 </html>

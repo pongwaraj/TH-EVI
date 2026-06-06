@@ -1,0 +1,9 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+ry_mueang_rayong,Mueang Rayong,Rayong city core,district_center,12.6814,101.2816,4.8,1.0,Provincial capital and strongest civic-retail node in Rayong.
+ry_ban_chang,Ban Chang,Ban Chang and U-Tapao side service node,transport_junction,12.7268,101.0558,4.0,0.9,Western Rayong transport and service node linked to airport and industry.
+ry_klaeng,Klaeng,Klaeng district center,district_center,12.7792,101.6475,4.0,0.84,Eastern service town and Route 3 corridor node.
+ry_wang_chan,Wang Chan,Wang Chan district center,coverage_anchor,12.9385,101.5190,3.6,0.78,Interior district service node for community coverage.
+ry_ban_khai,Ban Khai,Ban Khai district center,district_center,12.7825,101.2965,3.8,0.86,Community and industrial spillover node west of central Rayong.
+ry_pluak_daeng,Pluak Daeng,Pluak Daeng industrial town core,industrial_town,13.0280,101.2130,4.4,1.0,Primary industrial and worker-service node for north-west Rayong.
+ry_khao_chamao,Khao Chamao,Khao Chamao district center,coverage_anchor,12.9640,101.6800,3.5,0.76,Smaller inland service node with lower year-round demand intensity.
+ry_nikhom_phatthana,Nikhom Phatthana,Nikhom Phatthana industrial service node,industrial_town,12.8565,101.1735,4.1,0.9,Industrial-service district linking Rayong city side with the Pluak Daeng estate corridor.

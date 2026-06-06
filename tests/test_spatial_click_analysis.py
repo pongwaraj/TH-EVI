@@ -132,6 +132,88 @@ def test_click_analysis_combines_base_poi_and_competitor_fields():
     assert result["urban_eligible"] is True
 
 
+def test_samut_prakan_bang_pu_click_analysis_has_area_signals(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    result = analyze_click_location(
+        lat=13.5230,
+        lon=100.7060,
+        province="Samut Prakan",
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["net_sessions_per_day"] > 0
+    assert result["zone_boost_sessions"] > 0
+    assert result["business_area_boost_sessions"] > 0
+    assert result["top_pois"]
+    assert result["eligibility_status"] in {"eligible", "low_relevance"}
+
+
+def test_rayong_pluak_daeng_click_analysis_has_industrial_area_signals(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    result = analyze_click_location(
+        lat=13.0280,
+        lon=101.2130,
+        province="Rayong",
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["net_sessions_per_day"] > 0
+    assert result["zone_boost_sessions"] > 0
+    assert result["business_area_boost_sessions"] > 0
+    assert result["top_pois"]
+    assert result["eligibility_status"] in {"eligible", "low_relevance"}
+
+
 def test_click_analysis_rejects_isolated_point_without_access_signal():
     result = analyze_click_location(
         lat=17.05,

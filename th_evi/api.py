@@ -12,7 +12,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import text
+from sqlalchemy import or_, text
 import uvicorn
 
 from .data import (
@@ -24,12 +24,19 @@ from .data import (
 from .db import (
     AnalysisResult,
     AnalysisRun,
+    BusinessAreaReference,
     CandidateSite,
+    ChargerCompetitor,
     CompetitorRecord,
+    DistrictNodeReference,
+    HeatmapExclusionReference,
+    HotZoneReference,
+    POIReference,
     SiteAssumption,
     get_database_url,
     session_scope,
 )
+from . import heatmap as heatmap_module
 from .heatmap import generate_chiang_mai_heatmap, generate_province_heatmap
 from .location import LANDMARK_DB, LocationDemandModel, StationDemandModel
 from .site import (
@@ -40,6 +47,7 @@ from .site import (
     StationSpec,
     recommend_station_spec,
 )
+from . import spatial as spatial_module
 from .spatial import analyze_click_location
 from .temporal import analyze_station
 
@@ -123,6 +131,10 @@ class ClickAnalysisRequest(BaseModel):
     price_per_kwh: float = Field(6.8, gt=0)
 
 
+class ReferenceRecordRequest(BaseModel):
+    values: dict[str, Any] = Field(default_factory=dict)
+
+
 def _dump_model(model_obj: BaseModel) -> dict[str, Any]:
     if hasattr(model_obj, "model_dump"):
         return model_obj.model_dump()
@@ -138,6 +150,245 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, list):
         return [_json_safe(item) for item in value]
     return value
+
+
+REFERENCE_LAYER_CONFIG: dict[str, dict[str, Any]] = {
+    "poi": {
+        "label_th": "POI",
+        "model": POIReference,
+        "natural_key": "poi_id",
+        "province_field": "province",
+        "list_fields": ["poi_id", "name", "category", "district", "confidence", "verification_status", "active", "updated_at", "updated_by"],
+        "form_fields": [
+            {"name": "poi_id", "label_th": "POI ID", "type": "text", "required": True},
+            {"name": "province", "label_th": "จังหวัด", "type": "text", "required": True},
+            {"name": "district", "label_th": "อำเภอ", "type": "text"},
+            {"name": "name", "label_th": "ชื่อ", "type": "text", "required": True},
+            {"name": "category", "label_th": "ประเภท", "type": "text", "required": True},
+            {"name": "lat", "label_th": "ละติจูด", "type": "number", "required": True},
+            {"name": "lon", "label_th": "ลองจิจูด", "type": "number", "required": True},
+            {"name": "demand_role", "label_th": "บทบาท demand", "type": "text"},
+            {"name": "radius_km", "label_th": "รัศมี กม.", "type": "number"},
+            {"name": "weight", "label_th": "น้ำหนัก", "type": "number"},
+            {"name": "source_url", "label_th": "Source URL", "type": "text"},
+            {"name": "verification_status", "label_th": "สถานะตรวจสอบ", "type": "text"},
+            {"name": "verification_note", "label_th": "Verification note", "type": "textarea"},
+            {"name": "confidence", "label_th": "ความมั่นใจ", "type": "text"},
+            {"name": "updated_by", "label_th": "Updated by", "type": "text"},
+            {"name": "notes", "label_th": "หมายเหตุ", "type": "textarea"},
+        ],
+        "defaults": {"verification_status": "seed_needs_verification", "confidence": "medium", "active": True},
+    },
+    "competitors": {
+        "label_th": "Competitors",
+        "model": ChargerCompetitor,
+        "natural_key": "station_id",
+        "province_field": "province",
+        "list_fields": ["station_id", "name", "network", "operator", "verification_status", "confidence", "active", "updated_at", "updated_by"],
+        "form_fields": [
+            {"name": "station_id", "label_th": "Station ID", "type": "text", "required": True},
+            {"name": "province", "label_th": "จังหวัด", "type": "text", "required": True},
+            {"name": "district", "label_th": "อำเภอ", "type": "text"},
+            {"name": "name", "label_th": "ชื่อสถานี", "type": "text", "required": True},
+            {"name": "network", "label_th": "เครือข่าย", "type": "text"},
+            {"name": "operator", "label_th": "ผู้ให้บริการ", "type": "text"},
+            {"name": "lat", "label_th": "ละติจูด", "type": "number", "required": True},
+            {"name": "lon", "label_th": "ลองจิจูด", "type": "number", "required": True},
+            {"name": "plug_count", "label_th": "จำนวนหัว", "type": "integer"},
+            {"name": "gun_count", "label_th": "จำนวน gun", "type": "integer"},
+            {"name": "max_kw", "label_th": "kW สูงสุด", "type": "number"},
+            {"name": "open_hours", "label_th": "เวลาทำการ", "type": "text"},
+            {"name": "source_url", "label_th": "Source URL", "type": "text"},
+            {"name": "verification_status", "label_th": "สถานะตรวจสอบ", "type": "text"},
+            {"name": "verification_note", "label_th": "Verification note", "type": "textarea"},
+            {"name": "confidence", "label_th": "ความมั่นใจ", "type": "text"},
+            {"name": "updated_by", "label_th": "Updated by", "type": "text"},
+            {"name": "notes", "label_th": "หมายเหตุ", "type": "textarea"},
+        ],
+        "defaults": {"verification_status": "seed_needs_verification", "confidence": "low", "active": True},
+    },
+    "business-areas": {
+        "label_th": "Business Areas",
+        "model": BusinessAreaReference,
+        "natural_key": "business_area_id",
+        "province_field": "province",
+        "list_fields": ["business_area_id", "name", "area_type", "location_type", "confidence", "active", "updated_at", "updated_by"],
+        "form_fields": [
+            {"name": "business_area_id", "label_th": "Business Area ID", "type": "text", "required": True},
+            {"name": "province", "label_th": "จังหวัด", "type": "text", "required": True},
+            {"name": "name", "label_th": "ชื่อพื้นที่", "type": "text", "required": True},
+            {"name": "area_type", "label_th": "ชนิดพื้นที่", "type": "text", "required": True},
+            {"name": "center_lat", "label_th": "ละติจูดศูนย์กลาง", "type": "number", "required": True},
+            {"name": "center_lon", "label_th": "ลองจิจูดศูนย์กลาง", "type": "number", "required": True},
+            {"name": "radius_km", "label_th": "รัศมี กม.", "type": "number", "required": True},
+            {"name": "demand_pool_conservative", "label_th": "Demand conservative", "type": "number"},
+            {"name": "demand_pool_base", "label_th": "Demand base", "type": "number"},
+            {"name": "demand_pool_upside", "label_th": "Demand upside", "type": "number"},
+            {"name": "location_type", "label_th": "ประเภททำเล", "type": "text"},
+            {"name": "source_url", "label_th": "Source URL", "type": "text"},
+            {"name": "verification_note", "label_th": "Verification note", "type": "textarea"},
+            {"name": "confidence", "label_th": "ความมั่นใจ", "type": "text"},
+            {"name": "last_verified_date", "label_th": "วันที่ยืนยันล่าสุด", "type": "text"},
+            {"name": "updated_by", "label_th": "Updated by", "type": "text"},
+            {"name": "notes", "label_th": "หมายเหตุ", "type": "textarea"},
+        ],
+        "defaults": {"confidence": "medium", "active": True},
+    },
+    "heatmap-exclusions": {
+        "label_th": "Heatmap Exclusions",
+        "model": HeatmapExclusionReference,
+        "natural_key": "exclusion_id",
+        "province_field": "province",
+        "list_fields": ["exclusion_id", "name", "exclusion_type", "confidence", "active", "updated_at", "updated_by"],
+        "form_fields": [
+            {"name": "exclusion_id", "label_th": "Exclusion ID", "type": "text", "required": True},
+            {"name": "province", "label_th": "จังหวัด", "type": "text", "required": True},
+            {"name": "name", "label_th": "ชื่อพื้นที่ตัดออก", "type": "text", "required": True},
+            {"name": "center_lat", "label_th": "ละติจูดศูนย์กลาง", "type": "number", "required": True},
+            {"name": "center_lon", "label_th": "ลองจิจูดศูนย์กลาง", "type": "number", "required": True},
+            {"name": "radius_km", "label_th": "รัศมี กม.", "type": "number", "required": True},
+            {"name": "exclusion_type", "label_th": "ประเภทการตัดออก", "type": "text"},
+            {"name": "source_url", "label_th": "Source URL", "type": "text"},
+            {"name": "verification_note", "label_th": "Verification note", "type": "textarea"},
+            {"name": "confidence", "label_th": "ความมั่นใจ", "type": "text"},
+            {"name": "last_verified_date", "label_th": "วันที่ยืนยันล่าสุด", "type": "text"},
+            {"name": "updated_by", "label_th": "Updated by", "type": "text"},
+            {"name": "reason", "label_th": "เหตุผล", "type": "textarea"},
+        ],
+        "defaults": {"confidence": "medium", "active": True},
+    },
+    "hot-zones": {
+        "label_th": "Hot Zones",
+        "model": HotZoneReference,
+        "natural_key": "zone_id",
+        "province_field": "province",
+        "list_fields": ["zone_id", "name", "heat_rank", "competition_pressure", "confidence", "active", "updated_at", "updated_by"],
+        "form_fields": [
+            {"name": "zone_id", "label_th": "Zone ID", "type": "text", "required": True},
+            {"name": "province", "label_th": "จังหวัด", "type": "text", "required": True},
+            {"name": "name", "label_th": "ชื่อโซน", "type": "text", "required": True},
+            {"name": "center_lat", "label_th": "ละติจูดศูนย์กลาง", "type": "number", "required": True},
+            {"name": "center_lon", "label_th": "ลองจิจูดศูนย์กลาง", "type": "number", "required": True},
+            {"name": "radius_km", "label_th": "รัศมี กม.", "type": "number", "required": True},
+            {"name": "heat_rank", "label_th": "อันดับความร้อน", "type": "integer"},
+            {"name": "demand_pool_conservative", "label_th": "Demand conservative", "type": "number"},
+            {"name": "demand_pool_base", "label_th": "Demand base", "type": "number"},
+            {"name": "demand_pool_upside", "label_th": "Demand upside", "type": "number"},
+            {"name": "competition_pressure", "label_th": "แรงกดดันการแข่งขัน", "type": "text"},
+            {"name": "source_url", "label_th": "Source URL", "type": "text"},
+            {"name": "verification_note", "label_th": "Verification note", "type": "textarea"},
+            {"name": "confidence", "label_th": "ความมั่นใจ", "type": "text"},
+            {"name": "last_verified_date", "label_th": "วันที่ยืนยันล่าสุด", "type": "text"},
+            {"name": "updated_by", "label_th": "Updated by", "type": "text"},
+            {"name": "capture_notes", "label_th": "คำอธิบาย", "type": "textarea"},
+        ],
+        "defaults": {"confidence": "medium", "active": True},
+    },
+    "district-nodes": {
+        "label_th": "District Nodes",
+        "model": DistrictNodeReference,
+        "natural_key": "node_id",
+        "province_field": "province",
+        "list_fields": ["node_id", "district_name", "name", "node_type", "confidence", "active", "updated_at", "updated_by"],
+        "form_fields": [
+            {"name": "node_id", "label_th": "Node ID", "type": "text", "required": True},
+            {"name": "province", "label_th": "จังหวัด", "type": "text", "required": True},
+            {"name": "district_name", "label_th": "อำเภอ", "type": "text", "required": True},
+            {"name": "name", "label_th": "ชื่อจุดศูนย์กลาง", "type": "text", "required": True},
+            {"name": "node_type", "label_th": "ประเภท node", "type": "text", "required": True},
+            {"name": "lat", "label_th": "ละติจูด", "type": "number", "required": True},
+            {"name": "lon", "label_th": "ลองจิจูด", "type": "number", "required": True},
+            {"name": "radius_km", "label_th": "รัศมี กม.", "type": "number"},
+            {"name": "confidence_multiplier", "label_th": "ตัวคูณความมั่นใจ", "type": "number"},
+            {"name": "source_url", "label_th": "Source URL", "type": "text"},
+            {"name": "verification_note", "label_th": "Verification note", "type": "textarea"},
+            {"name": "confidence", "label_th": "ความมั่นใจ", "type": "text"},
+            {"name": "updated_by", "label_th": "Updated by", "type": "text"},
+            {"name": "notes", "label_th": "หมายเหตุ", "type": "textarea"},
+        ],
+        "defaults": {"confidence": "medium", "active": True},
+    },
+}
+
+
+def _reference_config(layer: str) -> dict[str, Any]:
+    config = REFERENCE_LAYER_CONFIG.get(layer)
+    if not config:
+        raise HTTPException(status_code=404, detail="Unknown reference layer")
+    return config
+
+
+def _serialize_reference_row(layer: str, row: Any) -> dict[str, Any]:
+    config = _reference_config(layer)
+    values = {
+        "id": row.id,
+        "active": getattr(row, "active", True),
+        "natural_key": getattr(row, config["natural_key"], None),
+    }
+    field_names = {field["name"] for field in config["form_fields"]}
+    field_names.update(config["list_fields"])
+    field_names.update({"province", config["natural_key"]})
+    for name in field_names:
+        if hasattr(row, name):
+            values[name] = getattr(row, name)
+    return _json_safe(values)
+
+
+def _coerce_reference_value(field_type: str, value: Any) -> Any:
+    if value in (None, ""):
+        return None
+    if field_type == "integer":
+        return int(value)
+    if field_type == "number":
+        return float(value)
+    if field_type == "boolean":
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in {"1", "true", "yes", "on"}
+    return str(value)
+
+
+def _assign_reference_values(config: dict[str, Any], obj: Any, values: dict[str, Any]) -> None:
+    field_map = {field["name"]: field for field in config["form_fields"]}
+    for name, field in field_map.items():
+        if name not in values:
+            continue
+        coerced = _coerce_reference_value(field["type"], values.get(name))
+        if field.get("required") and coerced in (None, ""):
+            raise HTTPException(status_code=400, detail=f"{name} is required")
+        setattr(obj, name, coerced)
+    if "active" in values and hasattr(obj, "active"):
+        setattr(obj, "active", _coerce_reference_value("boolean", values.get("active")))
+
+
+def _reference_display_name(row: Any) -> str:
+    return getattr(row, "name", None) or getattr(row, "district_name", None) or ""
+
+
+def _duplicate_reference_values(config: dict[str, Any], row: Any) -> dict[str, Any]:
+    values = {}
+    for field in config["form_fields"]:
+        name = field["name"]
+        values[name] = getattr(row, name, None)
+    natural_key = config["natural_key"]
+    current_key = getattr(row, natural_key, "")
+    values[natural_key] = f"{current_key}_copy"
+    if "name" in values and values["name"]:
+        values["name"] = f"{values['name']} (Copy)"
+    values["updated_by"] = "local_admin"
+    values["active"] = getattr(row, "active", True)
+    return values
+
+
+def _clear_reference_caches() -> None:
+    spatial_module.load_pois_for_province.cache_clear()
+    spatial_module.load_competitors_for_province.cache_clear()
+    spatial_module.load_hot_zones_for_province.cache_clear()
+    spatial_module.load_business_areas_for_province.cache_clear()
+    spatial_module.load_heatmap_exclusions_for_province.cache_clear()
+    spatial_module.load_district_nodes_for_province.cache_clear()
+    spatial_module.load_enriched_district_nodes.cache_clear()
+    heatmap_module.generate_province_heatmap.cache_clear()
 
 
 def _station_type_for_queue(location_type: str | None, station_format: str) -> str:
@@ -425,6 +676,150 @@ def database_health():
         )
 
 
+@app.get("/api/reference/meta")
+def reference_meta():
+    return {
+        "layers": {
+            key: {
+                "label_th": value["label_th"],
+                "natural_key": value["natural_key"],
+                "list_fields": value["list_fields"],
+                "form_fields": value["form_fields"],
+                "defaults": value["defaults"],
+            }
+            for key, value in REFERENCE_LAYER_CONFIG.items()
+        }
+    }
+
+
+@app.get("/api/reference/{layer}")
+def list_reference_records(
+    layer: str,
+    province: str | None = Query(None),
+    active_state: str = Query("all", pattern="^(all|active|inactive)$"),
+    q: str | None = Query(None),
+    limit: int = Query(200, ge=1, le=1000),
+):
+    config = _reference_config(layer)
+    model_cls = config["model"]
+    province_field = getattr(model_cls, config["province_field"])
+    natural_key_field = getattr(model_cls, config["natural_key"])
+    with session_scope() as session:
+        query = session.query(model_cls)
+        if province:
+            query = query.filter(province_field == province)
+        if hasattr(model_cls, "active"):
+            if active_state == "active":
+                query = query.filter(model_cls.active.is_(True))
+            elif active_state == "inactive":
+                query = query.filter(model_cls.active.is_(False))
+        if q:
+            search = f"%{q.strip()}%"
+            filters = []
+            for field_name in (config["natural_key"], "name", "district_name", "category", "network", "operator"):
+                if hasattr(model_cls, field_name):
+                    filters.append(getattr(model_cls, field_name).ilike(search))
+            if filters:
+                query = query.filter(or_(*filters))
+        rows = query.order_by(province_field.asc(), natural_key_field.asc()).limit(limit).all()
+        return {"items": [_serialize_reference_row(layer, row) for row in rows], "count": len(rows)}
+
+
+@app.get("/api/reference/{layer}/{record_id}")
+def get_reference_record(layer: str, record_id: int):
+    config = _reference_config(layer)
+    model_cls = config["model"]
+    with session_scope() as session:
+        row = session.get(model_cls, record_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Reference record not found")
+        return _serialize_reference_row(layer, row)
+
+
+@app.post("/api/reference/{layer}")
+def create_reference_record(layer: str, req: ReferenceRecordRequest):
+    config = _reference_config(layer)
+    model_cls = config["model"]
+    payload = dict(config.get("defaults", {}))
+    payload.update(req.values or {})
+    payload.setdefault("updated_by", "local_admin")
+    obj = model_cls()
+    _assign_reference_values(config, obj, payload)
+    with session_scope() as session:
+        session.add(obj)
+        session.flush()
+        session.refresh(obj)
+        saved = _serialize_reference_row(layer, obj)
+    _clear_reference_caches()
+    return saved
+
+
+@app.put("/api/reference/{layer}/{record_id}")
+def update_reference_record(layer: str, record_id: int, req: ReferenceRecordRequest):
+    config = _reference_config(layer)
+    model_cls = config["model"]
+    with session_scope() as session:
+        obj = session.get(model_cls, record_id)
+        if obj is None:
+            raise HTTPException(status_code=404, detail="Reference record not found")
+        payload = dict(req.values or {})
+        payload.setdefault("updated_by", "local_admin")
+        _assign_reference_values(config, obj, payload)
+        session.flush()
+        session.refresh(obj)
+        saved = _serialize_reference_row(layer, obj)
+    _clear_reference_caches()
+    return saved
+
+
+@app.post("/api/reference/{layer}/{record_id}/duplicate")
+def duplicate_reference_record(layer: str, record_id: int):
+    config = _reference_config(layer)
+    model_cls = config["model"]
+    with session_scope() as session:
+        source = session.get(model_cls, record_id)
+        if source is None:
+            raise HTTPException(status_code=404, detail="Reference record not found")
+        payload = _duplicate_reference_values(config, source)
+        clone = model_cls()
+        _assign_reference_values(config, clone, payload)
+        session.add(clone)
+        session.flush()
+        session.refresh(clone)
+        saved = _serialize_reference_row(layer, clone)
+    _clear_reference_caches()
+    return saved
+
+
+@app.delete("/api/reference/{layer}/{record_id}")
+def delete_reference_record(layer: str, record_id: int):
+    config = _reference_config(layer)
+    model_cls = config["model"]
+    with session_scope() as session:
+        row = session.get(model_cls, record_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Reference record not found")
+        deleted = {
+            "id": row.id,
+            "natural_key": getattr(row, config["natural_key"], None),
+            "name": _reference_display_name(row),
+        }
+        if hasattr(row, "active"):
+            row.active = False
+            if hasattr(row, "updated_by"):
+                row.updated_by = "local_admin"
+            session.flush()
+            session.refresh(row)
+            deactivated = _serialize_reference_row(layer, row)
+        else:
+            session.delete(row)
+            deactivated = None
+    _clear_reference_caches()
+    if deactivated is not None:
+        return {"deactivated": deactivated}
+    return {"deleted": deleted}
+
+
 @app.get("/api/scenario")
 def scenario(year: int = Query(2035, ge=2025, le=2050)):
     """Return comprehensive scenario: all landmarks + summary."""
@@ -642,6 +1037,15 @@ def index():
     if not index_path.exists():
         return HTMLResponse("<h1>TH-EVI</h1><p>Frontend not built yet.</p>")
     return FileResponse(str(index_path))
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_page():
+    """Serve the reference data admin page."""
+    admin_path = STATIC_DIR / "admin.html"
+    if not admin_path.exists():
+        return HTMLResponse("<h1>TH-EVI</h1><p>Admin page not built yet.</p>")
+    return FileResponse(str(admin_path))
 
 
 def main():

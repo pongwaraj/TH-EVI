@@ -7,7 +7,11 @@ import csv
 from th_evi import ingest
 from th_evi.db import (
     AADTSegment,
+    BusinessAreaReference,
     ChargerCompetitor,
+    DistrictNodeReference,
+    HeatmapExclusionReference,
+    HotZoneReference,
     POIReference,
     ProvinceIngestionRun,
     ReferenceSource,
@@ -53,6 +57,130 @@ def test_ingest_preserves_sources_and_rerun_status(monkeypatch, tmp_path):
         ["station_id", "name", "operator", "network", "lat", "lon", "source_type", "verification_status", "confidence", "notes"],
         [{"station_id": "comp_1", "name": "Test Charger", "operator": "PEA", "network": "PEA VOLTA", "lat": "18.2", "lon": "99.2", "source_type": "osm", "verification_status": "seed_needs_verification", "confidence": "low", "notes": "test"}],
     )
+    _write_csv(
+        tmp_path / "business_areas_test_province.csv",
+        [
+            "business_area_id",
+            "name",
+            "area_type",
+            "center_lat",
+            "center_lon",
+            "radius_km",
+            "demand_pool_conservative",
+            "demand_pool_base",
+            "demand_pool_upside",
+            "location_type",
+            "confidence",
+            "notes",
+            "last_verified_date",
+        ],
+        [
+            {
+                "business_area_id": "biz_1",
+                "name": "Test growth area",
+                "area_type": "urban_fringe",
+                "center_lat": "18.3",
+                "center_lon": "99.3",
+                "radius_km": "3.5",
+                "demand_pool_conservative": "80",
+                "demand_pool_base": "110",
+                "demand_pool_upside": "145",
+                "location_type": "destination",
+                "confidence": "medium_high",
+                "notes": "test",
+                "last_verified_date": "2026-06-06",
+            }
+        ],
+    )
+    _write_csv(
+        tmp_path / "heatmap_exclusions_test_province.csv",
+        [
+            "exclusion_id",
+            "name",
+            "center_lat",
+            "center_lon",
+            "radius_km",
+            "exclusion_type",
+            "confidence",
+            "reason",
+            "last_verified_date",
+        ],
+        [
+            {
+                "exclusion_id": "exc_1",
+                "name": "Test lake",
+                "center_lat": "18.4",
+                "center_lon": "99.4",
+                "radius_km": "2.0",
+                "exclusion_type": "water",
+                "confidence": "high",
+                "reason": "test",
+                "last_verified_date": "2026-06-06",
+            }
+        ],
+    )
+    _write_csv(
+        tmp_path / "hot_zones_test_province.csv",
+        [
+            "zone_id",
+            "name",
+            "center_lat",
+            "center_lon",
+            "radius_km",
+            "heat_rank",
+            "demand_pool_conservative",
+            "demand_pool_base",
+            "demand_pool_upside",
+            "competition_pressure",
+            "capture_notes",
+            "confidence",
+            "last_verified_date",
+        ],
+        [
+            {
+                "zone_id": "zone_1",
+                "name": "Test core",
+                "center_lat": "18.5",
+                "center_lon": "99.5",
+                "radius_km": "3.2",
+                "heat_rank": "1",
+                "demand_pool_conservative": "120",
+                "demand_pool_base": "180",
+                "demand_pool_upside": "240",
+                "competition_pressure": "medium",
+                "capture_notes": "test",
+                "confidence": "high",
+                "last_verified_date": "2026-06-06",
+            }
+        ],
+    )
+    _write_csv(
+        tmp_path / "district_nodes_test_province.csv",
+        [
+            "node_id",
+            "district_name",
+            "name",
+            "node_type",
+            "lat",
+            "lon",
+            "radius_km",
+            "confidence_multiplier",
+            "notes",
+        ],
+        [
+            {
+                "node_id": "node_1",
+                "district_name": "Test District",
+                "name": "Test district center",
+                "node_type": "district_center",
+                "lat": "18.6",
+                "lon": "99.6",
+                "radius_km": "3.8",
+                "confidence_multiplier": "0.95",
+                "notes": "test",
+            }
+        ],
+    )
 
     Session = create_session_factory(f"sqlite:///{(tmp_path / 'test.sqlite3').as_posix()}")
     with Session() as session:
@@ -65,11 +193,23 @@ def test_ingest_preserves_sources_and_rerun_status(monkeypatch, tmp_path):
         source_by_id = {row.id: row.source_name for row in session.query(ReferenceSource).all()}
         poi = session.query(POIReference).one()
         competitor = session.query(ChargerCompetitor).one()
+        business_area = session.query(BusinessAreaReference).one()
+        exclusion = session.query(HeatmapExclusionReference).one()
+        zone = session.query(HotZoneReference).one()
+        node = session.query(DistrictNodeReference).one()
         run = session.query(ProvinceIngestionRun).one()
         assert source_by_id[poi.source_id] == "OpenStreetMap"
         assert source_by_id[competitor.source_id] == "OpenStreetMap"
+        assert business_area.name == "Test growth area"
+        assert exclusion.exclusion_type == "water"
+        assert zone.name == "Test core"
+        assert node.district_name == "Test District"
         assert run.status == "imported_db"
         assert "No seed files found" not in (run.notes or "")
+        assert "BusinessAreas:new=1/processed=1" in (run.notes or "")
+        assert "Exclusions:new=1/processed=1" in (run.notes or "")
+        assert "HotZones:new=1/processed=1" in (run.notes or "")
+        assert "DistrictNodes:new=1/processed=1" in (run.notes or "")
 
     with Session() as session:
         source_map = ingest.seed_reference_sources(session)
@@ -84,6 +224,10 @@ def test_ingest_preserves_sources_and_rerun_status(monkeypatch, tmp_path):
         assert "No seed files found" not in (runs[-1].notes or "")
         assert session.query(POIReference).count() == 1
         assert session.query(ChargerCompetitor).count() == 1
+        assert session.query(BusinessAreaReference).count() == 1
+        assert session.query(HeatmapExclusionReference).count() == 1
+        assert session.query(HotZoneReference).count() == 1
+        assert session.query(DistrictNodeReference).count() == 1
         assert session.query(AADTSegment).count() == 1
 
 

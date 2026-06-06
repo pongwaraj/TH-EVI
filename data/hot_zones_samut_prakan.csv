@@ -1,0 +1,4 @@
+zone_id,name,center_lat,center_lon,radius_km,heat_rank,demand_pool_conservative,demand_pool_base,demand_pool_upside,competition_pressure,capture_notes,confidence,last_verified_date
+sp_bangpu_industrial_coastal,Bang Pu industrial and coastal corridor,13.5230,100.7060,5.8,1,180,270,390,medium,"Bang Pu industrial estate, municipal growth, and Sukhumvit coastal corridor demand. Strong mix of commuter, worker, and service-route charging need.",2026-06-06
+sp_kheha_praksa_urban_rail,Kheha-Praksa urban rail and commuter band,13.5710,100.6140,4.8,2,160,240,340,medium_high,"BTS terminal, Robinson, housing expansion, and western commuter edge of the Bang Pu catchment.",2026-06-06
+sp_muang_boran_destination,Ancient City and coastal destination band,13.5375,100.6295,3.5,3,90,140,210,low_medium,"Destination-oriented demand around Muang Boran and the recreation coast; relevant but should stay below the industrial-commuter core.",2026-06-06

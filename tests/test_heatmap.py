@@ -21,6 +21,60 @@ def test_province_heatmap_supports_non_chiang_mai():
     assert all(point["context_score"] >= 5.0 for point in result["points"])
 
 
+def test_samut_prakan_heatmap_supports_bang_pu_scope():
+    result = generate_province_heatmap(
+        "Samut Prakan",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    assert result["province"] == "Samut Prakan"
+    assert result["point_count"] > 0
+    assert result["metadata"]["poi_count"] >= 6
+    assert result["metadata"]["business_area_count"] >= 3
+
+
+def test_samut_prakan_heatmap_excludes_gulf_open_water():
+    result = generate_province_heatmap(
+        "Samut Prakan",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    gulf_points = [
+        point for point in result["points"]
+        if 13.47 <= point["lat"] <= 13.53 and 100.75 <= point["lon"] <= 100.79
+    ]
+
+    assert result["metadata"]["heatmap_exclusion_count"] >= 1
+    assert gulf_points == []
+
+
+def test_rayong_heatmap_supports_pluak_daeng_industrial_scope():
+    result = generate_province_heatmap(
+        "Rayong",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    assert result["province"] == "Rayong"
+    assert result["point_count"] > 0
+    assert result["metadata"]["poi_count"] >= 6
+    assert result["metadata"]["business_area_count"] >= 4
+
+    pluak_daeng_points = [
+        point for point in result["points"]
+        if 12.98 <= point["lat"] <= 13.10 and 101.05 <= point["lon"] <= 101.24
+    ]
+    assert pluak_daeng_points
+
+
 def test_community_heatmap_supports_district_node_only_province():
     result = generate_province_heatmap(
         "Lamphun",
@@ -97,6 +151,25 @@ def test_chiang_mai_heatmap_includes_business_area_signal():
 
     assert result["metadata"]["business_area_count"] >= 6
     assert any(point["business_area_score"] > 0 for point in result["points"])
+
+
+def test_chiang_mai_airport_zone_stays_hot_with_airport_frontage_support():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    airport_points = [
+        point for point in result["points"]
+        if 18.72 <= point["lat"] <= 18.78 and 98.95 <= point["lon"] <= 99.00
+    ]
+
+    assert airport_points
+    top_airport = max(airport_points, key=lambda point: point["heat_score"])
+    assert top_airport["heat_score"] >= 195.0
+    assert "Chiang Mai Airport frontage and ride-hailing band" in top_airport.get("business_areas", [])
 
 
 def test_chiang_rai_heatmap_filters_remote_tourism_only_mountain_points():

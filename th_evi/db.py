@@ -327,9 +327,16 @@ class POIReference(Base):
     radius_km: Mapped[float | None] = mapped_column(Float, nullable=True)
     weight: Mapped[float | None] = mapped_column(Float, nullable=True)
     source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     verification_status: Mapped[str] = mapped_column(String(40), default="seed_needs_verification", nullable=False)
+    verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
@@ -357,10 +364,196 @@ class ChargerCompetitor(Base):
     open_hours: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     verification_status: Mapped[str] = mapped_column(String(40), default="seed_needs_verification", nullable=False)
+    verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[str] = mapped_column(String(40), default="low", nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class BusinessAreaReference(Base):
+    __tablename__ = "business_area_reference"
+    __table_args__ = (
+        UniqueConstraint("province", "business_area_id", name="uq_business_area_reference"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    business_area_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    area_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    center_lat: Mapped[float] = mapped_column(Float, nullable=False)
+    center_lon: Mapped[float] = mapped_column(Float, nullable=False)
+    radius_km: Mapped[float] = mapped_column(Float, nullable=False)
+    demand_pool_conservative: Mapped[float | None] = mapped_column(Float, nullable=True)
+    demand_pool_base: Mapped[float | None] = mapped_column(Float, nullable=True)
+    demand_pool_upside: Mapped[float | None] = mapped_column(Float, nullable=True)
+    location_type: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_verified_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class HeatmapExclusionReference(Base):
+    __tablename__ = "heatmap_exclusion_reference"
+    __table_args__ = (
+        UniqueConstraint("province", "exclusion_id", name="uq_heatmap_exclusion_reference"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    exclusion_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    center_lat: Mapped[float] = mapped_column(Float, nullable=False)
+    center_lon: Mapped[float] = mapped_column(Float, nullable=False)
+    radius_km: Mapped[float] = mapped_column(Float, nullable=False)
+    exclusion_type: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_verified_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class HotZoneReference(Base):
+    __tablename__ = "hot_zone_reference"
+    __table_args__ = (
+        UniqueConstraint("province", "zone_id", name="uq_hot_zone_reference"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    zone_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    center_lat: Mapped[float] = mapped_column(Float, nullable=False)
+    center_lon: Mapped[float] = mapped_column(Float, nullable=False)
+    radius_km: Mapped[float] = mapped_column(Float, nullable=False)
+    heat_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    demand_pool_conservative: Mapped[float | None] = mapped_column(Float, nullable=True)
+    demand_pool_base: Mapped[float | None] = mapped_column(Float, nullable=True)
+    demand_pool_upside: Mapped[float | None] = mapped_column(Float, nullable=True)
+    competition_pressure: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    capture_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_verified_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class DistrictNodeReference(Base):
+    __tablename__ = "district_node_reference"
+    __table_args__ = (
+        UniqueConstraint("province", "node_id", name="uq_district_node_reference"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    node_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    district_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    node_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    lat: Mapped[float] = mapped_column(Float, nullable=False)
+    lon: Mapped[float] = mapped_column(Float, nullable=False)
+    radius_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    confidence_multiplier: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+SQLITE_REFERENCE_COLUMN_PATCHES: dict[str, list[tuple[str, str]]] = {
+    "poi_reference": [
+        ("source_url", "VARCHAR(500)"),
+        ("verification_note", "TEXT"),
+        ("updated_by", "VARCHAR(120)"),
+        ("updated_at", "DATETIME"),
+        ("active", "BOOLEAN NOT NULL DEFAULT 1"),
+    ],
+    "charger_competitors": [
+        ("source_url", "VARCHAR(500)"),
+        ("verification_note", "TEXT"),
+        ("updated_by", "VARCHAR(120)"),
+        ("updated_at", "DATETIME"),
+        ("active", "BOOLEAN NOT NULL DEFAULT 1"),
+    ],
+    "business_area_reference": [
+        ("source_url", "VARCHAR(500)"),
+        ("verification_note", "TEXT"),
+        ("updated_by", "VARCHAR(120)"),
+        ("updated_at", "DATETIME"),
+    ],
+    "heatmap_exclusion_reference": [
+        ("source_url", "VARCHAR(500)"),
+        ("verification_note", "TEXT"),
+        ("updated_by", "VARCHAR(120)"),
+        ("updated_at", "DATETIME"),
+    ],
+    "hot_zone_reference": [
+        ("source_url", "VARCHAR(500)"),
+        ("verification_note", "TEXT"),
+        ("updated_by", "VARCHAR(120)"),
+        ("updated_at", "DATETIME"),
+    ],
+    "district_node_reference": [
+        ("source_url", "VARCHAR(500)"),
+        ("verification_note", "TEXT"),
+        ("updated_by", "VARCHAR(120)"),
+        ("updated_at", "DATETIME"),
+    ],
+}
+
+
+def _apply_sqlite_reference_column_patches(engine) -> None:
+    with engine.begin() as conn:
+        for table_name, columns in SQLITE_REFERENCE_COLUMN_PATCHES.items():
+            try:
+                existing = {
+                    row[1]
+                    for row in conn.exec_driver_sql(f"PRAGMA table_info('{table_name}')").fetchall()
+                }
+            except Exception:
+                continue
+            for column_name, ddl in columns:
+                if column_name in existing:
+                    continue
+                conn.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {ddl}")
 
 
 def get_database_url() -> str:
@@ -385,6 +578,8 @@ def create_session_factory(db_url: str | None = None) -> sessionmaker[Session]:
         connect_args = {"check_same_thread": False}
     engine = create_engine(url, connect_args=connect_args)
     Base.metadata.create_all(engine)
+    if url.startswith("sqlite"):
+        _apply_sqlite_reference_column_patches(engine)
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

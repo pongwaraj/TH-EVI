@@ -1,0 +1,4 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+sp_mueang_east_core,Mueang Samut Prakan,Bang Pu - Praksa east service core,district_center,13.5455,100.6735,4.2,0.96,"Eastern Mueang Samut Prakan node covering Bang Pu municipality, residential clusters, and hospital/service activity."
+sp_mueang_kheha_terminal,Mueang Samut Prakan,Kheha BTS commuter terminal,transport_junction,13.5711,100.6048,4.0,0.9,"Eastern BTS terminal and commuter interchange feeding the Bang Pu corridor."
+sp_mueang_bangpu_industrial,Mueang Samut Prakan,Bang Pu industrial estate node,industrial_town,13.5215,100.6918,3.8,1.0,"Industrial and logistics anchor inside the Bang Pu employment zone."

@@ -6,10 +6,14 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from th_evi.db import (
+    BusinessAreaReference,
+    DistrictNodeReference,
     EVBooking,
     EVFleetMix,
     EVModel,
     EVRegistration,
+    HeatmapExclusionReference,
+    HotZoneReference,
     create_session_factory,
 )
 
@@ -82,3 +86,85 @@ def test_ev_model_schema_supports_registration_booking_and_fleet_mix():
         assert saved.registrations[0].registrations == 120
         assert saved.bookings[0].bookings == 300
         assert saved.fleet_mix_rows[0].estimated_active_units == 1400
+
+
+def test_reference_schema_supports_business_areas_and_heatmap_exclusions():
+    Session = create_session_factory("sqlite:///:memory:")
+    with Session() as session:
+        session.add(
+            BusinessAreaReference(
+                business_area_id="cm_airport_frontage",
+                province="Chiang Mai",
+                name="Airport frontage",
+                area_type="urban_fringe",
+                center_lat=18.77,
+                center_lon=98.97,
+                radius_km=3.2,
+                demand_pool_base=175.0,
+                confidence="high",
+            )
+        )
+        session.add(
+            HeatmapExclusionReference(
+                exclusion_id="py_kwan_water_core",
+                province="Phayao",
+                name="Kwan Phayao water core",
+                center_lat=19.17,
+                center_lon=99.92,
+                radius_km=3.4,
+                exclusion_type="water",
+                confidence="high",
+            )
+        )
+        session.commit()
+
+    with Session() as session:
+        area = session.query(BusinessAreaReference).one()
+        exclusion = session.query(HeatmapExclusionReference).one()
+        assert area.business_area_id == "cm_airport_frontage"
+        assert area.active is True
+        assert area.updated_at is not None
+        assert exclusion.exclusion_id == "py_kwan_water_core"
+        assert exclusion.active is True
+
+
+def test_reference_schema_supports_hot_zones_and_district_nodes():
+    Session = create_session_factory("sqlite:///:memory:")
+    with Session() as session:
+        session.add(
+            HotZoneReference(
+                zone_id="cm_airport_core",
+                province="Chiang Mai",
+                name="Airport core",
+                center_lat=18.767,
+                center_lon=98.976,
+                radius_km=2.5,
+                heat_rank=1,
+                demand_pool_base=320.0,
+                confidence="high",
+            )
+        )
+        session.add(
+            DistrictNodeReference(
+                node_id="cm_mueang",
+                province="Chiang Mai",
+                district_name="Mueang Chiang Mai",
+                name="Chiang Mai city and inner ring",
+                node_type="district_center",
+                lat=18.7904,
+                lon=98.9847,
+                radius_km=4.8,
+                confidence_multiplier=1.0,
+                confidence="high",
+            )
+        )
+        session.commit()
+
+    with Session() as session:
+        zone = session.query(HotZoneReference).one()
+        node = session.query(DistrictNodeReference).one()
+        assert zone.zone_id == "cm_airport_core"
+        assert zone.active is True
+        assert zone.updated_at is not None
+        assert node.node_id == "cm_mueang"
+        assert node.active is True

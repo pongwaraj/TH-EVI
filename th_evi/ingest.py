@@ -17,8 +17,12 @@ import pandas as pd
 
 from .db import (
     AADTSegment,
+    BusinessAreaReference,
     ChargerCompetitor,
+    DistrictNodeReference,
     DistrictPopulation,
+    HeatmapExclusionReference,
+    HotZoneReference,
     POIReference,
     ProvinceIngestionRun,
     ReferenceSource,
@@ -40,6 +44,8 @@ PROVINCE_SLUGS = [
     "ubon_ratchathani",
     "nong_khai",
     "mae_hong_son",
+    "samut_prakan",
+    "rayong",
 ]
 
 SLUG_TO_NAME = {
@@ -55,6 +61,8 @@ SLUG_TO_NAME = {
     "ubon_ratchathani": "Ubon Ratchathani",
     "nong_khai": "Nong Khai",
     "mae_hong_son": "Mae Hong Son",
+    "samut_prakan": "Samut Prakan",
+    "rayong": "Rayong",
 }
 
 
@@ -114,11 +122,24 @@ def _thai_province_name(english_name: str) -> str:
         "Phrae": "แพร่",
         "Khon Kaen": "ขอนแก่น",
         "Udon Thani": "อุดรธานี",
-        "Ubon Ratchathani": "อุบลราชธานี",
-        "Nong Khai": "หนองคาย",
+    "Ubon Ratchathani": "อุบลราชธานี",
+    "Nong Khai": "หนองคาย",
         "Mae Hong Son": "แม่ฮ่องสอน",
+        "Samut Prakan": "สมุทรปราการ",
+        "Rayong": "ระยอง",
     }
     return mapping.get(english_name, english_name)
+
+
+def _first_existing_path(*candidates: Path) -> Path | None:
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+def _existing_paths(*candidates: Path) -> list[Path]:
+    return [path for path in candidates if path.exists()]
 
 
 def _resolve_source_id(
@@ -343,9 +364,12 @@ def ingest_aadt_segments(session, source_map: dict[str, int], slug: str) -> dict
 
 def ingest_poi_reference(session, source_map: dict[str, int], slug: str) -> dict[str, int]:
     """Upsert POI from poi_<slug>_seed.csv."""
-    csv_path = DATA_DIR / f"poi_{slug}_seed.csv"
-    if not csv_path.exists():
-        print(f"  SKIP poi_reference - {csv_path.name} not found")
+    csv_path = _first_existing_path(
+        DATA_DIR / f"poi_{slug}_seed.csv",
+        DATA_DIR / f"poi_{slug}_city_seed.csv",
+    )
+    if csv_path is None:
+        print(f"  SKIP poi_reference - poi_{slug}_seed.csv not found")
         return {"new_rows": 0, "processed_rows": 0, "file_found": 0}
 
     fallback_source = source_map.get("seed_estimate")
@@ -379,6 +403,14 @@ def ingest_poi_reference(session, source_map: dict[str, int], slug: str) -> dict
                 existing.lon = lon
                 existing.confidence = confidence
                 existing.source_id = source_id
+                existing.source_url = str(row.get("source_url", "")).strip() or None
+                existing.verification_note = (
+                    str(row.get("verification_note", "")).strip()
+                    or str(row.get("notes", "")).strip()
+                    or None
+                )
+                existing.updated_by = "ingest"
+                existing.active = str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"}
             else:
                 session.add(
                     POIReference(
@@ -390,6 +422,14 @@ def ingest_poi_reference(session, source_map: dict[str, int], slug: str) -> dict
                         lon=lon,
                         confidence=confidence,
                         source_id=source_id,
+                        source_url=str(row.get("source_url", "")).strip() or None,
+                        verification_note=(
+                            str(row.get("verification_note", "")).strip()
+                            or str(row.get("notes", "")).strip()
+                            or None
+                        ),
+                        updated_by="ingest",
+                        active=str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
                     )
                 )
                 count += 1
@@ -402,9 +442,112 @@ def ingest_poi_reference(session, source_map: dict[str, int], slug: str) -> dict
 
 def ingest_competitors(session, source_map: dict[str, int], slug: str) -> dict[str, int]:
     """Upsert competitors from competitors_<slug>_seed.csv."""
-    csv_path = DATA_DIR / f"competitors_{slug}_seed.csv"
+    csv_paths = _existing_paths(
+        DATA_DIR / f"competitors_{slug}_seed.csv",
+        DATA_DIR / f"competitors_{slug}_detailed.csv",
+        DATA_DIR / f"competitors_{slug}_google_verified.csv",
+    )
+    if not csv_paths:
+        print(f"  SKIP charger_competitors - competitors_{slug}_seed.csv not found")
+        return {"new_rows": 0, "processed_rows": 0, "file_found": 0}
+
+    fallback_source = source_map.get("seed_estimate")
+    count = 0
+    processed = 0
+
+    for csv_path in csv_paths:
+        with open(csv_path, encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                station_id = str(row.get("station_id", "")).strip()
+                province = str(row.get("province", "")).strip() or SLUG_TO_NAME.get(slug, slug)
+                name = str(row.get("name", "")).strip()
+                lat = _float_or_none(row.get("lat"))
+                lon = _float_or_none(row.get("lon"))
+                verification = str(row.get("verification_status", "seed_needs_verification")).strip()
+                confidence = str(row.get("confidence", "low")).strip()
+                if not station_id or not name or lat is None or lon is None:
+                    continue
+                processed += 1
+                source_id = _resolve_source_id(
+                    source_map,
+                    source_text=str(row.get("source", "")).strip(),
+                    source_type=str(row.get("source_type", "")).strip(),
+                    source_url=str(row.get("source_url", "")).strip(),
+                ) or fallback_source
+                district = str(row.get("district", "")).strip() or None
+                network = str(row.get("network", "")).strip() or None
+                operator = str(row.get("operator", "")).strip() or None
+                open_hours = str(row.get("opening_hours", "")).strip() or None
+                plug_count = _int_or_none(row.get("plug_count"))
+                gun_count = _int_or_none(row.get("guns")) or _int_or_none(row.get("gun_count"))
+                max_kw = _float_or_none(row.get("max_kw"))
+                existing = session.query(ChargerCompetitor).filter_by(province=province, station_id=station_id).first()
+                if existing:
+                    existing.name = name
+                    existing.lat = lat
+                    existing.lon = lon
+                    existing.district = district
+                    existing.network = network
+                    existing.operator = operator
+                    existing.open_hours = open_hours
+                    existing.plug_count = plug_count
+                    existing.gun_count = gun_count
+                    existing.max_kw = max_kw
+                    existing.verification_status = verification
+                    existing.confidence = confidence
+                    existing.source_id = source_id
+                    existing.notes = str(row.get("notes", "")).strip() or existing.notes
+                    existing.source_url = str(row.get("source_url", "")).strip() or None
+                    existing.verification_note = (
+                        str(row.get("verification_note", "")).strip()
+                        or str(row.get("notes", "")).strip()
+                        or None
+                    )
+                    existing.updated_by = "ingest"
+                    existing.active = str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"}
+                else:
+                    session.add(
+                        ChargerCompetitor(
+                            station_id=station_id,
+                            province=province,
+                            district=district,
+                            name=name,
+                            network=network,
+                            operator=operator,
+                            lat=lat,
+                            lon=lon,
+                            plug_count=plug_count,
+                            gun_count=gun_count,
+                            max_kw=max_kw,
+                            open_hours=open_hours,
+                            verification_status=verification,
+                            confidence=confidence,
+                            source_id=source_id,
+                            source_url=str(row.get("source_url", "")).strip() or None,
+                            verification_note=(
+                                str(row.get("verification_note", "")).strip()
+                                or str(row.get("notes", "")).strip()
+                                or None
+                            ),
+                            notes=str(row.get("notes", "")).strip() or None,
+                            updated_by="ingest",
+                            active=str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
+                        )
+                    )
+                    count += 1
+
+    session.flush()
+    total = session.query(ChargerCompetitor).filter_by(province=SLUG_TO_NAME.get(slug, slug)).count()
+    print(f"  charger_competitors: {count} new, {total} total for {slug}")
+    return {"new_rows": count, "processed_rows": processed, "file_found": 1}
+
+
+def ingest_business_areas(session, source_map: dict[str, int], slug: str) -> dict[str, int]:
+    """Upsert business areas from business_areas_<slug>.csv."""
+    csv_path = DATA_DIR / f"business_areas_{slug}.csv"
     if not csv_path.exists():
-        print(f"  SKIP charger_competitors - {csv_path.name} not found")
+        print(f"  SKIP business_area_reference - {csv_path.name} not found")
         return {"new_rows": 0, "processed_rows": 0, "file_found": 0}
 
     fallback_source = source_map.get("seed_estimate")
@@ -414,14 +557,13 @@ def ingest_competitors(session, source_map: dict[str, int], slug: str) -> dict[s
     with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            station_id = str(row.get("station_id", "")).strip()
+            business_area_id = str(row.get("business_area_id", "")).strip()
             province = str(row.get("province", "")).strip() or SLUG_TO_NAME.get(slug, slug)
             name = str(row.get("name", "")).strip()
-            lat = _float_or_none(row.get("lat"))
-            lon = _float_or_none(row.get("lon"))
-            verification = str(row.get("verification_status", "seed_needs_verification")).strip()
-            confidence = str(row.get("confidence", "low")).strip()
-            if not station_id or not name or lat is None or lon is None:
+            center_lat = _float_or_none(row.get("center_lat"))
+            center_lon = _float_or_none(row.get("center_lon"))
+            radius_km = _float_or_none(row.get("radius_km"))
+            if not business_area_id or not name or center_lat is None or center_lon is None or radius_km is None:
                 continue
             processed += 1
             source_id = _resolve_source_id(
@@ -430,35 +572,249 @@ def ingest_competitors(session, source_map: dict[str, int], slug: str) -> dict[s
                 source_type=str(row.get("source_type", "")).strip(),
                 source_url=str(row.get("source_url", "")).strip(),
             ) or fallback_source
-            district = str(row.get("district", "")).strip() or None
-            existing = session.query(ChargerCompetitor).filter_by(province=province, station_id=station_id).first()
+            existing = session.query(BusinessAreaReference).filter_by(
+                province=province,
+                business_area_id=business_area_id,
+            ).first()
+            payload = {
+                "name": name,
+                "area_type": str(row.get("area_type", "urban_fringe")).strip() or "urban_fringe",
+                "center_lat": center_lat,
+                "center_lon": center_lon,
+                "radius_km": radius_km,
+                "demand_pool_conservative": _float_or_none(row.get("demand_pool_conservative")),
+                "demand_pool_base": _float_or_none(row.get("demand_pool_base")),
+                "demand_pool_upside": _float_or_none(row.get("demand_pool_upside")),
+                "location_type": str(row.get("location_type", "")).strip() or None,
+                "source_id": source_id,
+                "source_url": str(row.get("source_url", "")).strip() or None,
+                "verification_note": (
+                    str(row.get("verification_note", "")).strip()
+                    or str(row.get("notes", "")).strip()
+                    or None
+                ),
+                "confidence": str(row.get("confidence", "medium")).strip(),
+                "notes": str(row.get("notes", "")).strip() or None,
+                "last_verified_date": str(row.get("last_verified_date", "")).strip() or None,
+                "updated_by": "ingest",
+                "active": str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
+            }
             if existing:
-                existing.name = name
-                existing.lat = lat
-                existing.lon = lon
-                existing.district = district
-                existing.verification_status = verification
-                existing.confidence = confidence
-                existing.source_id = source_id
+                for key, value in payload.items():
+                    setattr(existing, key, value)
             else:
                 session.add(
-                    ChargerCompetitor(
-                        station_id=station_id,
+                    BusinessAreaReference(
+                        business_area_id=business_area_id,
                         province=province,
-                        district=district,
-                        name=name,
-                        lat=lat,
-                        lon=lon,
-                        verification_status=verification,
-                        confidence=confidence,
-                        source_id=source_id,
+                        **payload,
                     )
                 )
                 count += 1
 
     session.flush()
-    total = session.query(ChargerCompetitor).filter_by(province=SLUG_TO_NAME.get(slug, slug)).count()
-    print(f"  charger_competitors: {count} new, {total} total for {slug}")
+    total = session.query(BusinessAreaReference).filter_by(province=SLUG_TO_NAME.get(slug, slug)).count()
+    print(f"  business_area_reference: {count} new, {total} total for {slug}")
+    return {"new_rows": count, "processed_rows": processed, "file_found": 1}
+
+
+def ingest_heatmap_exclusions(session, source_map: dict[str, int], slug: str) -> dict[str, int]:
+    """Upsert exclusions from heatmap_exclusions_<slug>.csv."""
+    csv_path = DATA_DIR / f"heatmap_exclusions_{slug}.csv"
+    if not csv_path.exists():
+        print(f"  SKIP heatmap_exclusion_reference - {csv_path.name} not found")
+        return {"new_rows": 0, "processed_rows": 0, "file_found": 0}
+
+    fallback_source = source_map.get("seed_estimate")
+    count = 0
+    processed = 0
+
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            exclusion_id = str(row.get("exclusion_id", "")).strip()
+            province = str(row.get("province", "")).strip() or SLUG_TO_NAME.get(slug, slug)
+            name = str(row.get("name", "")).strip()
+            center_lat = _float_or_none(row.get("center_lat"))
+            center_lon = _float_or_none(row.get("center_lon"))
+            radius_km = _float_or_none(row.get("radius_km"))
+            if not exclusion_id or not name or center_lat is None or center_lon is None or radius_km is None:
+                continue
+            processed += 1
+            source_id = _resolve_source_id(
+                source_map,
+                source_text=str(row.get("source", "")).strip(),
+                source_type=str(row.get("source_type", "")).strip(),
+                source_url=str(row.get("source_url", "")).strip(),
+            ) or fallback_source
+            existing = session.query(HeatmapExclusionReference).filter_by(
+                province=province,
+                exclusion_id=exclusion_id,
+            ).first()
+            payload = {
+                "name": name,
+                "center_lat": center_lat,
+                "center_lon": center_lon,
+                "radius_km": radius_km,
+                "exclusion_type": str(row.get("exclusion_type", "")).strip() or None,
+                "source_id": source_id,
+                "source_url": str(row.get("source_url", "")).strip() or None,
+                "verification_note": (
+                    str(row.get("verification_note", "")).strip()
+                    or str(row.get("reason", "")).strip()
+                    or None
+                ),
+                "confidence": str(row.get("confidence", "medium")).strip(),
+                "reason": str(row.get("reason", "")).strip() or None,
+                "last_verified_date": str(row.get("last_verified_date", "")).strip() or None,
+                "updated_by": "ingest",
+                "active": str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
+            }
+            if existing:
+                for key, value in payload.items():
+                    setattr(existing, key, value)
+            else:
+                session.add(
+                    HeatmapExclusionReference(
+                        exclusion_id=exclusion_id,
+                        province=province,
+                        **payload,
+                    )
+                )
+                count += 1
+
+    session.flush()
+    total = session.query(HeatmapExclusionReference).filter_by(province=SLUG_TO_NAME.get(slug, slug)).count()
+    print(f"  heatmap_exclusion_reference: {count} new, {total} total for {slug}")
+    return {"new_rows": count, "processed_rows": processed, "file_found": 1}
+
+
+def ingest_hot_zones(session, source_map: dict[str, int], slug: str) -> dict[str, int]:
+    """Upsert hot zones from hot_zones_<slug>.csv."""
+    csv_path = DATA_DIR / f"hot_zones_{slug}.csv"
+    if not csv_path.exists():
+        print(f"  SKIP hot_zone_reference - {csv_path.name} not found")
+        return {"new_rows": 0, "processed_rows": 0, "file_found": 0}
+
+    fallback_source = source_map.get("seed_estimate")
+    count = 0
+    processed = 0
+
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            zone_id = str(row.get("zone_id", "")).strip()
+            province = str(row.get("province", "")).strip() or SLUG_TO_NAME.get(slug, slug)
+            name = str(row.get("name", "")).strip()
+            center_lat = _float_or_none(row.get("center_lat"))
+            center_lon = _float_or_none(row.get("center_lon"))
+            radius_km = _float_or_none(row.get("radius_km"))
+            if not zone_id or not name or center_lat is None or center_lon is None or radius_km is None:
+                continue
+            processed += 1
+            source_id = _resolve_source_id(
+                source_map,
+                source_text=str(row.get("source", "")).strip(),
+                source_type=str(row.get("source_type", "")).strip(),
+                source_url=str(row.get("source_url", "")).strip(),
+            ) or fallback_source
+            payload = {
+                "name": name,
+                "center_lat": center_lat,
+                "center_lon": center_lon,
+                "radius_km": radius_km,
+                "heat_rank": _int_or_none(row.get("heat_rank")),
+                "demand_pool_conservative": _float_or_none(row.get("demand_pool_conservative")),
+                "demand_pool_base": _float_or_none(row.get("demand_pool_base")),
+                "demand_pool_upside": _float_or_none(row.get("demand_pool_upside")),
+                "competition_pressure": str(row.get("competition_pressure", "")).strip() or None,
+                "source_id": source_id,
+                "source_url": str(row.get("source_url", "")).strip() or None,
+                "verification_note": (
+                    str(row.get("verification_note", "")).strip()
+                    or str(row.get("capture_notes", "")).strip()
+                    or None
+                ),
+                "confidence": str(row.get("confidence", "medium")).strip(),
+                "capture_notes": str(row.get("capture_notes", "")).strip() or None,
+                "last_verified_date": str(row.get("last_verified_date", "")).strip() or None,
+                "updated_by": "ingest",
+                "active": str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
+            }
+            existing = session.query(HotZoneReference).filter_by(province=province, zone_id=zone_id).first()
+            if existing:
+                for key, value in payload.items():
+                    setattr(existing, key, value)
+            else:
+                session.add(HotZoneReference(zone_id=zone_id, province=province, **payload))
+                count += 1
+
+    session.flush()
+    total = session.query(HotZoneReference).filter_by(province=SLUG_TO_NAME.get(slug, slug)).count()
+    print(f"  hot_zone_reference: {count} new, {total} total for {slug}")
+    return {"new_rows": count, "processed_rows": processed, "file_found": 1}
+
+
+def ingest_district_nodes(session, source_map: dict[str, int], slug: str) -> dict[str, int]:
+    """Upsert district nodes from district_nodes_<slug>.csv."""
+    csv_path = DATA_DIR / f"district_nodes_{slug}.csv"
+    if not csv_path.exists():
+        print(f"  SKIP district_node_reference - {csv_path.name} not found")
+        return {"new_rows": 0, "processed_rows": 0, "file_found": 0}
+
+    fallback_source = source_map.get("seed_estimate")
+    count = 0
+    processed = 0
+
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            node_id = str(row.get("node_id", "")).strip()
+            province = str(row.get("province", "")).strip() or SLUG_TO_NAME.get(slug, slug)
+            district_name = str(row.get("district_name", "")).strip()
+            name = str(row.get("name", "")).strip()
+            lat = _float_or_none(row.get("lat"))
+            lon = _float_or_none(row.get("lon"))
+            if not node_id or not district_name or not name or lat is None or lon is None:
+                continue
+            processed += 1
+            source_id = _resolve_source_id(
+                source_map,
+                source_text=str(row.get("source", "")).strip(),
+                source_type=str(row.get("source_type", "")).strip(),
+                source_url=str(row.get("source_url", "")).strip(),
+            ) or fallback_source
+            payload = {
+                "district_name": district_name,
+                "name": name,
+                "node_type": str(row.get("node_type", "coverage_anchor")).strip() or "coverage_anchor",
+                "lat": lat,
+                "lon": lon,
+                "radius_km": _float_or_none(row.get("radius_km")),
+                "confidence_multiplier": _float_or_none(row.get("confidence_multiplier")),
+                "source_id": source_id,
+                "source_url": str(row.get("source_url", "")).strip() or None,
+                "verification_note": (
+                    str(row.get("verification_note", "")).strip()
+                    or str(row.get("notes", "")).strip()
+                    or None
+                ),
+                "confidence": str(row.get("confidence", "medium")).strip(),
+                "notes": str(row.get("notes", "")).strip() or None,
+                "updated_by": "ingest",
+                "active": str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
+            }
+            existing = session.query(DistrictNodeReference).filter_by(province=province, node_id=node_id).first()
+            if existing:
+                for key, value in payload.items():
+                    setattr(existing, key, value)
+            else:
+                session.add(DistrictNodeReference(node_id=node_id, province=province, **payload))
+                count += 1
+
+    session.flush()
+    total = session.query(DistrictNodeReference).filter_by(province=SLUG_TO_NAME.get(slug, slug)).count()
+    print(f"  district_node_reference: {count} new, {total} total for {slug}")
     return {"new_rows": count, "processed_rows": processed, "file_found": 1}
 
 
@@ -487,16 +843,40 @@ def ingest_province(session, source_map: dict[str, int], slug: str) -> None:
     aadt_stats = ingest_aadt_segments(session, source_map, slug)
     poi_stats = ingest_poi_reference(session, source_map, slug)
     comp_stats = ingest_competitors(session, source_map, slug)
+    business_area_stats = ingest_business_areas(session, source_map, slug)
+    exclusion_stats = ingest_heatmap_exclusions(session, source_map, slug)
+    hot_zone_stats = ingest_hot_zones(session, source_map, slug)
+    district_node_stats = ingest_district_nodes(session, source_map, slug)
 
-    total_new = aadt_stats["new_rows"] + poi_stats["new_rows"] + comp_stats["new_rows"]
-    files_found = aadt_stats["file_found"] + poi_stats["file_found"] + comp_stats["file_found"]
+    total_new = (
+        aadt_stats["new_rows"]
+        + poi_stats["new_rows"]
+        + comp_stats["new_rows"]
+        + business_area_stats["new_rows"]
+        + exclusion_stats["new_rows"]
+        + hot_zone_stats["new_rows"]
+        + district_node_stats["new_rows"]
+    )
+    files_found = (
+        aadt_stats["file_found"]
+        + poi_stats["file_found"]
+        + comp_stats["file_found"]
+        + business_area_stats["file_found"]
+        + exclusion_stats["file_found"]
+        + hot_zone_stats["file_found"]
+        + district_node_stats["file_found"]
+    )
     status = "imported_db" if files_found > 0 else "skipped"
     if files_found > 0:
         notes = (
             f"files:{files_found} "
             f"AADT:new={aadt_stats['new_rows']}/processed={aadt_stats['processed_rows']}/crosscheck_failures={aadt_stats['crosscheck_failures']} "
             f"POI:new={poi_stats['new_rows']}/processed={poi_stats['processed_rows']} "
-            f"Competitors:new={comp_stats['new_rows']}/processed={comp_stats['processed_rows']}"
+            f"Competitors:new={comp_stats['new_rows']}/processed={comp_stats['processed_rows']} "
+            f"BusinessAreas:new={business_area_stats['new_rows']}/processed={business_area_stats['processed_rows']} "
+            f"Exclusions:new={exclusion_stats['new_rows']}/processed={exclusion_stats['processed_rows']} "
+            f"HotZones:new={hot_zone_stats['new_rows']}/processed={hot_zone_stats['processed_rows']} "
+            f"DistrictNodes:new={district_node_stats['new_rows']}/processed={district_node_stats['processed_rows']}"
         )
     else:
         notes = "No seed files found"
