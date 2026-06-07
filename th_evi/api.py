@@ -19,7 +19,6 @@ from .data import (
     get_chiang_mai_district_population,
     get_cm_highway_aadt,
     load_doh_aadt,
-    load_osm_charging_stations,
 )
 from .db import (
     AnalysisResult,
@@ -626,10 +625,28 @@ def list_highways():
 
 
 @app.get("/api/chargers")
-def list_chargers():
-    """Return existing EV charging stations from OSM."""
-    df = load_osm_charging_stations()
-    return {"stations": df.to_dict(orient="records")}
+def list_chargers(province: str = Query("Chiang Mai", min_length=1)):
+    """Return existing charger competitors for the selected province."""
+    rows = spatial_module.load_competitors_for_province(province)
+    stations = []
+    for row in rows:
+        lat = row.get("lat")
+        lon = row.get("lon")
+        if lat in (None, "") or lon in (None, ""):
+            continue
+        stations.append({
+            "station_id": row.get("station_id"),
+            "name": row.get("name") or row.get("station_id") or "Competitor",
+            "operator": row.get("operator"),
+            "network": row.get("network"),
+            "lat": lat,
+            "lon": lon,
+            "capacity": row.get("plug_count") or row.get("gun_count") or row.get("capacity"),
+            "max_kw": row.get("max_kw"),
+            "verification_status": row.get("verification_status"),
+            "confidence": row.get("confidence"),
+        })
+    return {"province": province, "stations": _json_safe(stations), "station_count": len(stations)}
 
 
 @app.get("/api/population")

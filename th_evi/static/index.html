@@ -10,6 +10,8 @@
 <style>
 * { box-sizing: border-box; }
 :root { --panel-width: 460px; }
+body[data-workspace-mode="planning"] { --panel-width: 400px; }
+body[data-workspace-mode="analysis"] { --panel-width: 520px; }
 html, body { height: 100%; margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #17202a; background: #f4f6f8; }
 body { display: grid; grid-template-columns: clamp(340px, var(--panel-width), 760px) 12px minmax(0, 1fr); }
 body.panel-resizing { cursor: col-resize; user-select: none; }
@@ -44,9 +46,18 @@ h2 { margin: 0 0 10px; font-size: 13px; font-weight: 700; text-transform: upperc
 .lang-switch { display: inline-flex; border: 1px solid #cdd6df; border-radius: 6px; overflow: hidden; flex: 0 0 auto; }
 .lang-switch button { border: 0; background: #fff; color: #12395b; padding: 5px 9px; cursor: pointer; min-height: 28px; font-size: 12px; }
 .lang-switch button.active { background: #12395b; color: #fff; }
+.workspace-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.workspace-mode-btn { border: 1px solid #cdd6df; background: #fff; color: #12395b; border-radius: 10px; padding: 10px 12px; text-align: left; cursor: pointer; min-height: 68px; }
+.workspace-mode-btn b { display: block; font-size: 13px; margin-bottom: 3px; }
+.workspace-mode-btn span { display: block; font-size: 11px; color: #526577; line-height: 1.4; }
+.workspace-mode-btn.active { background: #12395b; border-color: #12395b; color: #fff; }
+.workspace-mode-btn.active span { color: rgba(255,255,255,.82); }
 .muted { color: #66788a; font-size: 12px; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.province-picker { display: grid; gap: 6px; }
+.province-search { font-weight: 500; }
+.province-native { display: none; }
 label { display: grid; gap: 3px; font-size: 12px; color: #34495e; }
 input, select, textarea { width: 100%; border: 1px solid #cdd6df; border-radius: 6px; padding: 7px 8px; background: white; color: #17202a; min-height: 34px; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #12395b; box-shadow: 0 0 0 2px rgba(18,57,91,.12); }
@@ -59,6 +70,13 @@ textarea { min-height: 56px; resize: vertical; }
 .quick-bar h2 { color: #12395b; margin-bottom: 8px; }
 .quick-bar input, .quick-bar select { background: #fff; border-color: #b8cfe0; font-weight: 600; }
 .quick-bar .hint { font-size: 11px; color: #526577; margin-top: 6px; }
+.planning-card { background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%); border-left: 4px solid #2c7bb6; }
+.planning-card h2 { color: #2c7bb6; }
+.planning-summary { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #eef6ff; font-size: 12px; color: #36506a; line-height: 1.5; }
+.planning-actions { display: flex; gap: 8px; align-items: stretch; }
+.planning-actions .btn { flex: 1; }
+.planning-meta { margin-top: 8px; display: grid; gap: 6px; }
+.legend-card { margin-top: 10px; padding: 8px; background: #f9fafb; border-radius: 6px; font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
 /* Buttons */
 .btn { border: 1px solid #12395b; background: #12395b; color: white; border-radius: 6px; padding: 8px 14px; cursor: pointer; min-height: 36px; font-weight: 600; transition: background .15s; }
 .btn:hover:not(:disabled) { background: #0d2a44; }
@@ -93,6 +111,9 @@ a { color: #0b65c2; text-decoration: none; }
 .section-toggle::after { content: "▲"; font-size: 10px; color: #aaa; transition: transform .2s; }
 .section-toggle.collapsed::after { transform: rotate(180deg); }
 .section-body { overflow: hidden; transition: max-height .25s ease; }
+body[data-workspace-mode="planning"] [data-workspace-mode="analysis"] { display: none !important; }
+body[data-workspace-mode="analysis"] [data-workspace-mode="planning"] { display: none !important; }
+body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none !important; }
 @media (max-width: 980px) {
   body { grid-template-columns: 1fr; grid-template-rows: 55vh auto; }
   #map { height: 55vh; order: 1; }
@@ -115,13 +136,47 @@ a { color: #0b65c2; text-decoration: none; }
         <button type="button" id="lang-en">EN</button>
       </div>
     </div>
+    <div class="workspace-mode-switch">
+      <button type="button" class="workspace-mode-btn" id="workspace-mode-planning">
+        <b data-i18n="planningMode">โหมดวางแผน</b>
+        <span data-i18n="planningModeHint">ดู Heat Map ภาพกว้างเพื่อวางแผนพื้นที่และส่งทีม Survey</span>
+      </button>
+      <button type="button" class="workspace-mode-btn" id="workspace-mode-analysis">
+        <b data-i18n="analysisMode">โหมดวิเคราะห์รายจุด</b>
+        <span data-i18n="analysisModeHint">กรอก Candidate site วิเคราะห์รายจุด และบันทึกข้อมูล</span>
+      </button>
+    </div>
   </div>
 
   <!-- Quick Settings bar — ค่าหลักที่ทีมปรับบ่อย -->
   <div class="quick-bar">
     <h2 data-i18n="quickSettings">&#9881; ค่าหลัก (ปรับได้ทันที)</h2>
+    <div class="grid" style="margin-bottom:8px">
+      <label><span data-i18n="province">จังหวัด</span>
+        <div class="province-picker">
+        <input id="heatmap-province-search" class="province-search" type="text" list="heatmap-province-options" autocomplete="off" placeholder="ค้นหาจังหวัด">
+        <select id="heatmap-province" class="province-native">
+          <option value="เชียงใหม่">เชียงใหม่</option>
+          <option value="สมุทรปราการ">สมุทรปราการ</option>
+          <option value="ระยอง">ระยอง</option>
+          <option value="เชียงราย">เชียงราย</option>
+          <option value="ลำปาง">ลำปาง</option>
+          <option value="ลำพูน">ลำพูน</option>
+          <option value="พิษณุโลก">พิษณุโลก</option>
+          <option value="แพร่">แพร่</option>
+          <option value="น่าน">น่าน</option>
+          <option value="พะเยา">พะเยา</option>
+          <option value="หนองคาย">หนองคาย</option>
+          <option value="อุดรธานี">อุดรธานี</option>
+          <option value="ขอนแก่น">ขอนแก่น</option>
+          <option value="อุบลราชธานี">อุบลราชธานี</option>
+        </select>
+        <datalist id="heatmap-province-options"></datalist>
+        </div>
+      </label>
+    </div>
     <div class="grid-3">
-      <label><span data-i18n="kwhSession">kWh/ครั้ง</span><input id="avg_kwh" type="number" min="1" step="0.5" value="32"></label>
+      <label data-planning-hide="true"><span data-i18n="kwhSession">kWh/ครั้ง</span><input id="avg_kwh" type="number" min="1" step="0.5" value="32"></label>
       <label><span data-i18n="year">ปีที่วิเคราะห์</span><input id="year" type="number" min="2025" max="2050" value="2026"></label>
       <label><span data-i18n="scenario">ฉากทัศน์</span>
         <select id="scenario">
@@ -153,14 +208,14 @@ a { color: #0b65c2; text-decoration: none; }
         </select>
       </label>
     </div>
-    <div style="margin-top:8px">
+    <div style="margin-top:8px" data-workspace-mode="analysis">
       <label class="check"><input id="show_point_forecast" type="checkbox"> <span data-i18n="showPointForecast">แสดงค่าพยากรณ์เฉพาะจุด (kW / sessions ลึก)</span></label>
     </div>
     <div class="hint" data-i18n="quickSettingsHint">&#128073; คลิกบนแผนที่เพื่อดู demand ทันที หรือกรอกข้อมูลด้านล่างแล้วกด "วิเคราะห์และบันทึก"</div>
   </div>
 
   <form id="analysis-form">
-    <div class="section">
+    <div class="section" data-workspace-mode="analysis">
       <h2 data-i18n="candidateSite">พื้นที่ที่จะวิเคราะห์</h2>
       <label><span data-i18n="siteName">ชื่อสถานที่</span><input id="name" required placeholder="เช่น Lotus's ลำพูน / PTT เด่นชัย"></label>
       <div class="grid">
@@ -169,13 +224,16 @@ a { color: #0b65c2; text-decoration: none; }
       </div>
       <div class="grid">
         <label><span data-i18n="province">จังหวัด</span>
-          <select id="province">
+          <div class="province-picker">
+          <input id="province-search" class="province-search" type="text" list="province-options" autocomplete="off" placeholder="ค้นหาจังหวัด">
+          <select id="province" class="province-native">
             <option value="เชียงใหม่">เชียงใหม่</option>
             <option value="สมุทรปราการ">สมุทรปราการ</option>
             <option value="ระยอง">ระยอง</option>
             <option value="เชียงราย">เชียงราย</option>
             <option value="ลำปาง">ลำปาง</option>
             <option value="ลำพูน">ลำพูน</option>
+            <option value="พิษณุโลก">พิษณุโลก</option>
             <option value="แพร่">แพร่</option>
             <option value="น่าน">น่าน</option>
             <option value="พะเยา">พะเยา</option>
@@ -184,6 +242,8 @@ a { color: #0b65c2; text-decoration: none; }
             <option value="ขอนแก่น">ขอนแก่น</option>
             <option value="อุบลราชธานี">อุบลราชธานี</option>
           </select>
+          <datalist id="province-options"></datalist>
+          </div>
         </label>
         <label><span data-i18n="zone">โซน/ย่าน</span><input id="zone" placeholder="เช่น เมืองชั้นใน / Route 11 / บ้านดู่"></label>
       </div>
@@ -191,9 +251,9 @@ a { color: #0b65c2; text-decoration: none; }
       <div class="muted" style="margin-top:6px" data-i18n="coordinateHelp">&#128205; คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps</div>
     </div>
 
-    <div class="section">
-      <h2 class="section-toggle" data-i18n="demandAssumptions" data-target="demand-body">สมมติฐานความต้องการ</h2>
-      <div id="demand-body" class="section-body">
+    <div class="section" data-workspace-mode="analysis">
+      <h2 class="section-toggle collapsed" data-i18n="demandAssumptions" data-target="demand-body">สมมติฐานความต้องการ</h2>
+      <div id="demand-body" class="section-body" style="max-height:0;overflow:hidden">
         <div class="grid" style="margin-bottom:8px">
           <label><span data-i18n="locationType">ประเภททำเล</span>
             <select id="location_type">
@@ -220,9 +280,9 @@ a { color: #0b65c2; text-decoration: none; }
       </div>
     </div>
 
-    <div class="section">
-      <h2 class="section-toggle" data-i18n="stationSite" data-target="station-body">สถานีและคุณภาพพื้นที่</h2>
-      <div id="station-body" class="section-body">
+    <div class="section" data-workspace-mode="analysis">
+      <h2 class="section-toggle collapsed" data-i18n="stationSite" data-target="station-body">สถานีและคุณภาพพื้นที่</h2>
+      <div id="station-body" class="section-body" style="max-height:0;overflow:hidden">
         <div class="grid-3" style="margin-bottom:8px">
           <label><span data-i18n="guns">หัวชาร์จ</span><input id="guns" type="number" min="1" value="1"></label>
           <label><span data-i18n="totalKw">กำลังรวม kW</span><input id="total_site_kw" type="number" min="1" value="30"></label>
@@ -248,7 +308,7 @@ a { color: #0b65c2; text-decoration: none; }
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" data-workspace-mode="analysis">
       <h2 class="section-toggle collapsed" data-i18n="knownCompetitor" data-target="competitor-body">คู่แข่งที่ทราบ</h2>
       <div id="competitor-body" class="section-body" style="max-height:0;overflow:hidden">
         <div class="grid" style="margin-bottom:8px">
@@ -262,18 +322,22 @@ a { color: #0b65c2; text-decoration: none; }
       </div>
     </div>
 
-    <div class="section">
-      <button class="btn primary-lg" id="analyze-btn" type="submit" data-i18n="analyzeSave">&#128190; วิเคราะห์และบันทึก</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn secondary" id="refresh-btn" type="button" style="flex:1" data-i18n="refreshSites">&#8635; รีเฟรช</button>
+    <div class="section planning-card">
+      <button class="btn primary-lg" id="analyze-btn" type="submit" data-i18n="analyzeSave" data-workspace-mode="analysis">&#128190; วิเคราะห์และบันทึก</button>
+      <h2 data-i18n="heatmapWorkspace" data-workspace-mode="planning">Heat Map Workspace</h2>
+      <div class="planning-actions">
+        <button class="btn secondary" id="refresh-btn" type="button" style="flex:1" data-i18n="refreshSites" data-workspace-mode="analysis">&#8635; รีเฟรช</button>
         <button class="btn secondary" id="heatmap-btn" type="button" style="flex:1" data-i18n="loadHeatmap">&#127777; Heat Map</button>
       </div>
-      <div id="status" class="status"></div>
-      <div class="heat-legend">
-        <span data-i18n="heat">Heat Map:</span>
-        <span id="heatmap-meta" data-i18n="notLoaded" style="font-weight:600;color:#12395b">ยังไม่ได้โหลด</span>
+      <div class="planning-meta">
+        <div id="status" class="status"></div>
+        <div class="heat-legend">
+          <span data-i18n="heat">Heat Map:</span>
+          <span id="heatmap-meta" data-i18n="notLoaded" style="font-weight:600;color:#12395b">ยังไม่ได้โหลด</span>
+        </div>
       </div>
-      <div style="margin-top:8px;padding:8px;background:#f9fafb;border-radius:6px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:3px">
+      <div class="planning-summary" data-workspace-mode="planning" data-i18n="planningSummary">ใช้แผนที่เพื่อดูภาพกว้าง เลือกจังหวัด ปรับมุมมอง และคลิกพื้นที่ที่ควรส่งทีม Survey ต่อ</div>
+      <div class="legend-card">
         <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#fff3bf;border-radius:2px"></span>30-45%</div>
         <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#ffd166;border-radius:2px"></span>45-60%</div>
         <div style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;background:#f8961e;border-radius:2px"></span>60-75%</div>
@@ -283,7 +347,7 @@ a { color: #0b65c2; text-decoration: none; }
     </div>
   </form>
 
-  <div class="section result-section" id="result-section" style="display:none">
+  <div class="section result-section" id="result-section" style="display:none" data-workspace-mode="analysis">
     <h2 data-i18n="latestResult">&#9989; ผลวิเคราะห์ล่าสุด</h2>
     <div class="metrics">
       <div class="metric"><span data-i18n="sessionsDay">ครั้ง/วัน</span><b id="m_sessions">-</b></div>
@@ -298,7 +362,7 @@ a { color: #0b65c2; text-decoration: none; }
     </table>
   </div>
 
-  <div class="section">
+  <div class="section" data-workspace-mode="analysis">
     <h2 data-i18n="savedSites">&#128204; พื้นที่ที่บันทึกไว้</h2>
     <table>
       <thead><tr><th data-i18n="site">สถานที่</th><th data-i18n="sessions">ครั้ง/วัน</th><th data-i18n="report">รายงาน</th></tr></thead>
@@ -306,7 +370,7 @@ a { color: #0b65c2; text-decoration: none; }
     </table>
   </div>
 
-  <div class="section">
+  <div class="section" data-workspace-mode="analysis">
     <h2 data-i18n="referenceAdmin">จัดการข้อมูลอ้างอิง</h2>
     <div class="muted" data-i18n="referenceAdminHint">เปิดหน้าแยกสำหรับจัดการ POI, competitors, hot zones และข้อมูลอ้างอิงอื่น ๆ</div>
     <div style="margin-top:10px">
@@ -369,6 +433,10 @@ a { color: #0b65c2; text-decoration: none; }
 const translations = {
   th: {
     appSubtitle: "วิเคราะห์ความต้องการสถานีชาร์จ EV สำหรับประเทศไทย",
+    planningMode: "โหมดวางแผน",
+    planningModeHint: "ดู Heat Map ภาพกว้างเพื่อวางแผนพื้นที่และส่งทีม Survey",
+    analysisMode: "โหมดวิเคราะห์รายจุด",
+    analysisModeHint: "กรอก Candidate site วิเคราะห์รายจุด และบันทึกข้อมูล",
     candidateSite: "พื้นที่ที่จะวิเคราะห์",
     siteName: "ชื่อสถานที่",
     latitude: "ละติจูด",
@@ -380,6 +448,8 @@ const translations = {
     coordinateHelp: "คลิกบนแผนที่เพื่อใส่พิกัด หรือวาง lat/lon จาก Google Maps",
     quickSettings: "ค่าหลัก (ปรับได้ทันที)",
     quickSettingsHint: "คลิกบนแผนที่เพื่อดู demand ทันที หรือกรอกข้อมูลด้านล่างแล้วกด วิเคราะห์และบันทึก",
+    heatmapWorkspace: "Heat Map Workspace",
+    planningSummary: "ใช้แผนที่เพื่อดูภาพกว้าง เลือกจังหวัด ปรับมุมมอง และคลิกพื้นที่ที่ควรส่งทีม Survey ต่อ",
     mapClickHint: "คลิกบนแผนที่เพื่อดู Demand",
     demandAssumptions: "สมมติฐานความต้องการ",
     locationType: "ประเภททำเล",
@@ -460,6 +530,7 @@ const translations = {
     open: "เปิด",
     loadingHeatmap: "กำลังโหลด Heat Map...",
     heatmapLoaded: "โหลด Heat Map แล้ว",
+    exclusionsForceGrid: "ใช้มุมมอง Grid เนื่องจากมีพื้นที่ต้องห้าม",
     heatmapUnavailable: "ไม่มีข้อมูล Heat Map สำหรับจังหวัดนี้ในตอนนี้",
     referenceLandmarks: "จุดอ้างอิง",
     existingChargers: "สถานีชาร์จเดิม",
@@ -505,6 +576,10 @@ const translations = {
   },
   en: {
     appSubtitle: "EV charging station demand analysis for Thailand",
+    planningMode: "Planning Mode",
+    planningModeHint: "Use the heat map for executive planning and survey routing.",
+    analysisMode: "Candidate Analysis",
+    analysisModeHint: "Analyze single candidate sites and save screening details.",
     candidateSite: "Candidate Site",
     siteName: "Site name",
     latitude: "Latitude",
@@ -516,6 +591,8 @@ const translations = {
     coordinateHelp: "Click the map to fill lat/lon, or paste coordinates from Google Maps.",
     quickSettings: "Key Settings (adjust anytime)",
     quickSettingsHint: "Click the map for instant demand estimate, or fill the form below and click Analyze & Save",
+    heatmapWorkspace: "Heat Map Workspace",
+    planningSummary: "Use the map for wide-area planning, switch views, and click areas that should go to survey next.",
     mapClickHint: "Click map to estimate demand",
     demandAssumptions: "Demand Assumptions",
     locationType: "Location type",
@@ -596,6 +673,7 @@ const translations = {
     open: "Open",
     loadingHeatmap: "Loading heat map...",
     heatmapLoaded: "Heat map loaded",
+    exclusionsForceGrid: "Grid view used because excluded surfaces are present",
     heatmapUnavailable: "Heat map is not available for this province yet",
     referenceLandmarks: "Reference landmarks",
     existingChargers: "Existing chargers",
@@ -643,7 +721,8 @@ const translations = {
 
 let currentLang = localStorage.getItem("thEviLang") || "th";
 const t = key => (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
-const DEFAULT_CENTER = [18.787747, 98.993128];
+const DEFAULT_PROVINCE_THAI = "เชียงใหม่";
+const DEFAULT_CENTER = [18.754923, 99.036718];
 const DEFAULT_ZOOM = 11;
 const THAILAND_BOUNDS = [[5.4, 97.2], [20.9, 105.8]];
 
@@ -683,12 +762,14 @@ const heatmapLayer = L.layerGroup().addTo(map);
 let draftMarker = null;
 let layerControl = null;
 let latestHeatmapData = null;
-const CANDIDATE_STATE_KEY = "th-evi-candidate-state";
+const CANDIDATE_STATE_KEY = "th-evi-candidate-state-v2";
 const PANEL_WIDTH_KEY = "th-evi-panel-width";
 const PANEL_DEFAULT_WIDTH = 460;
 const PANEL_MIN_WIDTH = 340;
 const PANEL_MAX_WIDTH = 760;
 let isPanelResizing = false;
+const WORKSPACE_MODE_KEY = "thEviWorkspaceMode";
+let currentWorkspaceMode = window.localStorage.getItem(WORKSPACE_MODE_KEY) || "planning";
 
 const $ = id => document.getElementById(id);
 const PROVINCE_API_VALUES = {
@@ -698,6 +779,7 @@ const PROVINCE_API_VALUES = {
   "เชียงราย": "Chiang Rai",
   "ลำปาง": "Lampang",
   "ลำพูน": "Lamphun",
+  "พิษณุโลก": "Phitsanulok",
   "แพร่": "Phrae",
   "น่าน": "Nan",
   "พะเยา": "Phayao",
@@ -720,6 +802,8 @@ const fmt = value => Number(value || 0).toLocaleString(undefined, { maximumFract
 const HEATMAP_MIN_VISIBLE_INTENSITY = 0.30;
 let activeHeatmapRequestId = 0;
 let activeHeatmapController = null;
+const PROVINCE_SELECT_IDS = ["heatmap-province", "province"];
+const provinceOptionCache = {};
 const HEATMAP_COLOR_STOPS = [
   { at: 0.30, color: "#fff3bf" },
   { at: 0.45, color: "#ffd166" },
@@ -744,14 +828,14 @@ function clampPanelWidth(width) {
 }
 
 function currentPanelWidth() {
-  const currentWidth = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue("--panel-width"), 10);
+  const currentWidth = Number.parseInt(getComputedStyle(document.body).getPropertyValue("--panel-width"), 10);
   return Number.isFinite(currentWidth) ? currentWidth : PANEL_DEFAULT_WIDTH;
 }
 
 function applyPanelWidth(width, persist = true) {
   if (window.innerWidth <= 980) return;
   const safeWidth = clampPanelWidth(width);
-  document.documentElement.style.setProperty("--panel-width", `${safeWidth}px`);
+  document.body.style.setProperty("--panel-width", `${safeWidth}px`);
   if (persist) localStorage.setItem(PANEL_WIDTH_KEY, String(safeWidth));
   window.requestAnimationFrame(() => map.invalidateSize(false));
 }
@@ -818,12 +902,124 @@ function apiProvinceFromThai(thaiName) {
   return PROVINCE_API_VALUES[thaiName] || thaiName;
 }
 
+function currentProvinceThaiValue() {
+  return $("heatmap-province").value || $("province").value;
+}
+
+function applyDefaultProvinceSelection() {
+  if ($("heatmap-province")) $("heatmap-province").value = DEFAULT_PROVINCE_THAI;
+  if ($("province")) $("province").value = DEFAULT_PROVINCE_THAI;
+}
+
 function apiProvinceValue() {
-  return PROVINCE_API_VALUES[$("province").value] || $("province").value;
+  const thaiName = currentProvinceThaiValue();
+  return PROVINCE_API_VALUES[thaiName] || thaiName;
+}
+
+function cacheProvinceOptions(selectId) {
+  if (provinceOptionCache[selectId]) return provinceOptionCache[selectId];
+  const select = $(selectId);
+  provinceOptionCache[selectId] = Array.from(select.options).map(option => ({
+    value: option.value,
+    label: option.textContent || option.value
+  }));
+  return provinceOptionCache[selectId];
+}
+
+function provinceDatalistId(selectId) {
+  return selectId === "heatmap-province" ? "heatmap-province-options" : "province-options";
+}
+
+function syncProvinceSearchLabel(selectId) {
+  const search = $(`${selectId}-search`);
+  const select = $(selectId);
+  if (!search || !select) return;
+  const selectedOption = select.options[select.selectedIndex];
+  search.value = selectedOption ? selectedOption.textContent : select.value;
+}
+
+function renderProvinceSuggestions(selectId, query = "") {
+  const datalist = $(provinceDatalistId(selectId));
+  const allOptions = cacheProvinceOptions(selectId);
+  const normalized = query.trim().toLowerCase();
+  const filtered = normalized
+    ? allOptions.filter(option =>
+        option.label.toLowerCase().includes(normalized) ||
+        option.value.toLowerCase().includes(normalized) ||
+        (PROVINCE_API_VALUES[option.value] || "").toLowerCase().includes(normalized)
+      )
+    : allOptions;
+  datalist.innerHTML = filtered.map(option => `<option value="${option.label}"></option>`).join("");
+}
+
+function resolveProvinceSearchValue(selectId, query) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return null;
+  return cacheProvinceOptions(selectId).find(option =>
+    option.label.toLowerCase() === normalized ||
+    option.value.toLowerCase() === normalized ||
+    (PROVINCE_API_VALUES[option.value] || "").toLowerCase() === normalized
+  ) || null;
+}
+
+function initProvinceSearch(selectId) {
+  const search = $(`${selectId}-search`);
+  const select = $(selectId);
+  if (!search || !select) return;
+  cacheProvinceOptions(selectId);
+  renderProvinceSuggestions(selectId);
+  syncProvinceSearchLabel(selectId);
+  search.addEventListener("input", () => {
+    renderProvinceSuggestions(selectId, search.value);
+    const match = resolveProvinceSearchValue(selectId, search.value);
+    if (match && select.value !== match.value) {
+      select.value = match.value;
+      select.dispatchEvent(new Event("change"));
+    }
+  });
+  search.addEventListener("change", () => {
+    const match = resolveProvinceSearchValue(selectId, search.value);
+    if (match) {
+      if (select.value !== match.value) {
+        select.value = match.value;
+        select.dispatchEvent(new Event("change"));
+      }
+    } else {
+      syncProvinceSearchLabel(selectId);
+    }
+  });
+  search.addEventListener("blur", () => syncProvinceSearchLabel(selectId));
+  select.addEventListener("change", () => syncProvinceSearchLabel(selectId));
+}
+
+function syncProvinceSelectors(sourceId) {
+  const source = $(sourceId);
+  const target = sourceId === "province" ? $("heatmap-province") : $("province");
+  if (!source || !target || target.value === source.value) return;
+  target.value = source.value;
+  syncProvinceSearchLabel(target.id);
+}
+
+function applyWorkspaceMode(mode) {
+  currentWorkspaceMode = mode === "analysis" ? "analysis" : "planning";
+  document.body.setAttribute("data-workspace-mode", currentWorkspaceMode);
+  $("workspace-mode-planning").classList.toggle("active", currentWorkspaceMode === "planning");
+  $("workspace-mode-analysis").classList.toggle("active", currentWorkspaceMode === "analysis");
+  $("workspace-mode-planning").setAttribute("aria-pressed", currentWorkspaceMode === "planning" ? "true" : "false");
+  $("workspace-mode-analysis").setAttribute("aria-pressed", currentWorkspaceMode === "analysis" ? "true" : "false");
+  window.localStorage.setItem(WORKSPACE_MODE_KEY, currentWorkspaceMode);
+  document.querySelectorAll(".section-toggle").forEach(h2 => {
+    const targetId = h2.getAttribute("data-target");
+    const body = targetId ? document.getElementById(targetId) : null;
+    if (body && !h2.classList.contains("collapsed")) body.style.maxHeight = body.scrollHeight + "px";
+  });
+  map.invalidateSize(false);
 }
 
 function readCandidateState() {
   try {
+    const staleRaw = window.localStorage.getItem("th-evi-candidate-state");
+    if (staleRaw) window.localStorage.removeItem("th-evi-candidate-state");
     const raw = window.localStorage.getItem(CANDIDATE_STATE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
@@ -891,7 +1087,10 @@ function restoreCandidateState() {
   if (state.name) $("name").value = state.name;
   if (state.lat) $("lat").value = state.lat;
   if (state.lon) $("lon").value = state.lon;
-  if (state.province && PROVINCE_API_VALUES[state.province]) $("province").value = state.province;
+  if (state.province && PROVINCE_API_VALUES[state.province]) {
+    $("province").value = state.province;
+    $("heatmap-province").value = state.province;
+  }
   if (state.zone) $("zone").value = state.zone;
   if (state.notes) $("notes").value = state.notes;
   return true;
@@ -996,6 +1195,10 @@ function drawGridHeat(data) {
 }
 
 function drawClassicHeat(data) {
+  if (Number(data?.metadata?.heatmap_exclusion_count || 0) > 0) {
+    drawGridHeat(data);
+    return;
+  }
   const heatPoints = [];
   data.points.forEach(point => {
     const displayIntensity = point.display_intensity ?? point.intensity ?? 0;
@@ -1558,9 +1761,12 @@ async function saveReferenceRecord() {
 }
 
 async function loadReferenceLayers() {
+  const province = apiProvinceValue();
+  landmarkLayer.clearLayers();
+  chargerLayer.clearLayers();
   const [landmarks, chargers] = await Promise.all([
     fetch("/api/landmarks").then(r => r.json()),
-    fetch("/api/chargers").then(r => r.json())
+    fetch(`/api/chargers?province=${encodeURIComponent(province)}`).then(r => r.json())
   ]);
   landmarks.forEach(l => {
     L.circleMarker([l.lat, l.lon], {
@@ -1575,7 +1781,9 @@ async function loadReferenceLayers() {
       radius: 5,
       color: "#805ad5",
       fillOpacity: 0.65
-    }).bindPopup(`<b>${st.operator || t("charger")}</b><br>${st.capacity || "?"} bays`).addTo(chargerLayer);
+    }).bindPopup(
+      `<b>${st.name || st.operator || t("charger")}</b><br>${st.network || st.operator || ""}<br>${st.max_kw || st.capacity || "?"} ${st.max_kw ? "kW" : "bays"}`
+    ).addTo(chargerLayer);
   });
 }
 
@@ -1618,11 +1826,14 @@ async function loadHeatMap() {
     }
 
     const modeLabel = mode === "district" ? "District" : (mode === "community" ? "Community" : "Urban");
-    const viewLabel = view === "classic" ? t("classicView") : t("gridView");
+    const effectiveView = view === "classic" && Number(data?.metadata?.heatmap_exclusion_count || 0) > 0 ? "grid" : view;
+    const viewLabel = effectiveView === "classic" ? t("classicView") : t("gridView");
     const metaText = `${data.point_count} cells | ${resolution.toFixed(2)} km | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${viewLabel} | ${data.year} ${t(data.scenario)}`;
     $("heatmap-meta").textContent = metaText;
     $("heatmap-meta").style.color = "#2c7bb6";
-    $("status").textContent = `✓ ${t("heatmapLoaded")}`;
+    $("status").textContent = effectiveView !== view
+      ? `✓ ${t("heatmapLoaded")} (${t("exclusionsForceGrid")})`
+      : `✓ ${t("heatmapLoaded")}`;
     $("status").style.color = "#2f855a";
     if (data.bounds) {
       map.fitBounds([
@@ -1680,6 +1891,8 @@ $("reference-search").addEventListener("keydown", event => {
 $("reference-active-filter").addEventListener("change", loadReferenceRecords);
 $("lang-th").addEventListener("click", () => applyLanguage("th"));
 $("lang-en").addEventListener("click", () => applyLanguage("en"));
+$("workspace-mode-planning").addEventListener("click", () => applyWorkspaceMode("planning"));
+$("workspace-mode-analysis").addEventListener("click", () => applyWorkspaceMode("analysis"));
 ["name", "lat", "lon", "province", "zone", "notes"].forEach(id => {
   $(id).addEventListener("input", saveCandidateState);
   $(id).addEventListener("change", saveCandidateState);
@@ -1702,8 +1915,17 @@ $("heatmap_resolution").addEventListener("change", () => {
   loadHeatMap();
 });
 
-$("province").addEventListener("change", () => {
+$("heatmap-province").addEventListener("change", () => {
+  syncProvinceSelectors("heatmap-province");
   fillReferenceProvinceOptions();
+  loadReferenceLayers();
+  loadHeatMap();
+});
+
+$("province").addEventListener("change", () => {
+  syncProvinceSelectors("province");
+  fillReferenceProvinceOptions();
+  loadReferenceLayers();
   loadHeatMap();
 });
 
@@ -1725,9 +1947,14 @@ document.querySelectorAll(".section-toggle").forEach(function(h2) {
 ;(async function initializeApp() {
 try {
   applyLanguage(currentLang);
+  applyWorkspaceMode(currentWorkspaceMode);
+  PROVINCE_SELECT_IDS.forEach(initProvinceSearch);
   initPanelResizer();
   $("year").value = new Date().getFullYear();
+  applyDefaultProvinceSelection();
   restoreCandidateState();
+  syncProvinceSelectors("heatmap-province");
+  PROVINCE_SELECT_IDS.forEach(syncProvinceSearchLabel);
   ensureDefaultMapView(true);
   await loadReferenceMeta();
   await loadReferenceRecords();

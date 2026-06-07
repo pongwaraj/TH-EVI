@@ -1,0 +1,10 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+phs_mueang,Mueang Phitsanulok,Phitsanulok city core,district_center,16.8218,100.2655,4.8,1.0,Provincial capital and primary urban node with strongest base demand in the province.
+phs_wang_thong,Wang Thong,Wang Thong gateway town,transport_junction,16.8419,100.4085,4.2,0.9,Eastbound Route 12 junction and gateway between the city and mountain corridor.
+phs_nakhon_thai,Nakhon Thai,Nakhon Thai district center,transport_junction,17.1000,100.8370,4.0,0.86,Eastern district service center on the Route 12 corridor toward Loei and Phu Hin Rong Kla.
+phs_chat_trakan,Chat Trakan,Chat Trakan district center,coverage_anchor,17.2800,100.6000,3.4,0.72,Remote northeast district coverage node with lower confidence and lower station intensity.
+phs_bang_rakam,Bang Rakam,Bang Rakam district center,district_center,16.7580,100.1180,3.8,0.82,Western district center with local market and civic demand.
+phs_bang_krathum,Bang Krathum,Bang Krathum district center,coverage_anchor,16.5780,100.3060,3.2,0.72,Southern district coverage node.
+phs_phrom_phiram,Phrom Phiram,Phrom Phiram district center,district_center,17.0330,100.2010,3.8,0.8,Northern district center on the rail and highway axis.
+phs_wat_bot,Wat Bot,Wat Bot district center,coverage_anchor,16.9830,100.3350,3.2,0.72,Northeast district support node between Mueang and the mountain-side districts.
+phs_noen_maprang,Noen Maprang,Noen Maprang district center,tourism_town,16.5660,100.6240,3.6,0.76,Southeast district center with nature-tourism and local community relevance.

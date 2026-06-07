@@ -1,0 +1,4 @@
+exclusion_id,name,center_lat,center_lon,radius_km,exclusion_type,confidence,reason,last_verified_date
+phs_phu_hin_rong_kla_forest_core,Phu Hin Rong Kla mountain forest core,17.0500,100.9800,10.5,forest,medium_high,"Protected mountain and national-park core where public EV station siting is not plausible for this screening stage.",2026-06-06
+phs_thung_salaeng_luang_forest_core,Thung Salaeng Luang protected forest core,16.9300,100.9000,12.0,forest,medium,"Large protected upland and forest area east of the urban core; exclude from site screening until a specific roadside gateway node is identified.",2026-06-06
+phs_kaeng_sopha_waterfall_forest,Kaeng Sopha forest-waterfall core,16.9100,100.6720,5.5,forest,medium,"Mountain-waterfall forest area where fixed public charging is not a first-pass heat-map candidate; prefer gateway-town nodes instead.",2026-06-06

@@ -16,6 +16,7 @@ from th_evi.spatial import (
 
 UDON_THANI = "\u0e2d\u0e38\u0e14\u0e23\u0e18\u0e32\u0e19\u0e35"
 CHIANG_MAI = "Chiang Mai"
+PHITSANULOK = "Phitsanulok"
 
 
 def test_poi_attraction_decays_with_distance():
@@ -543,6 +544,65 @@ def test_chiang_mai_competitor_loader_drops_generic_unknown_osm_points():
     assert "ptt_ev_don_chan_osm" not in station_ids
     assert "byd_city_osm" not in station_ids
     assert "mg_supercharge_city_osm" not in station_ids
+
+
+def test_phitsanulok_loader_has_minimum_heatmap_anchor_sets():
+    poi_ids = {row["poi_id"] for row in load_pois_for_province(PHITSANULOK)}
+    competitor_ids = {row["station_id"] for row in load_competitors_for_province(PHITSANULOK)}
+    business_area_ids = {row["business_area_id"] for row in load_business_areas_for_province(PHITSANULOK)}
+
+    assert {
+        "central_phitsanulok",
+        "phitsanulok_airport",
+        "naresuan_university",
+        "buddhachinaraj_hospital",
+        "phitsanulok_bus_terminal_2",
+    }.issubset(poi_ids)
+    assert {
+        "pea_volta_bangchak_central",
+        "elexa_tha_pho",
+        "mg_supercharge_city",
+    }.issubset(competitor_ids)
+    assert {
+        "phs_central_h12_fringe",
+        "phs_old_city_medical_band",
+        "phs_samo_khae_bypass_connector",
+    }.issubset(business_area_ids)
+
+
+def test_phitsanulok_competitor_loader_prefers_named_city_and_gateway_stations():
+    competitor_ids = {row["station_id"] for row in load_competitors_for_province(PHITSANULOK)}
+
+    assert {
+        "ptt_charging_station_phitsanulok",
+        "ptt_charging_station_phitsanulok_1",
+        "ptt_charging_station_phitsanulok_2",
+        "ptt_charging_station_phitsanulok_3",
+        "sharge_phitsanulok",
+    }.issubset(competitor_ids)
+    assert "ev_station_pluz_city_seed" not in competitor_ids
+    assert "ev_station_pluz_bypass_seed" not in competitor_ids
+    assert "ea_anywhere_city_seed" not in competitor_ids
+    assert "homepro_partner_eleX_seed" not in competitor_ids
+
+
+def test_phitsanulok_click_analysis_supports_central_retail_core():
+    result = analyze_click_location(
+        lat=16.8385,
+        lon=100.2385,
+        province=PHITSANULOK,
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["eligibility_status"] == "eligible"
+    assert result["net_sessions_per_day"] > 0
+    assert result["top_pois"]
+    assert result["top_competitors"]
+    assert result["top_business_areas"]
 
 
 def test_airport_core_competitors_include_super_ev_hub():

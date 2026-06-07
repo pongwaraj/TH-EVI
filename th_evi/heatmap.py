@@ -233,6 +233,19 @@ def _point_hits_heatmap_exclusion(
     exclusions: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
     for exclusion in exclusions:
+        lat_min = _float_or_none(exclusion.get("lat_min"))
+        lat_max = _float_or_none(exclusion.get("lat_max"))
+        lon_min = _float_or_none(exclusion.get("lon_min"))
+        lon_max = _float_or_none(exclusion.get("lon_max"))
+        if (
+            lat_min is not None
+            and lat_max is not None
+            and lon_min is not None
+            and lon_max is not None
+            and lat_min <= lat <= lat_max
+            and lon_min <= lon <= lon_max
+        ):
+            return exclusion
         center_lat = _float_or_none(exclusion.get("center_lat"))
         center_lon = _float_or_none(exclusion.get("center_lon"))
         radius = _float_or_none(exclusion.get("radius_km"))

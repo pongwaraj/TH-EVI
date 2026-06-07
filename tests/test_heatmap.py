@@ -1,4 +1,8 @@
-from th_evi.heatmap import generate_chiang_mai_heatmap, generate_province_heatmap
+from th_evi.heatmap import (
+    _point_hits_heatmap_exclusion,
+    generate_chiang_mai_heatmap,
+    generate_province_heatmap,
+)
 
 
 def test_heatmap_includes_grid_step_metadata():
@@ -257,6 +261,38 @@ def test_lampang_heatmap_keeps_mae_moh_town_edges_outside_mine_core():
     assert mae_moh_town_points
 
 
+def test_phitsanulok_heatmap_supports_city_and_corridor_scope():
+    result = generate_province_heatmap(
+        "Phitsanulok",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    assert result["province"] == "Phitsanulok"
+    assert result["point_count"] > 0
+
+
+def test_heatmap_exclusion_supports_bounding_box_rows():
+    exclusion = _point_hits_heatmap_exclusion(
+        19.1700,
+        99.9200,
+        [
+            {
+                "exclusion_id": "bbox_1",
+                "lat_min": "19.1500",
+                "lat_max": "19.1800",
+                "lon_min": "99.9100",
+                "lon_max": "99.9300",
+            }
+        ],
+    )
+
+    assert exclusion is not None
+    assert exclusion["exclusion_id"] == "bbox_1"
+
+
 def test_phayao_heatmap_includes_business_area_signal():
     result = generate_province_heatmap(
         "Phayao",
@@ -303,6 +339,48 @@ def test_phayao_heatmap_excludes_broader_kwan_phayao_water_body():
     ]
 
     assert broad_water_points == []
+
+
+def test_phayao_heatmap_excludes_kwan_phayao_far_west_water_point():
+    result = generate_province_heatmap(
+        "Phayao",
+        year=2026,
+        scenario="base",
+        resolution_km=0.25,
+        mode="urban",
+    )
+
+    west_water_points = [
+        point for point in result["points"]
+        if abs(point["lat"] - 19.1637) <= 0.01 and abs(point["lon"] - 99.8834) <= 0.01
+    ]
+
+    assert result["metadata"]["heatmap_exclusion_count"] >= 6
+    assert west_water_points == []
+
+
+def test_phayao_heatmap_excludes_kwan_phayao_reviewed_west_water_points():
+    result = generate_province_heatmap(
+        "Phayao",
+        year=2026,
+        scenario="base",
+        resolution_km=0.25,
+        mode="urban",
+    )
+
+    reviewed_water_points = [
+        (19.1987, 99.8601),
+        (19.1728, 99.8556),
+        (19.1508, 99.8696),
+    ]
+    for lat, lon in reviewed_water_points:
+        nearby_points = [
+            point for point in result["points"]
+            if abs(point["lat"] - lat) <= 0.01 and abs(point["lon"] - lon) <= 0.01
+        ]
+        assert nearby_points == []
+
+    assert result["metadata"]["heatmap_exclusion_count"] >= 9
 
 
 def test_lamphun_heatmap_includes_business_area_signal_near_jampha_chatuchak():

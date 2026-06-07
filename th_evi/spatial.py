@@ -63,6 +63,8 @@ PROVINCE_SLUGS = {
     "\u0e23\u0e30\u0e22\u0e2d\u0e07": "rayong",
     "Lamphun": "lamphun",
     "\u0e25\u0e33\u0e1e\u0e39\u0e19": "lamphun",
+    "Phitsanulok": "phitsanulok",
+    "\u0e1e\u0e34\u0e29\u0e13\u0e38\u0e42\u0e25\u0e01": "phitsanulok",
     "Nan": "nan",
     "\u0e19\u0e48\u0e32\u0e19": "nan",
     "Mae Hong Son": "mae_hong_son",
