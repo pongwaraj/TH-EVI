@@ -6,6 +6,7 @@ import html
 import json
 import math
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,10 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, text
 import uvicorn
+
+# In-memory cache for heatmap API (TTL 10 minutes)
+_heatmap_cache: dict[str, tuple[float, Any]] = {}
+HEATMAP_CACHE_TTL = 600  # 10 minutes
 
 from .data import (
     get_chiang_mai_district_population,
@@ -869,12 +874,25 @@ def chiang_mai_heatmap(
     resolution_km: float = Query(1.0, gt=0, le=5),
 ):
     """Return Chiang Mai area-demand heat-map points."""
-    return generate_chiang_mai_heatmap(
+    # Cache key
+    cache_key = f"chiang-mai:{year}:{scenario}:{mode}:{resolution_km}"
+    now = time.time()
+    
+    # Check cache
+    if cache_key in _heatmap_cache:
+        cached_time, cached_data = _heatmap_cache[cache_key]
+        if now - cached_time < HEATMAP_CACHE_TTL:
+            return cached_data
+    
+    # Generate and cache
+    result = generate_chiang_mai_heatmap(
         year=year,
         scenario=scenario,
         mode=mode,
         resolution_km=resolution_km,
     )
+    _heatmap_cache[cache_key] = (now, result)
+    return result
 
 
 @app.get("/api/heatmap")
@@ -886,14 +904,27 @@ def province_heatmap(
     resolution_km: float = Query(1.0, gt=0, le=5),
 ):
     """Return province heat-map points clipped to urban activity fields."""
+    # Cache key
+    cache_key = f"province:{province}:{year}:{scenario}:{mode}:{resolution_km}"
+    now = time.time()
+    
+    # Check cache
+    if cache_key in _heatmap_cache:
+        cached_time, cached_data = _heatmap_cache[cache_key]
+        if now - cached_time < HEATMAP_CACHE_TTL:
+            return cached_data
+    
     try:
-        return generate_province_heatmap(
+        result = generate_province_heatmap(
             province=province,
             year=year,
             scenario=scenario,
             mode=mode,
             resolution_km=resolution_km,
         )
+        # Cache successful result
+        _heatmap_cache[cache_key] = (now, result)
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -1070,6 +1101,39 @@ def admin_page():
 def location_report_v2(run_id: int):
     """Executive-ready location analysis report."""
     return generate_location_report(run_id)
+
+
+@app.get("/api/ping")
+def ping():
+    """Keep-alive endpoint: warms DB connection and primes cache."""
+    try:
+        with session_scope() as db:
+            count = db.execute(text("SELECT 1")).scalar()
+        # Prime top heatmap cache if empty
+        if not _heatmap_cache:
+            try:
+                result = generate_province_heatmap(
+                    province="Chiang Mai", year=2030,
+                    scenario="base", mode="urban", resolution_km=1.0,
+                )
+                _heatmap_cache["province:Chiang Mai:2030:base:urban:1.0"] = (time.time(), result)
+            except Exception:
+                pass
+        return {"status": "ok", "db": "connected", "cache_entries": len(_heatmap_cache)}
+    except Exception as exc:
+        return {"status": "degraded", "error": str(exc)}
+
+
+@app.get("/api/cache/status")
+def cache_status():
+    """Return cache statistics."""
+    now = time.time()
+    valid = sum(1 for t, _ in _heatmap_cache.values() if now - t < HEATMAP_CACHE_TTL)
+    return {
+        "total_entries": len(_heatmap_cache),
+        "valid_entries": valid,
+        "cache_ttl_seconds": HEATMAP_CACHE_TTL,
+    }
 
 
 def main():

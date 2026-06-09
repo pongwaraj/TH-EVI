@@ -6,5 +6,6 @@ def test_chargers_api_returns_selected_province_competitors():
 
     assert payload["province"] == "Phitsanulok"
     assert payload["station_count"] >= 5
-    station_names = {station["name"] for station in payload["stations"]}
-    assert "PEA VOLTA Charging Station (Singhawat / Phlai Chumphon)" in station_names
+    assert all(station["lat"] and station["lon"] for station in payload["stations"])
+    station_networks = {station["network"] for station in payload["stations"]}
+    assert "EV Station PluZ" in station_networks

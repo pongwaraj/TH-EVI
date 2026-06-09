@@ -1886,10 +1886,22 @@ async function loadHeatMap() {
   const requestId = ++activeHeatmapRequestId;
   if (activeHeatmapController) activeHeatmapController.abort();
   activeHeatmapController = new AbortController();
+  
+  // Timeout 60s
+  const timeoutId = setTimeout(() => activeHeatmapController.abort(), 60000);
+  
+  // Countdown timer
+  const startTime = Date.now();
+  const countdownInterval = setInterval(() => {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    $("status").textContent = `${t("loadingHeatmap")} (${elapsed}s)...`;
+  }, 100);
+  
   $("heatmap-btn").disabled = true;
   $("heatmap-spinner").style.display = "inline-block";
   $("status").textContent = t("loadingHeatmap");
   $("status").className = "status";
+  
   try {
     const year = num("year") || new Date().getFullYear();
     const scenario = $("scenario").value || "base";
@@ -1943,6 +1955,8 @@ async function loadHeatMap() {
     $("status").textContent = `⚠ ${err.message}`;
     $("status").className = "status danger";
   } finally {
+    clearTimeout(timeoutId);
+    clearInterval(countdownInterval);
     if (requestId === activeHeatmapRequestId) {
       $("heatmap-btn").disabled = false;
       $("heatmap-spinner").style.display = "none";
