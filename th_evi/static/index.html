@@ -337,7 +337,7 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
       <h2 data-i18n="heatmapWorkspace" data-workspace-mode="planning">Heat Map Workspace</h2>
       <div class="planning-actions">
         <button class="btn secondary" id="refresh-btn" type="button" style="flex:1" data-i18n="refreshSites" data-workspace-mode="analysis">&#8635; รีเฟรช</button>
-        <button class="btn secondary" id="heatmap-btn" type="button" style="flex:1" data-i18n="loadHeatmap">&#127777; Heat Map</button>
+        <button class="btn secondary" id="heatmap-btn" type="button" style="flex:1" data-i18n="loadHeatmap"><span id="heatmap-spinner" class="spinner" style="display:none;margin-right:6px"></span>&#127777; Heat Map</button>
       </div>
       <div class="planning-meta">
         <div id="status" class="status"></div>
@@ -754,8 +754,8 @@ const translations = {
 let currentLang = localStorage.getItem("thEviLang") || "th";
 const t = key => (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key;
 const DEFAULT_PROVINCE_THAI = "เชียงใหม่";
-const DEFAULT_CENTER = [18.754923, 99.036718];
-const DEFAULT_ZOOM = 11;
+const DEFAULT_CENTER = [18.7883, 98.9853]; // Chiang Mai Old City (Tha Pae Gate)
+const DEFAULT_ZOOM = 12;
 const THAILAND_BOUNDS = [[5.4, 97.2], [20.9, 105.8]];
 
 function applyLanguage(lang) {
@@ -1887,6 +1887,7 @@ async function loadHeatMap() {
   if (activeHeatmapController) activeHeatmapController.abort();
   activeHeatmapController = new AbortController();
   $("heatmap-btn").disabled = true;
+  $("heatmap-spinner").style.display = "inline-block";
   $("status").textContent = t("loadingHeatmap");
   $("status").className = "status";
   try {
@@ -1944,6 +1945,7 @@ async function loadHeatMap() {
   } finally {
     if (requestId === activeHeatmapRequestId) {
       $("heatmap-btn").disabled = false;
+      $("heatmap-spinner").style.display = "none";
       activeHeatmapController = null;
     }
   }
