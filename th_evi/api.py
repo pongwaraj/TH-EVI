@@ -47,6 +47,7 @@ from .site import (
     recommend_station_spec,
 )
 from . import spatial as spatial_module
+from .report import generate_location_report
 from .spatial import analyze_click_location
 from .temporal import analyze_station
 
@@ -1063,6 +1064,12 @@ def admin_page():
     if not admin_path.exists():
         return HTMLResponse("<h1>TH-EVI</h1><p>Admin page not built yet.</p>")
     return FileResponse(str(admin_path))
+
+
+@app.get("/reports/v2/{run_id}", response_class=HTMLResponse)
+def location_report_v2(run_id: int):
+    """Executive-ready location analysis report."""
+    return generate_location_report(run_id)
 
 
 def main():
