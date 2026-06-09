@@ -1,0 +1,9 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+nrm_mueang_korat,Mueang Nakhon Ratchasima,Korat city core,district_center,14.9799,102.0977,5.2,1.0,Provincial capital and strongest baseline urban node in the province.
+nrm_pak_chong,Pak Chong,Pak Chong gateway town,transport_junction,14.7080,101.4160,4.6,0.96,Major Mittraphap corridor gateway between Bangkok, Khao Yai, and Korat.
+nrm_sikhiu,Sikhio,Sikhio district center,transport_junction,14.8980,101.7080,4.0,0.86,Service town on the Mittraphap corridor between Pak Chong and Korat city.
+nrm_dan_khun_thot,Dan Khun Thot,Dan Khun Thot district center,district_center,15.2080,101.7720,4.0,0.84,Western district service node on the Route 201 and interdistrict connector side.
+nrm_chok_chai,Chok Chai,Chok Chai district center,district_center,14.7280,102.1650,4.0,0.84,Important southern district center with agri-service and local market demand.
+nrm_phimai,Phimai,Phimai district center,district_center,15.2210,102.4940,4.0,0.82,Historic district center and eastern service town with tourism and community relevance.
+nrm_bua_yai,Bua Yai,Bua Yai district center,district_center,15.5850,102.4250,4.0,0.8,Northern service town on the rail and highway axis toward Khon Kaen and Chaiyaphum.
+nrm_non_sung,Non Sung,Non Sung district center,coverage_anchor,15.1830,102.2560,3.6,0.76,Secondary east-side district node supporting province-wide coverage.

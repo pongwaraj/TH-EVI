@@ -1,0 +1,11 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+nrm_korat_city_center,Nakhon Ratchasima city center,district_center,14.9799,102.0977,local context + seed coordinate,medium_high,"Primary civic and service core of Korat with year-round resident, office, retail, and government demand."
+nrm_the_mall_korat,The Mall Korat,shopping_mall,14.9748,102.0838,public retail listing + seed coordinate,medium_high,"Major retail and destination anchor on the western side of the urban core; strong everyday and weekend charging relevance."
+nrm_terminal21_korat,Terminal 21 Korat,shopping_mall,14.9986,102.1142,public retail listing + seed coordinate,medium_high,"Large regional mall and urban destination in the north-east side of central Korat."
+nrm_maharat_hospital,Maharat Nakhon Ratchasima Hospital,hospital,14.9738,102.1021,public hospital references + seed coordinate,medium_high,"Main city hospital anchor with strong all-day recurring destination demand."
+nrm_bangkok_hospital_korat,Bangkok Hospital Ratchasima,hospital,14.9558,102.0428,public hospital references + seed coordinate,medium_high,"Private hospital and service anchor on the south-west urban side near major arterial access."
+nrm_suranaree_university,Suranaree University of Technology,education,14.8806,102.0236,public university references + seed coordinate,medium_high,"Large education and research campus on the Route 304 south side with student, staff, and visitor demand."
+nrm_korat_railway_station,Nakhon Ratchasima Railway Station,transport,14.9777,102.0979,public station references + seed coordinate,medium,"Primary rail anchor in the city center and a useful urban-mobility node."
+nrm_korat_bus_terminal_2,Nakhon Ratchasima Bus Terminal 2,bus_station,14.9585,102.0508,public transport references + seed coordinate,medium,"Intercity bus terminal and arterial-access node on the south-west side of the city."
+nrm_saveone_market,Save One Night Market,lifestyle,14.9518,102.0472,public market references + seed coordinate,medium,"Large lifestyle and evening-market destination with broad local catchment and parking-based dwell time."
+nrm_pak_chong_town_center,Pak Chong town center,district_center,14.7080,101.4160,local context + seed coordinate,medium_high,"Gateway service town between Bangkok and Korat on the Mittraphap corridor with strong roadside and destination overlap."

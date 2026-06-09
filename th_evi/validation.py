@@ -25,14 +25,18 @@ Run:  python -m th_evi.validation
 
 from __future__ import annotations
 
+import csv
 import logging
+from functools import lru_cache
 from statistics import mean
 from typing import Optional
+from pathlib import Path
 
 from .adoption import EVAdoptionModel
 from .location import StationDemandModel
 
 logger = logging.getLogger(__name__)
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +52,7 @@ ADOPTION_GROUND_TRUTH = {
 
 # Observed charging-station demand (station-days). CONFIRMED points only.
 # Each: id, year, stalls, obs_daily (typical), obs_peak, source.
-STATION_GROUND_TRUTH = [
+DEFAULT_STATION_GROUND_TRUTH = [
     {
         "id": "cm_cultural_center_hub",
         "year": 2026,
@@ -61,10 +65,47 @@ STATION_GROUND_TRUTH = [
 
 # Stations to instrument next so LOO becomes meaningful (target n >= 5).
 # Pulled from the CM competitor set in notebooks/03_location_analysis.py.
-STATION_TO_COLLECT = [
+DEFAULT_STATION_TO_COLLECT = [
     "BYD CM (4 bays)", "PTT Central Airport", "EGAT EleXA",
     "PEA Volta", "Centara Hotel", "MG Airport",
 ]
+
+
+@lru_cache(maxsize=1)
+def load_station_ground_truth() -> list[dict]:
+    csv_path = DATA_DIR / "station_ground_truth.csv"
+    if not csv_path.exists():
+        return [point.copy() for point in DEFAULT_STATION_GROUND_TRUTH]
+
+    rows: list[dict] = []
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            if not row.get("id"):
+                continue
+            rows.append({
+                "id": row["id"],
+                "year": int(row["year"]),
+                "stalls": int(row["stalls"]),
+                "obs_daily": float(row["obs_daily"]),
+                "obs_peak": float(row["obs_peak"]) if row.get("obs_peak") not in (None, "") else None,
+                "source": row.get("source") or "",
+            })
+    return rows or [point.copy() for point in DEFAULT_STATION_GROUND_TRUTH]
+
+
+@lru_cache(maxsize=1)
+def load_station_to_collect() -> list[str]:
+    csv_path = DATA_DIR / "station_ground_truth_to_collect.csv"
+    if not csv_path.exists():
+        return list(DEFAULT_STATION_TO_COLLECT)
+
+    rows: list[str] = []
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            station_name = (row.get("station_name") or "").strip()
+            if station_name:
+                rows.append(station_name)
+    return rows or list(DEFAULT_STATION_TO_COLLECT)
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +188,8 @@ def fit_station_calibration(train):
 
 def loo_validate_station():
     """Leave-one-out CV of the station model's single calibration scalar."""
-    pts = STATION_GROUND_TRUTH
+    pts = load_station_ground_truth()
+    to_collect = load_station_to_collect()
     n = len(pts)
     n_params = 1  # calibration_factor
 
@@ -166,7 +208,7 @@ def loo_validate_station():
         "n_free_params": n_params,
         "fitted_calibration_factor": round(factor, 3),
         "in_sample": in_sample,
-        "to_collect": STATION_TO_COLLECT,
+        "to_collect": to_collect,
     }
 
     if n <= n_params:
@@ -193,6 +235,19 @@ def loo_validate_station():
     }
     result["status"] = "OK"
     return result
+
+
+@lru_cache(maxsize=1)
+def station_calibration_summary() -> dict:
+    result = loo_validate_station()
+    return {
+        "ground_truth_points": result["n_points"],
+        "free_params": result["n_free_params"],
+        "calibration_factor": result["fitted_calibration_factor"],
+        "status": result["status"],
+        "has_loo_metrics": result["loo"] is not None,
+        "next_to_collect": result["to_collect"],
+    }
 
 
 # ---------------------------------------------------------------------------

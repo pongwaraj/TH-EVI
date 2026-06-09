@@ -1,0 +1,9 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+nky_nakhon_nayok_town_center,Nakhon Nayok town center,district_center,14.2065,101.2130,local context + seed coordinate,medium_high,"Primary civic and service core of Nakhon Nayok town with market, municipal, hospital, and daily-errand demand."
+nky_nakhon_nayok_hospital,Nakhon Nayok Hospital,hospital,14.2075,101.2125,public hospital references + seed coordinate,medium_high,"Main provincial hospital and one of the strongest all-day destination anchors in the province."
+nky_lotuss_nakhon_nayok,Lotus's Nakhon Nayok,shopping_mall,14.1995,101.2148,public retail listing + seed coordinate,medium,"Major retail anchor on the city side, useful for destination and mixed-use charging demand."
+nky_ongkharak_town_center,Ongkharak town center,district_center,14.0658,100.9908,local context + seed coordinate,medium_high,"District center on the Rangsit-Nakhon Nayok axis with recurring resident, food, and everyday-service trips."
+nky_swu_ongkharak,Srinakharinwirot University Ongkharak Campus,education,14.1086,100.9935,public university references + seed coordinate,medium_high,"Large education campus with student, staff, and visitor demand connected to the Ongkharak medical cluster."
+nky_swu_medical_center,HRH Princess Maha Chakri Sirindhorn Medical Center,hospital,14.1077,100.9899,public medical center references + seed coordinate,medium_high,"Major medical anchor with long dwell time and recurring daily demand on the Ongkharak side."
+nky_ban_na_town_center,Ban Na town center,district_center,14.2644,101.0705,local context + seed coordinate,medium,"Service town and junction node between Nakhon Nayok, Prachin Buri, and Saraburi approaches."
+nky_pak_phli_town_center,Pak Phli town center,district_center,14.1635,101.2685,local context + seed coordinate,medium,"East-side service town supporting local community demand and the provincial interior connector."

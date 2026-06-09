@@ -61,6 +61,12 @@ PROVINCE_SLUGS = {
     "ระยอง": "rayong",
     "Rayong": "rayong",
     "\u0e23\u0e30\u0e22\u0e2d\u0e07": "rayong",
+    "นครราชสีมา": "nakhon_ratchasima",
+    "Nakhon Ratchasima": "nakhon_ratchasima",
+    "\u0e19\u0e04\u0e23\u0e23\u0e32\u0e0a\u0e2a\u0e35\u0e21\u0e32": "nakhon_ratchasima",
+    "นครนายก": "nakhon_nayok",
+    "Nakhon Nayok": "nakhon_nayok",
+    "\u0e19\u0e04\u0e23\u0e19\u0e32\u0e22\u0e01": "nakhon_nayok",
     "Lamphun": "lamphun",
     "\u0e25\u0e33\u0e1e\u0e39\u0e19": "lamphun",
     "Phitsanulok": "phitsanulok",
@@ -87,6 +93,8 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "mae_hong_son": "Mae Hong Son",
     "samut_prakan": "Samut Prakan",
     "rayong": "Rayong",
+    "nakhon_ratchasima": "Nakhon Ratchasima",
+    "nakhon_nayok": "Nakhon Nayok",
 }
 
 SCENARIO_FACTORS = {
@@ -554,6 +562,59 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
     return list(best_by_key.values())
 
 
+def _filter_and_dedupe_nakhon_ratchasima_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Prefer named public Korat/Pak Chong stations over overlapping audit placeholders."""
+
+    alias_groups = [
+        {
+            "nrm_ev_station_pluz_the_mall_seed",
+            "ptt_charging_station_korat_1",
+        },
+        {
+            "nrm_elexa_suranaree_seed",
+            "elexa_korat_nong_chabok",
+        },
+        {
+            "nrm_ev_station_pluz_pakchong_seed",
+            "elexa_pak_chong_2",
+            "elex_by_egat_pak_chong",
+        },
+    ]
+    alias_lookup = {
+        station_id: min(group)
+        for group in alias_groups
+        for station_id in group
+    }
+
+    def priority(row: dict[str, Any]) -> tuple[int, int, int]:
+        status = str(row.get("verification_status") or "").strip().lower()
+        source = str(row.get("source") or "").strip().lower()
+        source_type = str(row.get("source_type") or "").strip().lower()
+        status_rank = {
+            "verified": 5,
+            "partial": 4,
+            "public_listing_verified_ac_only": 3,
+            "public_listing_needs_operator_verification": 3,
+            "operator_app_verification_needed": 1,
+            "seed_needs_verification": 1,
+        }.get(status, 0)
+        source_rank = 1 if source == "spotmycharge" or source_type in {"public_listing_exact", "official_reference"} else 0
+        power_rank = int(_parse_power_kw(row))
+        return (status_rank, source_rank, power_rank)
+
+    best_by_key: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        station_id = str(row.get("station_id") or "").strip()
+        if not station_id:
+            continue
+        key = alias_lookup.get(station_id, station_id)
+        current = best_by_key.get(key)
+        if current is None or priority(row) > priority(current):
+            best_by_key[key] = row
+
+    return list(best_by_key.values())
+
+
 @lru_cache(maxsize=32)
 def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     slug = _slug_for_province(province)
@@ -581,6 +642,8 @@ def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
     rows = _merge_rows(_load_db_competitors_for_province(province), rows, "station_id")
     if slug == "chiang_mai":
         rows = _filter_and_dedupe_chiang_mai_competitors(rows)
+    elif slug == "nakhon_ratchasima":
+        rows = _filter_and_dedupe_nakhon_ratchasima_competitors(rows)
     return rows
 
 

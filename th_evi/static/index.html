@@ -159,6 +159,8 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
           <option value="เชียงใหม่">เชียงใหม่</option>
           <option value="สมุทรปราการ">สมุทรปราการ</option>
           <option value="ระยอง">ระยอง</option>
+          <option value="นครราชสีมา">นครราชสีมา</option>
+          <option value="นครนายก">นครนายก</option>
           <option value="เชียงราย">เชียงราย</option>
           <option value="ลำปาง">ลำปาง</option>
           <option value="ลำพูน">ลำพูน</option>
@@ -189,6 +191,12 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
         <select id="heatmap_view">
           <option value="grid" data-i18n-option="gridView">Grid Cells</option>
           <option value="classic" data-i18n-option="classicView">Classic Heat</option>
+        </select>
+      </label>
+      <label><span data-i18n="heatmapMetric">ชั้นคะแนน Heat Map</span>
+        <select id="heatmap_metric">
+          <option value="demand" selected data-i18n-option="demandLayer">ดีมานด์</option>
+          <option value="net" data-i18n-option="netOpportunity">โอกาสสุทธิ</option>
         </select>
       </label>
 <label><span data-i18n="heatmapResolution">ความละเอียด Heat Map</span>
@@ -230,6 +238,8 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
             <option value="เชียงใหม่">เชียงใหม่</option>
             <option value="สมุทรปราการ">สมุทรปราการ</option>
             <option value="ระยอง">ระยอง</option>
+            <option value="นครราชสีมา">นครราชสีมา</option>
+            <option value="นครนายก">นครนายก</option>
             <option value="เชียงราย">เชียงราย</option>
             <option value="ลำปาง">ลำปาง</option>
             <option value="ลำพูน">ลำพูน</option>
@@ -480,12 +490,16 @@ const translations = {
     loadHeatmap: "โหลด Heat Map",
     heatmapMode: "รูปแบบ Heat Map",
     heatmapView: "มุมมอง Heat Map",
+    heatmapMetric: "ชั้นคะแนน Heat Map",
     heatmapResolution: "ความละเอียด Heat Map",
     urbanHotZones: "พื้นที่เมืองและการค้า",
     communityCoverage: "พื้นที่บริการชุมชน",
     districtPotential: "ศักยภาพรายอำเภอ",
     gridView: "เซลล์สี่เหลี่ยม",
     classicView: "แบบฟุ้งมาตรฐาน",
+    netOpportunity: "โอกาสสุทธิ",
+    demandLayer: "ดีมานด์",
+    competitionLayer: "การแข่งขัน",
     resolution025: "ละเอียดสูง 0.25 กม.",
     resolution05: "มาตรฐาน 0.5 กม.",
     resolution10: "กว้าง 1.0 กม.",
@@ -540,6 +554,13 @@ const translations = {
     sessionsPerDay: "ครั้ง/วัน",
     kwhPerDay: "kWh/วัน",
     heatScore: "Heat score",
+    screeningScore: "คะแนนคัดกรอง",
+    scoreNotForecast: "คะแนนนี้ใช้คัดพื้นที่ ไม่ใช่ตัวเลข forecast ตรง ๆ",
+    layerScore: "คะแนนชั้นข้อมูล",
+    demandScoreLabel: "คะแนนดีมานด์",
+    competitionScoreLabel: "คะแนนการแข่งขัน",
+    netOpportunityLabel: "คะแนนโอกาสสุทธิ",
+    dailyKwhEquivalent: "kWh เทียบเท่า/วัน",
     modelSessions: "ครั้งจากโมเดล",
     zoneScore: "คะแนนโซน",
     charger: "สถานีชาร์จ",
@@ -623,12 +644,16 @@ const translations = {
     loadHeatmap: "Load Heat Map",
     heatmapMode: "Heat Map Mode",
     heatmapView: "Heat Map View",
+    heatmapMetric: "Heat Map Metric",
     heatmapResolution: "Heat Map Resolution",
     urbanHotZones: "Urban and Commercial",
     communityCoverage: "Community Coverage",
     districtPotential: "District Potential",
     gridView: "Grid Cells",
     classicView: "Classic Heat",
+    netOpportunity: "Net Opportunity",
+    demandLayer: "Demand",
+    competitionLayer: "Competition",
     resolution025: "Fine 0.25 km",
     resolution05: "Standard 0.5 km",
     resolution10: "Wide 1.0 km",
@@ -683,6 +708,13 @@ const translations = {
     sessionsPerDay: "sessions/day",
     kwhPerDay: "kWh/day",
     heatScore: "Heat score",
+    screeningScore: "Screening score",
+    scoreNotForecast: "This score is for area screening, not a direct forecast",
+    layerScore: "Layer score",
+    demandScoreLabel: "Demand score",
+    competitionScoreLabel: "Competition score",
+    netOpportunityLabel: "Net opportunity score",
+    dailyKwhEquivalent: "kWh equivalent/day",
     modelSessions: "Model sessions",
     zoneScore: "Zone score",
     charger: "Charger",
@@ -776,6 +808,8 @@ const PROVINCE_API_VALUES = {
   "เชียงใหม่": "Chiang Mai",
   "สมุทรปราการ": "Samut Prakan",
   "ระยอง": "Rayong",
+  "นครราชสีมา": "Nakhon Ratchasima",
+  "นครนายก": "Nakhon Nayok",
   "เชียงราย": "Chiang Rai",
   "ลำปาง": "Lampang",
   "ลำพูน": "Lamphun",
@@ -820,6 +854,40 @@ const CLASSIC_HEAT_GRADIENT = {
   0.90: "#b5179e",
   1.00: "#7b2cbf"
 };
+const HEATMAP_METRIC_FIELDS = {
+  demand: "demand_score",
+  net: "net_opportunity_score"
+};
+
+function currentHeatmapMetric() {
+  return $("heatmap_metric")?.value || "demand";
+}
+
+function heatmapMetricField(metric = currentHeatmapMetric()) {
+  return HEATMAP_METRIC_FIELDS[metric] || HEATMAP_METRIC_FIELDS.net;
+}
+
+function heatmapMetricLabel(metric = currentHeatmapMetric()) {
+  if (metric === "demand") return t("demandScoreLabel");
+  return t("netOpportunityLabel");
+}
+
+function pointMetricScore(point, metric = currentHeatmapMetric()) {
+  const field = heatmapMetricField(metric);
+  return Number(point?.[field] ?? point?.heat_score ?? 0);
+}
+
+function pointMetricIntensity(point, metric = currentHeatmapMetric()) {
+  const layerIntensity = point?.intensity_layers?.[metric];
+  if (typeof layerIntensity === "number") return layerIntensity;
+  return Number(point?.display_intensity ?? point?.intensity ?? 0);
+}
+
+function pointDisplayIntensity(point, metric = currentHeatmapMetric()) {
+  const layerIntensity = point?.display_intensity_layers?.[metric];
+  if (typeof layerIntensity === "number") return layerIntensity;
+  return pointMetricIntensity(point, metric);
+}
 
 function clampPanelWidth(width) {
   const viewportMax = Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, Math.floor(window.innerWidth * 0.68)));
@@ -1168,12 +1236,13 @@ function addDistrictSummaryMarkers(data) {
 }
 
 function drawGridHeat(data) {
+  const metric = currentHeatmapMetric();
   const latStep = Number(data.lat_step_deg || 0);
   const lonStep = Number(data.lon_step_deg || 0);
   const halfLat = latStep > 0 ? latStep / 2 : 0.0045;
   const halfLon = lonStep > 0 ? lonStep / 2 : 0.0045;
   data.points.forEach(point => {
-    const displayIntensity = point.display_intensity ?? point.intensity ?? 0;
+    const displayIntensity = pointDisplayIntensity(point, metric);
     if (displayIntensity < HEATMAP_MIN_VISIBLE_INTENSITY) return;
     const color = heatColor(displayIntensity);
     const cellOpacity = Math.max(0.32, Math.min(0.78, 0.24 + 0.58 * displayIntensity));
@@ -1199,9 +1268,10 @@ function drawClassicHeat(data) {
     drawGridHeat(data);
     return;
   }
+  const metric = currentHeatmapMetric();
   const heatPoints = [];
   data.points.forEach(point => {
-    const displayIntensity = point.display_intensity ?? point.intensity ?? 0;
+    const displayIntensity = pointDisplayIntensity(point, metric);
     if (displayIntensity < HEATMAP_MIN_VISIBLE_INTENSITY) return;
     heatPoints.push([point.lat, point.lon, Math.max(0.2, Math.min(1, displayIntensity))]);
   });
@@ -1248,16 +1318,25 @@ function nearestHeatPoint(lat, lon) {
 function showAreaDemandPopup(lat, lon, summary) {
   if (estimateMarker) estimateMarker.remove();
   estimateMarker = L.marker([lat, lon]).addTo(map);
-  const areaSessions = Number(summary.area_sessions ?? summary.heat_score ?? summary.gross_area_demand_sessions ?? 0);
+  const metric = summary.metric || currentHeatmapMetric();
+  const areaScore = Number(summary.area_score ?? summary.heat_score ?? summary.gross_area_demand_sessions ?? 0);
   const cellLabel = summary.cell_label || `${fmt(summary.resolution_km || latestHeatmapData?.resolution_km || 1.0)} km`;
+  const scoreLabel = heatmapMetricLabel(metric);
+  const demandScore = Number(summary.demand_score ?? 0);
+  const competitionScore = Number(summary.competition_score ?? 0);
+  const netScore = Number(summary.net_opportunity_score ?? areaScore);
   const popupContent =
     '<div style="font-size:13px;min-width:190px">' +
     '<h3 style="margin:0 0 8px;color:#12395b;font-size:14px">' + t("areaDemandHeat") + '</h3>' +
     '<table style="width:100%;margin-bottom:8px">' +
     '<tr><td style="padding:4px 0"><b>' + t("locationLabel") + ':</b></td><td style="text-align:right"><b>' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</b></td></tr>' +
-    '<tr style="background:#f0f0f0"><td style="padding:4px">' + t("sessionsDay") + ':</td><td style="text-align:right"><b style="color:#7b2cbf">' + fmt(areaSessions) + '</b></td></tr>' +
+    '<tr style="background:#f0f0f0"><td style="padding:4px">' + scoreLabel + ':</td><td style="text-align:right"><b style="color:#7b2cbf">' + fmt(areaScore) + '</b></td></tr>' +
+    '<tr><td style="padding:4px">' + t("demandScoreLabel") + ':</td><td style="text-align:right">' + fmt(demandScore) + '</td></tr>' +
+    '<tr style="background:#f0f0f0"><td style="padding:4px">' + t("competitionScoreLabel") + ':</td><td style="text-align:right">' + fmt(competitionScore) + '</td></tr>' +
+    '<tr><td style="padding:4px">' + t("netOpportunityLabel") + ':</td><td style="text-align:right">' + fmt(netScore) + '</td></tr>' +
     '<tr><td style="padding:4px">' + t("cellLabel") + ':</td><td style="text-align:right">' + cellLabel + '</td></tr>' +
     '</table>' +
+    '<div class="muted" style="margin-bottom:8px">' + t("scoreNotForecast") + '</div>' +
     '<div style="display:flex;gap:6px;margin-top:8px">' +
     '<button onclick="useAsCandidate(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#10003; ' + t("useAsCandidate") + '</button>' +
     '<button onclick="closeEstimate()" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">&#10005; ' + t("closeLabel") + '</button>' +
@@ -1331,12 +1410,17 @@ async function quickEstimate(lat, lon, heatPoint = null) {
   const scenario = $("scenario").value || "base";
   const province = apiProvinceValue() || "Chiang Mai";
   const mode = $("heatmap_mode").value || "urban";
+  const metric = currentHeatmapMetric();
   const showPointForecast = bool("show_point_forecast");
   const nearbyHeatPoint = heatPoint || nearestHeatPoint(lat, lon);
 
   if (!showPointForecast && nearbyHeatPoint) {
     showAreaDemandPopup(lat, lon, {
-      area_sessions: nearbyHeatPoint.heat_score,
+      metric,
+      area_score: pointMetricScore(nearbyHeatPoint, metric),
+      demand_score: nearbyHeatPoint.demand_score,
+      competition_score: nearbyHeatPoint.competition_score,
+      net_opportunity_score: nearbyHeatPoint.net_opportunity_score,
       resolution_km: latestHeatmapData?.resolution_km || 1.0
     });
     return;
@@ -1372,7 +1456,13 @@ async function quickEstimate(lat, lon, heatPoint = null) {
 
     if (!showPointForecast) {
       showAreaDemandPopup(lat, lon, {
-        area_sessions: data.gross_area_demand_sessions,
+        metric,
+        area_score: metric === "demand"
+          ? Math.max(0, (data.base_sessions || 0) + (data.zone_boost_sessions || 0) + (data.poi_boost_sessions || 0) + (data.district_boost_sessions || 0) + (data.spatial_boost_sessions || 0))
+          : (data.gross_area_demand_sessions || 0),
+        demand_score: Math.max(0, (data.base_sessions || 0) + (data.zone_boost_sessions || 0) + (data.poi_boost_sessions || 0) + (data.district_boost_sessions || 0) + (data.spatial_boost_sessions || 0)),
+        competition_score: Math.max(0, data.raw_competitor_penalty_sessions || data.competitor_penalty_sessions || 0),
+        net_opportunity_score: Math.max(0, data.gross_area_demand_sessions || 0),
         resolution_km: latestHeatmapData?.resolution_km || Number($("heatmap_resolution").value || 1.0)
       });
       return;
@@ -1791,6 +1881,7 @@ async function loadHeatMap() {
   const province = apiProvinceValue();
   const mode = $("heatmap_mode").value || "urban";
   const view = $("heatmap_view").value || "grid";
+  const metric = currentHeatmapMetric();
   const resolution = parseFloat($("heatmap_resolution").value || "0.5") || 0.5;
   const requestId = ++activeHeatmapRequestId;
   if (activeHeatmapController) activeHeatmapController.abort();
@@ -1828,7 +1919,9 @@ async function loadHeatMap() {
     const modeLabel = mode === "district" ? "District" : (mode === "community" ? "Community" : "Urban");
     const effectiveView = view === "classic" && Number(data?.metadata?.heatmap_exclusion_count || 0) > 0 ? "grid" : view;
     const viewLabel = effectiveView === "classic" ? t("classicView") : t("gridView");
-    const metaText = `${data.point_count} cells | ${resolution.toFixed(2)} km | Max ${fmt(data.max_heat_score)} | ${modeLabel} | ${viewLabel} | ${data.year} ${t(data.scenario)}`;
+    const maxScores = data.max_scores || {};
+    const layerMax = Number(maxScores[metric] ?? data.max_heat_score ?? 0);
+    const metaText = `${data.point_count} cells | ${resolution.toFixed(2)} km | ${heatmapMetricLabel(metric)} max ${fmt(layerMax)} | ${modeLabel} | ${viewLabel} | ${data.year} ${t(data.scenario)}`;
     $("heatmap-meta").textContent = metaText;
     $("heatmap-meta").style.color = "#2c7bb6";
     $("status").textContent = effectiveView !== view
@@ -1909,6 +2002,9 @@ $("heatmap_mode").addEventListener("change", () => {
   loadHeatMap();
 });
 $("heatmap_view").addEventListener("change", () => {
+  loadHeatMap();
+});
+$("heatmap_metric").addEventListener("change", () => {
   loadHeatMap();
 });
 $("heatmap_resolution").addEventListener("change", () => {

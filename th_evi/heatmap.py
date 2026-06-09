@@ -7,6 +7,7 @@ from math import cos, exp, radians
 from typing import Any, Literal
 
 from .location import LocationDemandModel
+from .validation import station_calibration_summary
 from .spatial import (
     BUSINESS_AREA_CAPTURE_FACTOR,
     POI_CAPTURE_FACTOR,
@@ -28,6 +29,7 @@ from .spatial import (
 
 VALID_HEATMAP_SCENARIOS = {"conservative", "base", "upside"}
 VALID_HEATMAP_MODES = {"urban", "community", "district"}
+VALID_HEATMAP_LAYERS = {"demand", "competition", "net"}
 HEATMAP_MAX_RESOLUTION_KM = 5.0
 HEATMAP_PADDING_KM = 2.0
 HEATMAP_MAX_COMPETITOR_SIGNAL_SHARE = 0.55
@@ -65,7 +67,39 @@ COMMUNITY_SUPPORT_POI_CATEGORIES = {
     "transport",
     "transport_corridor",
 }
+HIGHWAY_SUPPORT_POI_CATEGORIES = {
+    "airport",
+    "bus_station",
+    "district_center",
+    "education",
+    "gas_station",
+    "hospital",
+    "office",
+    "shopping_mall",
+    "supermarket",
+    "target_site",
+    "transport",
+    "transport_corridor",
+}
 SUPPORTIVE_POI_MAX_DISTANCE_KM = 4.5
+HIGHWAY_SUPPORTIVE_POI_MAX_DISTANCE_KM = 3.5
+URBAN_DESTINATION_POI_CATEGORIES = {
+    "airport",
+    "bus_station",
+    "district_center",
+    "education",
+    "event_space",
+    "hospital",
+    "hotel",
+    "hotel_condo",
+    "lifestyle",
+    "market_tourism",
+    "office",
+    "shopping_mall",
+    "supermarket",
+    "target_site",
+    "transport",
+}
 
 DISTRICT_NODE_RULES: dict[str, tuple[float, float, str]] = {
     "district_center": (18.0, 3.6, "destination"),
@@ -75,6 +109,12 @@ DISTRICT_NODE_RULES: dict[str, tuple[float, float, str]] = {
     "industrial_town": (18.0, 3.4, "destination"),
     "border_town": (22.0, 4.4, "highway"),
     "coverage_anchor": (14.0, 3.2, "suburban"),
+}
+
+HEATMAP_LAYER_SCORE_FIELDS = {
+    "demand": "demand_score",
+    "competition": "competition_score",
+    "net": "net_opportunity_score",
 }
 
 
@@ -95,8 +135,15 @@ def _location_type_for_heat(
     categories = {item.get("category") for item in top_pois[:3]}
     if {"transport_corridor", "border_crossing"} & categories:
         return "highway"
-    if "city_center" in categories:
+    if any(
+        item.get("category") == "city_center"
+        and (_float_or_none(item.get("distance_km")) or 999.0) <= 3.5
+        for item in top_pois[:3]
+    ):
         return "city_center"
+    urban_destination_hits = sum(1 for category in categories if category in URBAN_DESTINATION_POI_CATEGORIES)
+    if urban_destination_hits >= 2:
+        return "destination"
     for item in top_business_areas[:2]:
         suggested = item.get("suggested_location_type")
         if suggested in {"highway", "city_center", "destination", "suburban"}:
@@ -307,6 +354,92 @@ def _heatmap_thresholds(mode: str) -> tuple[float, float]:
     if mode in {"community", "district"}:
         return COMMUNITY_MIN_CONTEXT_SESSIONS, COMMUNITY_MIN_HEAT_SCORE
     return URBAN_MIN_CONTEXT_SESSIONS, URBAN_MIN_HEAT_SCORE
+
+
+def _average_kwh_per_session_for_heat(location_type: str) -> float:
+    return LocationDemandModel._avg_energy_per_session(location_type)
+
+
+def _highway_support_multiplier(
+    *,
+    top_pois: list[dict[str, Any]],
+    top_business_areas: list[dict[str, Any]],
+    top_districts: list[dict[str, Any]],
+    top_competitors: list[dict[str, Any]],
+    poi_score: float,
+    business_area_score: float,
+    district_score: float,
+    competitor_signal_score: float,
+) -> float:
+    nearby_supportive_poi = False
+    for item in top_pois[:3]:
+        category = str(item.get("category") or "").strip()
+        distance = _float_or_none(item.get("distance_km"))
+        if (
+            category in HIGHWAY_SUPPORT_POI_CATEGORIES
+            and distance is not None
+            and distance <= HIGHWAY_SUPPORTIVE_POI_MAX_DISTANCE_KM
+        ):
+            nearby_supportive_poi = True
+            break
+
+    near_district = district_score >= 1.5 or _distance_within_limit(top_districts, max_distance_km=4.0)
+    near_competitor = _distance_within_limit(top_competitors, max_distance_km=HEATMAP_MAX_COMPETITOR_DISTANCE_KM)
+    area_types = {str(item.get("area_type") or "").strip() for item in top_business_areas[:2]}
+    only_corridor_business = bool(area_types) and area_types <= {"periurban_connector"}
+
+    # If the point is still mostly a corridor hypothesis with only weak support
+    # from POI, district, and competitor evidence, do not let coarse AADT drive
+    # a full highway demand base.
+    if (
+        only_corridor_business
+        and poi_score < 4.0
+        and district_score < 3.0
+        and competitor_signal_score < 4.0
+    ):
+        return 0.05
+
+    # A nearby competitor alone should not fully validate a high-AADT roadside
+    # point if the surrounding evidence is still just corridor geometry.
+    if only_corridor_business and near_competitor and not (nearby_supportive_poi or near_district):
+        return 0.05
+
+    if (
+        poi_score < 3.0
+        and business_area_score < 4.0
+        and district_score < 2.5
+        and competitor_signal_score < 8.5
+    ):
+        return 0.08
+
+    # Do not let an outer-ring / corridor hypothesis get a near-full highway
+    # multiplier from a weak district-junction signal alone. If there is no
+    # truly supportive roadside POI nearby and the remaining evidence is still
+    # thin, keep the point visible but not hot.
+    if (
+        not nearby_supportive_poi
+        and only_corridor_business
+        and poi_score < 5.0
+        and business_area_score < 6.0
+        and district_score < 2.0
+    ):
+        return 0.08
+
+    if nearby_supportive_poi and near_district:
+        return 1.0
+
+    if nearby_supportive_poi or near_district:
+        return 0.85
+
+    if near_competitor:
+        return 0.55
+
+    if top_business_areas:
+        if only_corridor_business:
+            return 0.08
+        return 0.55
+
+    return 0.2
 
 
 def _ratio_within_limit(
@@ -527,12 +660,12 @@ def generate_province_heatmap(
                 competitor_signal_raw * HEATMAP_MAX_COMPETITOR_SIGNAL_SHARE,
                 max(zone_sessions + business_area_sessions + poi_sessions + district_sessions, competitor_signal_raw * 0.35),
             )
-            if mode == "urban":
-                context_sessions = zone_sessions + business_area_sessions + poi_sessions + competitor_signal_sessions
-            else:
-                context_sessions = zone_sessions + business_area_sessions + poi_sessions + district_sessions + competitor_signal_sessions
+            supportive_context_sessions = zone_sessions + business_area_sessions + poi_sessions
+            if mode != "urban":
+                supportive_context_sessions += district_sessions
+            evidence_context_sessions = supportive_context_sessions + competitor_signal_sessions
 
-            if context_sessions < min_context:
+            if evidence_context_sessions < min_context:
                 lon += lon_step
                 continue
 
@@ -554,11 +687,27 @@ def generate_province_heatmap(
             )
             estimate = demand.estimate(lat, lon, year, location_type=location_type)
             model_sessions = estimate["charging_sessions_per_day"] * scenario_factor
-            heat_score = model_sessions + context_sessions
+            if location_type == "highway":
+                model_sessions *= _highway_support_multiplier(
+                    top_pois=poi_contributions,
+                    top_business_areas=business_area_contributions,
+                    top_districts=district_contributions,
+                    top_competitors=competitor_contributions,
+                    poi_score=poi_sessions,
+                    business_area_score=business_area_sessions,
+                    district_score=district_sessions,
+                    competitor_signal_score=competitor_signal_sessions,
+                )
+            demand_score = model_sessions + supportive_context_sessions
+            competition_score = competitor_signal_sessions
+            net_opportunity_score = max(demand_score - competition_score, 0.0)
+            heat_score = net_opportunity_score
 
             if heat_score < min_heat:
                 lon += lon_step
                 continue
+
+            avg_kwh_per_session = _average_kwh_per_session_for_heat(location_type)
 
             points.append({
                 "lat": round(lat, 6),
@@ -571,9 +720,16 @@ def generate_province_heatmap(
                 "business_area_score": round(business_area_sessions, 1),
                 "district_score": round(district_sessions, 1),
                 "competitor_signal_score": round(competitor_signal_sessions, 1),
-                "context_score": round(context_sessions, 1),
+                "competition_score": round(competition_score, 1),
+                "supportive_context_score": round(supportive_context_sessions, 1),
+                "context_score": round(supportive_context_sessions, 1),
+                "evidence_context_score": round(evidence_context_sessions, 1),
+                "demand_score": round(demand_score, 1),
+                "net_opportunity_score": round(net_opportunity_score, 1),
                 "heat_score": round(heat_score, 1),
-                "daily_kwh": round(heat_score * 24.0, 1),
+                "avg_kwh_per_session": round(avg_kwh_per_session, 1),
+                "daily_kwh_equivalent": round(net_opportunity_score * avg_kwh_per_session, 1),
+                "daily_kwh": round(net_opportunity_score * avg_kwh_per_session, 1),
                 "zones": [item["name"] for item in zone_contributions[:3]],
                 "business_areas": [item["name"] for item in business_area_contributions[:3]],
                 "pois": [item["name"] for item in poi_contributions[:3]],
@@ -586,9 +742,17 @@ def generate_province_heatmap(
             lon += lon_step
         lat += lat_step
 
-    max_heat = max((p["heat_score"] for p in points), default=1.0)
+    layer_max_scores = {
+        layer: max((p[field] for p in points), default=1.0)
+        for layer, field in HEATMAP_LAYER_SCORE_FIELDS.items()
+    }
+    max_heat = layer_max_scores["net"]
     for point in points:
-        point["intensity"] = round(point["heat_score"] / max_heat, 4)
+        point["intensity_layers"] = {
+            layer: round(point[field] / max(layer_max_scores[layer], 0.1), 4)
+            for layer, field in HEATMAP_LAYER_SCORE_FIELDS.items()
+        }
+        point["intensity"] = point["intensity_layers"]["net"]
 
     district_summaries: list[dict[str, Any]] = []
     if mode == "district":
@@ -650,6 +814,8 @@ def generate_province_heatmap(
         "bounds": {key: round(value, 6) for key, value in bounds.items()},
         "point_count": len(points),
         "max_heat_score": round(max_heat, 1),
+        "max_scores": {layer: round(value, 1) for layer, value in layer_max_scores.items()},
+        "default_layer": "demand",
         "points": points,
         "zones": zones,
         "metadata": {
@@ -660,6 +826,8 @@ def generate_province_heatmap(
             "competitor_count": len(competitors),
             "district_node_count": len(district_nodes),
             "heatmap_mode": mode,
+            "score_semantics": "screening_score_not_direct_forecast",
+            "station_calibration": station_calibration_summary(),
             "urban_mask": "district_poi_zone_competitor" if mode in {"community", "district"} else "poi_zone_competitor",
             "normalization": "within_district_weighted_by_province_potential" if mode == "district" else "province_max",
         },

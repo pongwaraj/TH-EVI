@@ -12,6 +12,29 @@ def test_heatmap_includes_grid_step_metadata():
     assert result["lat_step_deg"] > 0
     assert result["lon_step_deg"] > 0
     assert result["point_count"] > 0
+    assert result["default_layer"] == "demand"
+    assert {"demand", "competition", "net"} == set(result["max_scores"])
+
+
+def test_heatmap_points_include_split_scores_and_kwh_equivalent():
+    result = generate_chiang_mai_heatmap(year=2026, scenario="base", resolution_km=1.0)
+
+    point = result["points"][0]
+    assert "demand_score" in point
+    assert "competition_score" in point
+    assert "net_opportunity_score" in point
+    assert "intensity_layers" in point
+    assert point["daily_kwh"] == point["daily_kwh_equivalent"]
+    assert point["heat_score"] == point["net_opportunity_score"]
+
+
+def test_heatmap_metadata_includes_station_calibration_summary():
+    result = generate_chiang_mai_heatmap(year=2026, scenario="base", resolution_km=1.0)
+
+    calibration = result["metadata"]["station_calibration"]
+    assert calibration["ground_truth_points"] >= 1
+    assert calibration["calibration_factor"] > 0
+    assert "status" in calibration
 
 
 def test_province_heatmap_supports_non_chiang_mai():
@@ -77,6 +100,68 @@ def test_rayong_heatmap_supports_pluak_daeng_industrial_scope():
         if 12.98 <= point["lat"] <= 13.10 and 101.05 <= point["lon"] <= 101.24
     ]
     assert pluak_daeng_points
+
+
+def test_nakhon_nayok_heatmap_supports_city_and_ongkharak_scope():
+    result = generate_province_heatmap(
+        "Nakhon Nayok",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    assert result["province"] == "Nakhon Nayok"
+    assert result["point_count"] > 0
+    assert result["metadata"]["poi_count"] >= 6
+    assert result["metadata"]["business_area_count"] >= 4
+
+    core_points = [
+        point for point in result["points"]
+        if 14.05 <= point["lat"] <= 14.23 and 100.96 <= point["lon"] <= 101.24
+    ]
+    assert core_points
+
+
+def test_nakhon_ratchasima_heatmap_supports_korat_and_pak_chong_scope():
+    result = generate_province_heatmap(
+        "Nakhon Ratchasima",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    assert result["province"] == "Nakhon Ratchasima"
+    assert result["point_count"] > 0
+    assert result["metadata"]["poi_count"] >= 8
+    assert result["metadata"]["business_area_count"] >= 5
+
+    core_points = [
+        point for point in result["points"]
+        if 14.68 <= point["lat"] <= 15.02 and 101.38 <= point["lon"] <= 102.14
+    ]
+    assert core_points
+
+
+def test_chiang_mai_sankamphaeng_corridor_point_is_damped_without_built_support():
+    result = generate_province_heatmap(
+        "Chiang Mai",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    target = next(
+        point for point in result["points"]
+        if abs(point["lat"] - 18.819418) < 1e-6 and abs(point["lon"] - 99.153299) < 1e-6
+    )
+
+    assert target["location_type"] == "highway"
+    assert target["model_sessions"] < 40.0
+    assert target["demand_score"] < 70.0
+    assert "Chiang Mai Ring 3 east connector" in target["business_areas"]
 
 
 def test_community_heatmap_supports_district_node_only_province():
@@ -172,8 +257,99 @@ def test_chiang_mai_airport_zone_stays_hot_with_airport_frontage_support():
 
     assert airport_points
     top_airport = max(airport_points, key=lambda point: point["heat_score"])
-    assert top_airport["heat_score"] >= 195.0
+    assert top_airport["demand_score"] >= 80.0
+    assert top_airport["net_opportunity_score"] > 0
     assert "Chiang Mai Airport frontage and ride-hailing band" in top_airport.get("business_areas", [])
+
+
+def test_chiang_mai_route_118_pass_through_point_is_damped_without_service_support():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    target_lat = 18.8189
+    target_lon = 99.1736
+    point = min(
+        result["points"],
+        key=lambda item: (item["lat"] - target_lat) ** 2 + (item["lon"] - target_lon) ** 2,
+    )
+
+    assert point["location_type"] == "highway"
+    assert point["model_sessions"] < 20.0
+    assert point["net_opportunity_score"] < 60.0
+
+
+def test_chiang_mai_east_corridor_cluster_is_not_hot_from_corridor_and_competitor_alone():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    flagged_targets = [
+        (18.8200, 99.1061),
+        (18.8202, 99.1142),
+        (18.8173, 99.1239),
+    ]
+
+    for target_lat, target_lon in flagged_targets:
+        point = min(
+            result["points"],
+            key=lambda item: (item["lat"] - target_lat) ** 2 + (item["lon"] - target_lon) ** 2,
+        )
+        assert point["model_sessions"] < 30.0
+        assert point["demand_score"] < 45.0
+        assert point["net_opportunity_score"] < 35.0
+
+
+def test_chiang_mai_tweechol_side_points_do_not_behave_like_highway_hotspots():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    flagged_targets = [
+        (18.8464, 99.1055),
+        (18.8372, 99.1147),
+    ]
+
+    for target_lat, target_lon in flagged_targets:
+        point = min(
+            result["points"],
+            key=lambda item: (item["lat"] - target_lat) ** 2 + (item["lon"] - target_lon) ** 2,
+        )
+        assert point["model_sessions"] < 30.0
+        assert point["demand_score"] < 40.0
+        assert point["net_opportunity_score"] < 25.0
+
+
+def test_chiang_mai_doi_saket_approach_points_are_damped_when_only_corridor_and_junction_support():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    flagged_targets = [
+        (18.8468, 99.1241),
+        (18.8461, 99.1344),
+    ]
+
+    for target_lat, target_lon in flagged_targets:
+        point = min(
+            result["points"],
+            key=lambda item: (item["lat"] - target_lat) ** 2 + (item["lon"] - target_lon) ** 2,
+        )
+        assert point["model_sessions"] < 30.0
+        assert point["demand_score"] < 40.0
+        assert point["net_opportunity_score"] < 30.0
 
 
 def test_chiang_rai_heatmap_filters_remote_tourism_only_mountain_points():

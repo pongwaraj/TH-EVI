@@ -17,6 +17,8 @@ from th_evi.spatial import (
 UDON_THANI = "\u0e2d\u0e38\u0e14\u0e23\u0e18\u0e32\u0e19\u0e35"
 CHIANG_MAI = "Chiang Mai"
 PHITSANULOK = "Phitsanulok"
+NAKHON_NAYOK = "Nakhon Nayok"
+NAKHON_RATCHASIMA = "Nakhon Ratchasima"
 
 
 def test_poi_attraction_decays_with_distance():
@@ -201,6 +203,88 @@ def test_rayong_pluak_daeng_click_analysis_has_industrial_area_signals(monkeypat
         lat=13.0280,
         lon=101.2130,
         province="Rayong",
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["net_sessions_per_day"] > 0
+    assert result["zone_boost_sessions"] > 0
+    assert result["business_area_boost_sessions"] > 0
+    assert result["top_pois"]
+    assert result["eligibility_status"] in {"eligible", "low_relevance"}
+
+
+def test_nakhon_nayok_click_analysis_has_city_and_medical_area_signals(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    result = analyze_click_location(
+        lat=14.1078,
+        lon=100.9915,
+        province=NAKHON_NAYOK,
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=28,
+        price_per_kwh=6.8,
+    )
+
+    assert result["net_sessions_per_day"] > 0
+    assert result["zone_boost_sessions"] > 0
+    assert result["business_area_boost_sessions"] > 0
+    assert result["top_pois"]
+    assert result["eligibility_status"] in {"eligible", "low_relevance"}
+
+
+def test_nakhon_ratchasima_click_analysis_has_city_and_retail_area_signals(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    result = analyze_click_location(
+        lat=14.9799,
+        lon=102.0977,
+        province=NAKHON_RATCHASIMA,
         year=2026,
         scenario="base",
         mode="urban",
@@ -603,6 +687,56 @@ def test_phitsanulok_click_analysis_supports_central_retail_core():
     assert result["top_pois"]
     assert result["top_competitors"]
     assert result["top_business_areas"]
+
+
+def test_nakhon_nayok_loader_has_minimum_heatmap_anchor_sets():
+    poi_ids = {row["poi_id"] for row in load_pois_for_province(NAKHON_NAYOK)}
+    competitor_ids = {row["station_id"] for row in load_competitors_for_province(NAKHON_NAYOK)}
+    business_area_ids = {row["business_area_id"] for row in load_business_areas_for_province(NAKHON_NAYOK)}
+
+    assert {
+        "nky_nakhon_nayok_town_center",
+        "nky_nakhon_nayok_hospital",
+        "nky_lotuss_nakhon_nayok",
+        "nky_swu_ongkharak",
+        "nky_swu_medical_center",
+        "nky_ban_na_town_center",
+    }.issubset(poi_ids)
+    assert {
+        "nky_ev_station_pluz_nakhon_nayok_seed",
+        "nky_pea_volta_ongkharak_seed",
+    }.issubset(competitor_ids)
+    assert {
+        "nky_nakhon_nayok_retail_civic_band",
+        "nky_ongkharak_medical_education_band",
+        "nky_route_305_growth_axis",
+    }.issubset(business_area_ids)
+
+
+def test_nakhon_ratchasima_loader_has_minimum_heatmap_anchor_sets():
+    poi_ids = {row["poi_id"] for row in load_pois_for_province(NAKHON_RATCHASIMA)}
+    competitor_ids = {row["station_id"] for row in load_competitors_for_province(NAKHON_RATCHASIMA)}
+    business_area_ids = {row["business_area_id"] for row in load_business_areas_for_province(NAKHON_RATCHASIMA)}
+
+    assert {
+        "nrm_korat_city_center",
+        "nrm_the_mall_korat",
+        "nrm_terminal21_korat",
+        "nrm_maharat_hospital",
+        "nrm_suranaree_university",
+        "nrm_pak_chong_town_center",
+    }.issubset(poi_ids)
+    assert {
+        "nrm_pea_volta_korat_city_seed",
+        "ptt_charging_station_korat_1",
+        "pea_volta_khok_kruat",
+        "elex_by_egat_pak_chong",
+    }.issubset(competitor_ids)
+    assert {
+        "nrm_korat_retail_civic_band",
+        "nrm_mittraphap_modern_retail_spine",
+        "nrm_pakchong_mittraphap_gateway",
+    }.issubset(business_area_ids)
 
 
 def test_airport_core_competitors_include_super_ev_hub():

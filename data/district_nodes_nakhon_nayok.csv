@@ -1,0 +1,5 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+nky_mueang_nakhon_nayok,Mueang Nakhon Nayok,Nakhon Nayok city core,district_center,14.2065,101.2130,4.6,1.0,Provincial capital and primary urban node with the strongest baseline demand in the province.
+nky_ongkharak,Ongkharak,Ongkharak medical-education node,transport_junction,14.1078,100.9915,4.4,0.96,Strong district node on Route 305 with university and major medical demand.
+nky_ban_na,Ban Na,Ban Na gateway town,transport_junction,14.2644,101.0705,4.0,0.86,Service town and junction toward Saraburi and Prachin Buri with moderate year-round demand.
+nky_pak_phli,Pak Phli,Pak Phli district center,coverage_anchor,14.1635,101.2685,3.6,0.78,Smaller east-side service node supporting local community coverage and interior travel.
