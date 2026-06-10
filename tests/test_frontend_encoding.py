@@ -26,4 +26,4 @@ def test_static_frontend_thai_text_is_not_mojibake():
     assert 'id="province-search"' in html
     assert 'list="heatmap-province-options"' in html
     assert 'list="province-options"' in html
-    assert "const DEFAULT_CENTER = [18.7883, 98.9853];" in html
+    assert "const DEFAULT_CENTER = [18.754923, 99.036718];" in html
