@@ -15,7 +15,6 @@ from th_evi.db import (
     HeatmapExclusionReference,
     HotZoneReference,
     create_session_factory,
-    get_database_url,
 )
 
 
@@ -169,18 +168,3 @@ def test_reference_schema_supports_hot_zones_and_district_nodes():
         assert zone.updated_at is not None
         assert node.node_id == "cm_mueang"
         assert node.active is True
-
-
-def test_get_database_url_falls_back_to_local_env_file(monkeypatch, tmp_path):
-    monkeypatch.delenv("TH_EVI_DB_URL", raising=False)
-    monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("POSTGRES_URL", raising=False)
-    monkeypatch.setattr("th_evi.db.PROJECT_ROOT", tmp_path)
-    (tmp_path / ".env.local").write_text(
-        'DATABASE_URL="postgresql://example_user:secret@example-host/neondb?sslmode=require"\n',
-        encoding="utf-8",
-    )
-
-    url = get_database_url()
-
-    assert url.startswith("postgresql+psycopg://example_user:secret@example-host/neondb")

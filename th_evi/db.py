@@ -24,28 +24,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, rela
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DEFAULT_DB_PATH = DATA_DIR / "th_evi.sqlite3"
 DEFAULT_DB_URL = f"sqlite:///{DEFAULT_DB_PATH.as_posix()}"
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-
-def _read_local_env_value(*names: str) -> str | None:
-    for env_path in (PROJECT_ROOT / ".env.local", PROJECT_ROOT / ".env"):
-        if not env_path.exists():
-            continue
-        try:
-            for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-                line = raw_line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, value = line.split("=", 1)
-                if key.strip() not in names:
-                    continue
-                parsed = value.strip()
-                if len(parsed) >= 2 and parsed[0] == parsed[-1] and parsed[0] in {'"', "'"}:
-                    parsed = parsed[1:-1]
-                return parsed
-        except OSError:
-            continue
-    return None
 
 
 class Base(DeclarativeBase):
@@ -583,7 +561,6 @@ def get_database_url() -> str:
         os.environ.get("TH_EVI_DB_URL")
         or os.environ.get("DATABASE_URL")
         or os.environ.get("POSTGRES_URL")
-        or _read_local_env_value("TH_EVI_DB_URL", "DATABASE_URL", "POSTGRES_URL")
         or DEFAULT_DB_URL
     )
     if url.startswith("postgres://"):
