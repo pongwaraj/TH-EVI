@@ -134,7 +134,13 @@ def test_frontend_routes_include_main_and_admin_pages():
 
     home = client.get("/")
     assert home.status_code == 200
+    assert "TH-EVI Planning" in home.text
+    assert '/analysis' in home.text
     assert '/admin' in home.text
+
+    analysis = client.get("/analysis")
+    assert analysis.status_code == 200
+    assert "TH-EVI | EV Charging Site Analysis" in analysis.text
 
     admin = client.get("/admin")
     assert admin.status_code == 200

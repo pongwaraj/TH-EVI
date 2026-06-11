@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TH-EVI Planning | Heat Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { box-sizing: border-box; }
+:root {
+  --panel-width: 400px;
+  --line: #d7e0e7;
+  --ink: #12395b;
+  --muted: #5d7388;
+  --bg: #eef3f7;
+  --card: #ffffff;
+  --accent: #1565c0;
+  --accent-soft: #e8f1fb;
+}
+html, body { height: 100%; margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; background: var(--bg); color: #142433; }
+body { display: grid; grid-template-columns: minmax(320px, var(--panel-width)) minmax(0, 1fr); }
+aside { height: 100vh; overflow-y: auto; background: linear-gradient(180deg, #ffffff 0%, #f6f9fc 100%); border-right: 1px solid var(--line); }
+#map { height: 100vh; min-width: 0; }
+.section { padding: 16px; border-bottom: 1px solid var(--line); }
+.hero { background: linear-gradient(145deg, #12395b 0%, #1f5f96 100%); color: #fff; }
+.hero h1 { margin: 0; font-size: 26px; letter-spacing: 0.2px; }
+.hero p { margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: rgba(255,255,255,.84); }
+.hero-links { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.hero-links a { color: #fff; text-decoration: none; font-size: 12px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; background: rgba(255,255,255,.08); }
+.label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.field { margin-bottom: 12px; }
+input, select, button { width: 100%; font: inherit; }
+input, select {
+  border: 1px solid #c9d4de;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #102435;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(21,101,192,.12); }
+.btn {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-ghost { background: #eef4fa; color: var(--ink); }
+.control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 13px; color: #30485d; }
+.check-row input { width: auto; }
+.status { margin-top: 10px; min-height: 18px; font-size: 12px; color: var(--muted); }
+.status.error { color: #b42318; }
+.summary-card {
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  border: 1px solid #d6e6f8;
+}
+.summary-card h2 { margin: 0 0 8px; font-size: 14px; color: var(--ink); }
+.summary-card p { margin: 0; font-size: 12px; color: #395167; line-height: 1.6; }
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.metric {
+  background: #fff;
+  border: 1px solid #dbe5ee;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.metric span { display: block; font-size: 11px; color: var(--muted); }
+.metric strong { display: block; margin-top: 3px; font-size: 18px; color: var(--ink); }
+.list-card h2 { margin: 0 0 10px; font-size: 14px; color: var(--ink); }
+.list-card p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.list { display: grid; gap: 8px; margin-top: 10px; }
+.list-item {
+  border: 1px solid #dbe5ee;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.list-item strong { display: block; font-size: 13px; color: var(--ink); }
+.list-item span { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.shortlist-actions { display: flex; gap: 8px; margin-top: 10px; }
+.shortlist-actions button { flex: 1; }
+.legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #365169;
+}
+.legend-row { display: flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+.leaflet-popup-content { min-width: 240px; font-size: 13px; }
+.leaflet-popup-content h3 { margin: 0 0 8px; font-size: 15px; color: var(--ink); }
+.leaflet-popup-content table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.leaflet-popup-content td { padding: 4px 0; vertical-align: top; }
+.popup-actions { display: grid; gap: 8px; margin-top: 10px; }
+.popup-actions button { border: 0; border-radius: 8px; padding: 9px 10px; font-weight: 700; cursor: pointer; }
+.popup-primary { background: var(--accent); color: #fff; }
+.popup-maps { background: #2563eb; color: #fff; }
+.popup-street { background: #0f766e; color: #fff; }
+.note { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+@media (max-width: 980px) {
+  body { grid-template-columns: 1fr; grid-template-rows: auto 55vh; }
+  aside { height: auto; }
+  #map { height: 55vh; }
+}
+</style>
+</head>
+<body>
+<aside>
+  <section class="section hero">
+    <h1>TH-EVI Planning</h1>
+    <p>ดู Heat Map ระดับจังหวัดและอำเภอใหญ่ เพื่อคัดจุดที่ควรส่งทีมเซลส์หรือทีม Survey ไปตรวจพื้นที่ต่อได้ทันที</p>
+    <div class="hero-links">
+      <a href="/analysis">Advanced Analysis</a>
+      <a href="/admin">Data Admin</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="field">
+      <label class="label" for="province-search">จังหวัด</label>
+      <input id="province-search" list="province-options" autocomplete="off" placeholder="ค้นหาจังหวัด">
+      <datalist id="province-options"></datalist>
+      <select id="province" style="display:none">
+        <option value="เชียงใหม่">เชียงใหม่</option>
+        <option value="สมุทรปราการ">สมุทรปราการ</option>
+        <option value="ระยอง">ระยอง</option>
+        <option value="นครราชสีมา">นครราชสีมา</option>
+        <option value="นครนายก">นครนายก</option>
+        <option value="เชียงราย">เชียงราย</option>
+        <option value="ลำปาง">ลำปาง</option>
+        <option value="ลำพูน">ลำพูน</option>
+        <option value="พิษณุโลก">พิษณุโลก</option>
+        <option value="แพร่">แพร่</option>
+        <option value="น่าน">น่าน</option>
+        <option value="พะเยา">พะเยา</option>
+        <option value="หนองคาย">หนองคาย</option>
+        <option value="อุดรธานี">อุดรธานี</option>
+        <option value="ขอนแก่น">ขอนแก่น</option>
+        <option value="อุบลราชธานี">อุบลราชธานี</option>
+      </select>
+    </div>
+    <div class="control-grid">
+      <div class="field">
+        <label class="label" for="scope">มุมมอง</label>
+        <select id="scope">
+          <option value="urban">จังหวัด / เมือง / คอร์ริดอร์หลัก</option>
+          <option value="district">อำเภอใหญ่</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="label" for="resolution">ความละเอียด</label>
+        <select id="resolution">
+          <option value="1.0">1.0 km</option>
+          <option value="0.5">0.5 km</option>
+          <option value="0.25">0.25 km</option>
+        </select>
+      </div>
+    </div>
+    <label class="check-row">
+      <input id="show-competitors" type="checkbox">
+      แสดงสถานีคู่แข่ง
+    </label>
+    <div class="shortlist-actions">
+      <button class="btn btn-primary" id="load-btn" type="button">โหลด Heat Map</button>
+      <button class="btn btn-ghost" id="reset-btn" type="button">รีเซ็ตมุมมอง</button>
+    </div>
+    <div id="status" class="status">พร้อมใช้งาน</div>
+  </section>
+
+  <section class="section">
+    <div class="summary-card">
+      <h2>วิธีใช้</h2>
+      <p>เลือกจังหวัด แล้วกดโหลด Heat Map จากนั้นคลิก cell ที่สนใจบนแผนที่เพื่อดูคำแนะนำขนาดสถานี พร้อมปุ่มเปิด Google Maps และ Street View</p>
+      <div class="metric-grid">
+        <div class="metric"><span>Default Heat Layer</span><strong>Net Opportunity</strong></div>
+        <div class="metric"><span>Planning Goal</span><strong>Shortlist for Survey</strong></div>
+      </div>
+      <div class="legend">
+        <div class="legend-row"><span class="legend-swatch" style="background:#fff3bf"></span> Low</div>
+        <div class="legend-row"><span class="legend-swatch" style="background:#ffd166"></span> Watchlist</div>
+        <div class="legend-row"><span class="legend-swatch" style="background:#f8961e"></span> Good</div>
+        <div class="legend-row"><span class="legend-swatch" style="background:#ef476f"></span> Strong</div>
+        <div class="legend-row"><span class="legend-swatch" style="background:#7b2cbf"></span> Priority</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section list-card">
+    <h2>อำเภอใหญ่ / จุดหลัก</h2>
+    <p id="district-note">เมื่อเลือกมุมมองอำเภอใหญ่ ระบบจะแสดงอำเภอที่เด่นที่สุดของจังหวัดนี้ให้กดโฟกัสได้ทันที</p>
+    <div id="district-list" class="list"></div>
+  </section>
+
+  <section class="section list-card">
+    <h2>Shortlist</h2>
+    <p>จุดที่คุณเลือกไว้เพื่อส่งต่อให้ทีมเซลส์หรือทีม Survey</p>
+    <div id="shortlist" class="list"></div>
+    <div class="shortlist-actions">
+      <button class="btn btn-ghost" id="clear-shortlist" type="button">ล้าง Shortlist</button>
+    </div>
+  </section>
+</aside>
+
+<div id="map"></div>
+
+<script>
+const DEFAULT_CENTER = [18.754923, 99.036718];
+const DEFAULT_ZOOM = 11;
+const THAILAND_BOUNDS = [[5.4, 97.2], [20.9, 105.8]];
+const DEFAULT_PROVINCE = "เชียงใหม่";
+const SHORTLIST_KEY = "th-evi-phase1-shortlist";
+const PROVINCE_API_VALUES = {
+  "เชียงใหม่": "Chiang Mai",
+  "สมุทรปราการ": "Samut Prakan",
+  "ระยอง": "Rayong",
+  "นครราชสีมา": "Nakhon Ratchasima",
+  "นครนายก": "Nakhon Nayok",
+  "เชียงราย": "Chiang Rai",
+  "ลำปาง": "Lampang",
+  "ลำพูน": "Lamphun",
+  "พิษณุโลก": "Phitsanulok",
+  "แพร่": "Phrae",
+  "น่าน": "Nan",
+  "พะเยา": "Phayao",
+  "หนองคาย": "Nong Khai",
+  "อุดรธานี": "Udon Thani",
+  "ขอนแก่น": "Khon Kaen",
+  "อุบลราชธานี": "Ubon Ratchathani"
+};
+const HEAT_COLORS = [
+  { at: 0.30, color: "#fff3bf" },
+  { at: 0.45, color: "#ffd166" },
+  { at: 0.60, color: "#f8961e" },
+  { at: 0.75, color: "#ef476f" },
+  { at: 0.90, color: "#b5179e" },
+  { at: 1.00, color: "#7b2cbf" }
+];
+const STATION_TIERS = [
+  { id: "starter", maxKwh: 220, sessions: 8, label: "Starter", spec: "30 kW | 1 หัวชาร์จ", note: "เริ่มต้นในจุดทดลองหรือทำเลชุมชนขนาดเล็ก" },
+  { id: "compact", maxKwh: 500, sessions: 16, label: "Compact", spec: "60 kW | 2 หัวชาร์จ", note: "เหมาะกับจุดแวะสั้นและ community retail" },
+  { id: "district_fast", maxKwh: 1100, sessions: 30, label: "District Fast Charge", spec: "120 kW | 2 หัวชาร์จ", note: "เหมาะกับอำเภอใหญ่หรือเมืองรองที่มี demand ชัด" },
+  { id: "city_node", maxKwh: 2200, sessions: 55, label: "City Node", spec: "240 kW | 4 หัวชาร์จ", note: "เหมาะกับเมืองหลักหรือ retail node ที่ traffic สูง" },
+  { id: "hub_480", maxKwh: 4000, sessions: 95, label: "Corridor Hub", spec: "480 kW | 8 หัวชาร์จ", note: "เหมาะกับคอร์ริดอร์หลักหรือ node ที่รองรับหลายกลุ่มลูกค้า" },
+  { id: "hub_960", maxKwh: Infinity, sessions: Infinity, label: "Super Hub", spec: "960 kW | 16 หัวชาร์จ", note: "เหมาะกับ hot zone เมืองใหญ่หรือ regional hub" }
+];
+
+const $ = id => document.getElementById(id);
+const map = L.map("map", {
+  center: DEFAULT_CENTER,
+  zoom: DEFAULT_ZOOM,
+  maxBounds: THAILAND_BOUNDS,
+  maxBoundsViscosity: 0.9,
+  worldCopyJump: false
+}).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "&copy; OpenStreetMap contributors",
+  noWrap: true
+}).addTo(map);
+
+const heatmapLayer = L.layerGroup().addTo(map);
+const districtLayer = L.layerGroup().addTo(map);
+const competitorLayer = L.layerGroup().addTo(map);
+let latestHeatmapData = null;
+let shortlist = readShortlist();
+
+function apiProvinceValue() {
+  return PROVINCE_API_VALUES[$("province").value] || $("province").value;
+}
+
+function fmt(value) {
+  return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
+function renderProvinceOptions() {
+  const options = Array.from($("province").options).map(option => option.value);
+  $("province-options").innerHTML = options.map(value => `<option value="${value}"></option>`).join("");
+  $("province-search").value = DEFAULT_PROVINCE;
+  $("province").value = DEFAULT_PROVINCE;
+}
+
+function syncProvinceSearch() {
+  const searchValue = $("province-search").value.trim().toLowerCase();
+  const match = Array.from($("province").options).find(option => option.value.toLowerCase() === searchValue);
+  if (match) {
+    $("province").value = match.value;
+    $("province-search").value = match.value;
+  } else {
+    $("province-search").value = $("province").value;
+  }
+}
+
+function colorForIntensity(intensity) {
+  const normalized = Math.max(0.30, Math.min(1, Number(intensity || 0)));
+  for (let i = 1; i < HEAT_COLORS.length; i += 1) {
+    const prev = HEAT_COLORS[i - 1];
+    const next = HEAT_COLORS[i];
+    if (normalized <= next.at) {
+      const ratio = (normalized - prev.at) / Math.max(next.at - prev.at, 0.0001);
+      const from = hexToRgb(prev.color);
+      const to = hexToRgb(next.color);
+      return rgbToHex(
+        from.r + (to.r - from.r) * ratio,
+        from.g + (to.g - from.g) * ratio,
+        from.b + (to.b - from.b) * ratio
+      );
+    }
+  }
+  return HEAT_COLORS[HEAT_COLORS.length - 1].color;
+}
+
+function hexToRgb(hex) {
+  const value = parseInt(hex.replace("#", ""), 16);
+  return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+}
+
+function recommendationForPoint(point) {
+  const dailyKwh = Number(point.daily_kwh || point.daily_kwh_equivalent || 0);
+  const sessions = Number(point.net_opportunity_score || point.heat_score || 0);
+  return STATION_TIERS.find(tier => dailyKwh <= tier.maxKwh && sessions <= tier.sessions) || STATION_TIERS[STATION_TIERS.length - 1];
+}
+
+function evidenceText(point) {
+  const chunks = [];
+  if ((point.zones || []).length) chunks.push(`Hot zone: ${point.zones.slice(0, 2).join(", ")}`);
+  if ((point.business_areas || []).length) chunks.push(`Business area: ${point.business_areas.slice(0, 2).join(", ")}`);
+  if ((point.pois || []).length) chunks.push(`POI: ${point.pois.slice(0, 2).join(", ")}`);
+  if ((point.districts || []).length) chunks.push(`District support: ${point.districts.slice(0, 2).join(", ")}`);
+  return chunks.join("<br>") || "จุดนี้มีคะแนนจากโครงสร้างเมืองและแหล่งกิจกรรมใกล้เคียง";
+}
+
+function openGoogleMaps(lat, lon) {
+  window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`, "_blank", "noopener");
+}
+
+function openStreetView(lat, lon) {
+  window.open(`https://www.google.com/maps?layer=c&cbll=${lat},${lon}&cbp=12,0,0,0,0`, "_blank", "noopener");
+}
+
+function readShortlist() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SHORTLIST_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveShortlist() {
+  window.localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist));
+}
+
+function renderShortlist() {
+  const root = $("shortlist");
+  if (!shortlist.length) {
+    root.innerHTML = '<div class="list-item"><span>ยังไม่มีจุดที่บันทึกไว้</span></div>';
+    return;
+  }
+  root.innerHTML = shortlist.map((item, index) => `
+    <div class="list-item" data-index="${index}">
+      <strong>${item.province} | ${item.spec}</strong>
+      <span>${item.lat.toFixed(4)}, ${item.lon.toFixed(4)}</span>
+      <span>${item.label} | ${fmt(item.dailyKwh)} kWh/day</span>
+    </div>
+  `).join("");
+  root.querySelectorAll(".list-item").forEach(node => {
+    node.addEventListener("click", () => {
+      const item = shortlist[Number(node.dataset.index)];
+      map.setView([item.lat, item.lon], 15);
+    });
+  });
+}
+
+function addToShortlist(point) {
+  const recommendation = recommendationForPoint(point);
+  const key = `${point.lat}:${point.lon}:${recommendation.spec}`;
+  if (shortlist.some(item => item.key === key)) return;
+  shortlist.unshift({
+    key,
+    province: $("province").value,
+    lat: Number(point.lat),
+    lon: Number(point.lon),
+    label: recommendation.label,
+    spec: recommendation.spec,
+    dailyKwh: Number(point.daily_kwh || 0)
+  });
+  shortlist = shortlist.slice(0, 20);
+  saveShortlist();
+  renderShortlist();
+  $("status").textContent = "บันทึกลง Shortlist แล้ว";
+}
+
+function popupHtml(point) {
+  const recommendation = recommendationForPoint(point);
+  return `
+    <div>
+      <h3>${recommendation.label}</h3>
+      <div><b>แนะนำ:</b> ${recommendation.spec}</div>
+      <table>
+        <tr><td>พิกัด</td><td style="text-align:right">${Number(point.lat).toFixed(4)}, ${Number(point.lon).toFixed(4)}</td></tr>
+        <tr><td>Net opportunity</td><td style="text-align:right"><b>${fmt(point.net_opportunity_score)}</b></td></tr>
+        <tr><td>Demand score</td><td style="text-align:right">${fmt(point.demand_score)}</td></tr>
+        <tr><td>Competition</td><td style="text-align:right">${fmt(point.competition_score)}</td></tr>
+        <tr><td>kWh/day</td><td style="text-align:right">${fmt(point.daily_kwh)}</td></tr>
+      </table>
+      <div class="note">${recommendation.note}</div>
+      <div class="note">${evidenceText(point)}</div>
+      <div class="popup-actions">
+        <button class="popup-primary" onclick="window.phase1AddToShortlist(${point.lat}, ${point.lon})">เพิ่มลง Shortlist</button>
+        <button class="popup-maps" onclick="window.phase1OpenGoogleMaps(${point.lat}, ${point.lon})">เปิด Google Maps</button>
+        <button class="popup-street" onclick="window.phase1OpenStreetView(${point.lat}, ${point.lon})">Street View</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderDistrictList(data) {
+  const root = $("district-list");
+  const summaries = (data.district_summaries || []).slice(0, 10);
+  if (!summaries.length) {
+    root.innerHTML = '<div class="list-item"><span>มุมมองนี้ไม่มีรายการอำเภอให้เลือก</span></div>';
+    return;
+  }
+  root.innerHTML = summaries.map((item, index) => `
+    <div class="list-item" data-index="${index}">
+      <strong>${item.district_name}</strong>
+      <span>Heat score ${fmt(item.heat_score)} | ${item.point_count} cells</span>
+    </div>
+  `).join("");
+  root.querySelectorAll(".list-item").forEach(node => {
+    node.addEventListener("click", () => {
+      const item = summaries[Number(node.dataset.index)];
+      map.setView([item.lat, item.lon], 11);
+    });
+  });
+}
+
+function drawDistrictSummaries(data) {
+  districtLayer.clearLayers();
+  (data.district_summaries || []).forEach(summary => {
+    if (summary.lat == null || summary.lon == null) return;
+    const marker = L.circleMarker([summary.lat, summary.lon], {
+      radius: 8,
+      color: "#12395b",
+      fillColor: "#ffd166",
+      fillOpacity: 0.95,
+      weight: 2
+    }).addTo(districtLayer);
+    marker.bindPopup(`
+      <div>
+        <h3>${summary.district_name}</h3>
+        <div><b>Heat score:</b> ${fmt(summary.heat_score)}</div>
+        <div><b>Cells:</b> ${summary.point_count}</div>
+      </div>
+    `);
+  });
+}
+
+function drawCompetitors(rows) {
+  competitorLayer.clearLayers();
+  if (!$("show-competitors").checked) return;
+  (rows || []).forEach(row => {
+    if (!row.lat || !row.lon) return;
+    L.circleMarker([row.lat, row.lon], {
+      radius: 5,
+      color: "#7c3aed",
+      fillColor: "#7c3aed",
+      fillOpacity: 0.75,
+      weight: 1
+    }).bindPopup(`
+      <div>
+        <h3>${row.name || row.operator || "Competitor"}</h3>
+        <div>${row.network || row.operator || "-"}</div>
+        <div>${row.max_kw ? `${row.max_kw} kW` : "Power not confirmed"}</div>
+      </div>
+    `).addTo(competitorLayer);
+  });
+}
+
+async function loadCompetitors() {
+  const resp = await fetch(`/api/chargers?province=${encodeURIComponent(apiProvinceValue())}`);
+  if (!resp.ok) return;
+  const data = await resp.json();
+  drawCompetitors(data.stations || []);
+}
+
+function attachCell(point, data) {
+  const latHalf = Number(data.lat_step_deg || 0) / 2;
+  const lonHalf = Number(data.lon_step_deg || 0) / 2;
+  const fillColor = colorForIntensity(point.display_intensity ?? point.intensity_layers?.net ?? point.intensity ?? 0);
+  const rectangle = L.rectangle([
+    [point.lat - latHalf, point.lon - lonHalf],
+    [point.lat + latHalf, point.lon + lonHalf]
+  ], {
+    color: fillColor,
+    weight: 0,
+    fillColor,
+    fillOpacity: 0.72
+  }).addTo(heatmapLayer);
+  rectangle.on("click", () => {
+    L.popup({ maxWidth: 320 })
+      .setLatLng([point.lat, point.lon])
+      .setContent(popupHtml(point))
+      .openOn(map);
+  });
+}
+
+async function loadHeatmap() {
+  syncProvinceSearch();
+  const province = apiProvinceValue();
+  const mode = $("scope").value;
+  const resolution = $("resolution").value;
+  const year = new Date().getFullYear();
+  $("status").textContent = "กำลังโหลด Heat Map...";
+  $("status").className = "status";
+  $("load-btn").disabled = true;
+  heatmapLayer.clearLayers();
+  districtLayer.clearLayers();
+  try {
+    const resp = await fetch(`/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=base&mode=${mode}&resolution_km=${encodeURIComponent(resolution)}`);
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    latestHeatmapData = data;
+    (data.points || []).forEach(point => attachCell(point, data));
+    renderDistrictList(data);
+    if (mode === "district") drawDistrictSummaries(data);
+    if (data.bounds) {
+      map.fitBounds([
+        [data.bounds.lat_min, data.bounds.lon_min],
+        [data.bounds.lat_max, data.bounds.lon_max]
+      ], { padding: [18, 18] });
+    }
+    await loadCompetitors();
+    $("status").textContent = `โหลดแล้ว ${data.point_count} cells | Max net ${fmt(data.max_heat_score)}`;
+  } catch (err) {
+    $("status").textContent = `โหลด Heat Map ไม่สำเร็จ: ${err.message}`;
+    $("status").className = "status error";
+  } finally {
+    $("load-btn").disabled = false;
+  }
+}
+
+function resetView() {
+  map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+}
+
+window.phase1OpenGoogleMaps = openGoogleMaps;
+window.phase1OpenStreetView = openStreetView;
+window.phase1AddToShortlist = (lat, lon) => {
+  const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+  if (point) addToShortlist(point);
+};
+
+$("province-search").addEventListener("change", syncProvinceSearch);
+$("province-search").addEventListener("blur", syncProvinceSearch);
+$("province").addEventListener("change", () => { $("province-search").value = $("province").value; });
+$("show-competitors").addEventListener("change", loadCompetitors);
+$("load-btn").addEventListener("click", loadHeatmap);
+$("reset-btn").addEventListener("click", resetView);
+$("clear-shortlist").addEventListener("click", () => {
+  shortlist = [];
+  saveShortlist();
+  renderShortlist();
+});
+
+renderProvinceOptions();
+renderShortlist();
+renderDistrictList({ district_summaries: [] });
+</script>
+</body>
+</html>

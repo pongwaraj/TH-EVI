@@ -27,3 +27,15 @@ def test_static_frontend_thai_text_is_not_mojibake():
     assert 'list="heatmap-province-options"' in html
     assert 'list="province-options"' in html
     assert "const DEFAULT_CENTER = [18.754923, 99.036718];" in html
+
+
+def test_planning_frontend_includes_phase1_controls():
+    html = Path("th_evi/static/planning.html").read_text(encoding="utf-8")
+
+    assert "TH-EVI Planning" in html
+    assert 'id="province-search"' in html
+    assert 'id="scope"' in html
+    assert 'id="resolution"' in html
+    assert 'Street View' in html
+    assert 'Open Google Maps' not in html
+    assert '/analysis' in html

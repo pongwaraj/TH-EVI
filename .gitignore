@@ -35,6 +35,8 @@ TCE_logo.png
 *.html
 !th_evi/static/
 !th_evi/static/index.html
+!th_evi/static/planning.html
+!th_evi/static/admin.html
 .ipynb_checkpoints/
 
 # OS

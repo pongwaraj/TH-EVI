@@ -1050,10 +1050,28 @@ th {{ background: #edf2f7; }}
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    """Serve the main Leaflet map page."""
+    """Serve the phase-1 planning workspace."""
+    planning_path = STATIC_DIR / "planning.html"
+    if not planning_path.exists():
+        return HTMLResponse("<h1>TH-EVI</h1><p>Frontend not built yet.</p>")
+    return FileResponse(str(planning_path))
+
+
+@app.get("/planning", response_class=HTMLResponse)
+def planning_page():
+    """Serve the phase-1 planning workspace."""
+    planning_path = STATIC_DIR / "planning.html"
+    if not planning_path.exists():
+        return HTMLResponse("<h1>TH-EVI</h1><p>Planning page not built yet.</p>")
+    return FileResponse(str(planning_path))
+
+
+@app.get("/analysis", response_class=HTMLResponse)
+def analysis_page():
+    """Serve the advanced analysis workspace."""
     index_path = STATIC_DIR / "index.html"
     if not index_path.exists():
-        return HTMLResponse("<h1>TH-EVI</h1><p>Frontend not built yet.</p>")
+        return HTMLResponse("<h1>TH-EVI</h1><p>Analysis page not built yet.</p>")
     return FileResponse(str(index_path))
 
 
