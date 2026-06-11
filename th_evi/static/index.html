@@ -507,6 +507,8 @@ const translations = {
     locationLabel: "พิกัด",
     cellLabel: "ขนาดเซลล์",
     useAsCandidate: "ใช้เป็น Candidate",
+    openInGoogleMaps: "เปิด Google Maps",
+    openStreetView: "Street View",
     closeLabel: "ปิด",
     heat: "Heat",
     notLoaded: "ยังไม่ได้โหลด",
@@ -661,6 +663,8 @@ const translations = {
     locationLabel: "Location",
     cellLabel: "Cell",
     useAsCandidate: "Use as Candidate",
+    openInGoogleMaps: "Open Google Maps",
+    openStreetView: "Street View",
     closeLabel: "Close",
     heat: "Heat",
     notLoaded: "Not loaded",
@@ -1315,6 +1319,36 @@ function nearestHeatPoint(lat, lon) {
   return nearestDistance <= maxDistanceKm ? nearest : null;
 }
 
+function openGoogleMaps(lat, lon) {
+  const url = `https://www.google.com/maps?q=${Number(lat).toFixed(6)},${Number(lon).toFixed(6)}`;
+  window.open(url, "_blank", "noopener");
+}
+
+function openStreetView(lat, lon) {
+  const fixedLat = Number(lat).toFixed(6);
+  const fixedLon = Number(lon).toFixed(6);
+  const url = `https://www.google.com/maps?layer=c&cbll=${fixedLat},${fixedLon}&cbp=12,0,0,0,0`;
+  window.open(url, "_blank", "noopener");
+}
+
+function heatmapPopupActionButtons(lat, lon, includeCandidate = true) {
+  const candidateButton = includeCandidate
+    ? '<button onclick="useAsCandidate(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#10003; ' + t("useAsCandidate") + '</button>'
+    : "";
+  const mapsButton = '<button onclick="openGoogleMaps(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#2563eb;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#128506; ' + t("openInGoogleMaps") + '</button>';
+  const streetViewButton = '<button onclick="openStreetView(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#0f766e;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#128065; ' + t("openStreetView") + '</button>';
+  const closeButton = '<button onclick="closeEstimate()" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">&#10005; ' + t("closeLabel") + '</button>';
+
+  return (
+    '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">' +
+    candidateButton +
+    mapsButton +
+    streetViewButton +
+    closeButton +
+    '</div>'
+  );
+}
+
 function showAreaDemandPopup(lat, lon, summary) {
   if (estimateMarker) estimateMarker.remove();
   estimateMarker = L.marker([lat, lon]).addTo(map);
@@ -1337,10 +1371,8 @@ function showAreaDemandPopup(lat, lon, summary) {
     '<tr><td style="padding:4px">' + t("cellLabel") + ':</td><td style="text-align:right">' + cellLabel + '</td></tr>' +
     '</table>' +
     '<div class="muted" style="margin-bottom:8px">' + t("scoreNotForecast") + '</div>' +
-    '<div style="display:flex;gap:6px;margin-top:8px">' +
-    '<button onclick="useAsCandidate(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#10003; ' + t("useAsCandidate") + '</button>' +
-    '<button onclick="closeEstimate()" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">&#10005; ' + t("closeLabel") + '</button>' +
-    '</div></div>';
+    heatmapPopupActionButtons(lat, lon, true) +
+    '</div>';
   estimateMarker.bindPopup(popupContent).openPopup();
 }
 
@@ -1387,11 +1419,15 @@ function payload() {
   };
 }
 
-function setDraftMarker(lat, lon) {
+function setDraftMarker(lat, lon, options = {}) {
+  const { openPopup = true } = options;
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
   if (draftMarker) draftMarker.remove();
   draftMarker = L.marker([lat, lon], { draggable: true }).addTo(map);
-  draftMarker.bindPopup(t("candidatePoint")).openPopup();
+  draftMarker.bindPopup(t("candidatePoint"));
+  if (openPopup) {
+    draftMarker.openPopup();
+  }
   draftMarker.on("dragend", e => {
     const p = e.target.getLatLng();
     $("lat").value = p.lat.toFixed(6);
@@ -1539,10 +1575,8 @@ async function quickEstimate(lat, lon, heatPoint = null) {
       '</div>' +
       '<div style="margin-top:6px;font-size:11px;color:#526577">Confidence: <b>' + (data.confidence || "medium") + '</b></div>' +
       warningRows +
-      '<div style="display:flex;gap:6px;margin-top:10px">' +
-      '<button onclick="useAsCandidate(' + lat.toFixed(6) + ',' + lon.toFixed(6) + ')" style="flex:1;padding:6px;background:#12395b;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold">&#10003; Use as Candidate</button>' +
-      '<button onclick="closeEstimate()" style="flex:1;padding:6px;background:#e0e0e0;color:#333;border:none;border-radius:4px;cursor:pointer;font-size:12px">&#10005; Close</button>' +
-      '</div></div>';
+      heatmapPopupActionButtons(lat, lon, true) +
+      '</div>';
 
     estimateMarker.bindPopup(popupContent).openPopup();
     map.setView([lat, lon], 15);
@@ -2057,7 +2091,7 @@ try {
   const draftLat = Number($("lat").value);
   const draftLon = Number($("lon").value);
   if (Number.isFinite(draftLat) && Number.isFinite(draftLon)) {
-    setDraftMarker(draftLat, draftLon);
+    setDraftMarker(draftLat, draftLon, { openPopup: false });
   } else {
     ensureDefaultMapView(true);
   }
