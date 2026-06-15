@@ -565,6 +565,13 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
 def _filter_and_dedupe_nakhon_ratchasima_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Prefer named public Korat/Pak Chong stations over overlapping audit placeholders."""
 
+    skip_station_ids = {
+        "nrm_ev_station_pluz_the_mall_seed",
+        "nrm_pea_volta_korat_city_seed",
+        "nrm_mg_supercharge_korat_seed",
+        "nrm_ev_station_pluz_pakchong_seed",
+    }
+
     alias_groups = [
         {
             "nrm_ev_station_pluz_the_mall_seed",
@@ -578,6 +585,15 @@ def _filter_and_dedupe_nakhon_ratchasima_competitors(rows: list[dict[str, Any]])
             "nrm_ev_station_pluz_pakchong_seed",
             "elexa_pak_chong_2",
             "elex_by_egat_pak_chong",
+        },
+        {
+            "nrm_pea_volta_korat_city_seed",
+            "terminal_21_korat_kmz",
+        },
+        {
+            "nrm_mg_supercharge_korat_seed",
+            "terminal_21_korat_kmz",
+            "ptt_charging_station_korat_1",
         },
     ]
     alias_lookup = {
@@ -607,12 +623,57 @@ def _filter_and_dedupe_nakhon_ratchasima_competitors(rows: list[dict[str, Any]])
         station_id = str(row.get("station_id") or "").strip()
         if not station_id:
             continue
+        if station_id in skip_station_ids:
+            continue
         key = alias_lookup.get(station_id, station_id)
         current = best_by_key.get(key)
         if current is None or priority(row) > priority(current):
             best_by_key[key] = row
 
     return list(best_by_key.values())
+
+
+def _filter_and_dedupe_phitsanulok_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop generic city placeholders once more specific Phitsanulok competitors exist."""
+
+    skip_station_ids = {
+        "phitsanulok_ptt_ev_central_008",
+        "phitsanulok_ea_anywhere_009",
+        "phitsanulok_evolt_city_012",
+        "phitsanulok_elexa_013",
+    }
+    return [
+        row
+        for row in rows
+        if str(row.get("station_id") or "").strip() not in skip_station_ids
+    ]
+
+
+def _filter_and_dedupe_khon_kaen_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Prefer exact Central/urban competitors over overlapping Khon Kaen audit placeholders."""
+
+    skip_station_ids = {
+        "evolt_central_khon_kaen_seed",
+    }
+    return [
+        row
+        for row in rows
+        if str(row.get("station_id") or "").strip() not in skip_station_ids
+    ]
+
+
+def _filter_and_dedupe_rayong_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Hide generic Pluak Daeng placeholders when named public KMZ stations cover the same catchment."""
+
+    skip_station_ids = {
+        "ry_ev_station_pluz_pluakdaeng_seed",
+        "ry_mg_supercharge_pluakdaeng_seed",
+    }
+    return [
+        row
+        for row in rows
+        if str(row.get("station_id") or "").strip() not in skip_station_ids
+    ]
 
 
 @lru_cache(maxsize=32)
@@ -644,6 +705,12 @@ def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
         rows = _filter_and_dedupe_chiang_mai_competitors(rows)
     elif slug == "nakhon_ratchasima":
         rows = _filter_and_dedupe_nakhon_ratchasima_competitors(rows)
+    elif slug == "phitsanulok":
+        rows = _filter_and_dedupe_phitsanulok_competitors(rows)
+    elif slug == "khon_kaen":
+        rows = _filter_and_dedupe_khon_kaen_competitors(rows)
+    elif slug == "rayong":
+        rows = _filter_and_dedupe_rayong_competitors(rows)
     return rows
 
 

@@ -131,6 +131,19 @@ class ClickAnalysisRequest(BaseModel):
     price_per_kwh: float = Field(6.8, gt=0)
 
 
+class PlanningShortlistRequest(BaseModel):
+    province: str = Field(..., min_length=1, max_length=120)
+    lat: float
+    lon: float
+    recorded_by: str = Field(..., min_length=1, max_length=120)
+    site_name: str | None = Field(None, max_length=160)
+    recommendation_spec: str | None = Field(None, max_length=120)
+    metric_label: str | None = Field(None, max_length=80)
+    metric_value: float | None = None
+    daily_kwh: float | None = None
+    note: str | None = Field(None, max_length=1000)
+
+
 class ReferenceRecordRequest(BaseModel):
     values: dict[str, Any] = Field(default_factory=dict)
 
@@ -150,6 +163,29 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, list):
         return [_json_safe(item) for item in value]
     return value
+
+
+def _planning_key(province: str, lat: float, lon: float) -> str:
+    return f"{province.strip().lower()}:{lat:.4f}:{lon:.4f}"
+
+
+def _serialize_planning_site(site: CandidateSite) -> dict[str, Any]:
+    return {
+        "id": site.id,
+        "name": site.name,
+        "lat": site.lat,
+        "lon": site.lon,
+        "province": site.province,
+        "district": site.district,
+        "zone": site.zone,
+        "notes": site.notes,
+        "created_by": site.created_by,
+        "source": site.source,
+        "status": site.status,
+        "planning_key": site.planning_key,
+        "active": site.active,
+        "created_at": site.created_at.isoformat(),
+    }
 
 
 REFERENCE_LAYER_CONFIG: dict[str, dict[str, Any]] = {
@@ -921,6 +957,74 @@ def create_site_analysis(req: SiteAnalysisRequest):
     return _json_safe(result)
 
 
+@app.get("/api/planning-shortlist")
+def list_planning_shortlist(province: str | None = None):
+    """Return shared planning shortlist entries for team screening."""
+    with session_scope() as session:
+        query = (
+            session.query(CandidateSite)
+            .filter(CandidateSite.source == "planning_shortlist")
+            .filter(CandidateSite.active.is_(True))
+        )
+        if province:
+            query = query.filter(CandidateSite.province == province)
+        sites = query.order_by(CandidateSite.created_at.desc()).all()
+        return {"sites": [_serialize_planning_site(site) for site in sites]}
+
+
+@app.post("/api/planning-shortlist")
+def create_planning_shortlist_entry(req: PlanningShortlistRequest):
+    """Save one shared shortlist point and prevent duplicate team overlap on the same heatmap cell."""
+    key = _planning_key(req.province, req.lat, req.lon)
+    with session_scope() as session:
+        existing = (
+            session.query(CandidateSite)
+            .filter(CandidateSite.source == "planning_shortlist")
+            .filter(CandidateSite.active.is_(True))
+            .filter(CandidateSite.planning_key == key)
+            .first()
+        )
+        if existing:
+            return {
+                "saved": False,
+                "duplicate": True,
+                "message": f"จุดนี้ถูกบันทึกไว้แล้วโดย {existing.created_by or 'ทีมงาน'}",
+                "site": _serialize_planning_site(existing),
+            }
+
+        label = (req.site_name or "").strip() or f"Heat Map point {req.lat:.4f}, {req.lon:.4f}"
+        summary_bits: list[str] = []
+        if req.recommendation_spec:
+            summary_bits.append(f"Spec แนะนำ: {req.recommendation_spec}")
+        if req.metric_label and req.metric_value is not None:
+            summary_bits.append(f"{req.metric_label}: {req.metric_value:.1f}")
+        if req.daily_kwh is not None:
+            summary_bits.append(f"kWh/day: {req.daily_kwh:.1f}")
+        if req.note:
+            summary_bits.append(req.note.strip())
+        site = CandidateSite(
+            name=label,
+            lat=req.lat,
+            lon=req.lon,
+            province=req.province,
+            zone=req.recommendation_spec,
+            notes=" | ".join(bit for bit in summary_bits if bit),
+            created_by=req.recorded_by.strip(),
+            source="planning_shortlist",
+            status="shortlisted",
+            planning_key=key,
+            active=True,
+        )
+        session.add(site)
+        session.flush()
+        return {
+            "saved": True,
+            "duplicate": False,
+            "message": "บันทึกรายการทีมแล้ว",
+            "site": _serialize_planning_site(site),
+        }
+
+
 @app.get("/api/sites")
 def list_candidate_sites():
     """Return saved candidate sites with their latest analysis summary."""
@@ -949,6 +1053,11 @@ def list_candidate_sites():
                 "province": site.province,
                 "district": site.district,
                 "zone": site.zone,
+                "created_by": site.created_by,
+                "source": site.source,
+                "status": site.status,
+                "planning_key": site.planning_key,
+                "active": site.active,
                 "created_at": site.created_at.isoformat(),
                 "latest": latest,
             })

@@ -41,6 +41,11 @@ class CandidateSite(Base):
     district: Mapped[str | None] = mapped_column(String(120), nullable=True)
     zone: Mapped[str | None] = mapped_column(String(160), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    source: Mapped[str] = mapped_column(String(40), default="analysis", nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="saved", nullable=False)
+    planning_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     assumptions: Mapped[list["SiteAssumption"]] = relationship(
@@ -499,6 +504,13 @@ class DistrictNodeReference(Base):
 
 
 SQLITE_REFERENCE_COLUMN_PATCHES: dict[str, list[tuple[str, str]]] = {
+    "candidate_sites": [
+        ("created_by", "VARCHAR(120)"),
+        ("source", "VARCHAR(40) NOT NULL DEFAULT 'analysis'"),
+        ("status", "VARCHAR(40) NOT NULL DEFAULT 'saved'"),
+        ("planning_key", "VARCHAR(120)"),
+        ("active", "BOOLEAN NOT NULL DEFAULT 1"),
+    ],
     "poi_reference": [
         ("source_url", "VARCHAR(500)"),
         ("verification_note", "TEXT"),

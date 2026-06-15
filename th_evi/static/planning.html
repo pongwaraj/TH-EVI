@@ -163,6 +163,17 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
         </select>
       </div>
     </div>
+    <div class="field">
+      <label class="label" for="metric">ชั้นคะแนน</label>
+      <select id="metric">
+        <option value="demand">Demand</option>
+        <option value="net">Net Opportunity</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="label" for="recorded-by">ชื่อผู้บันทึก</label>
+      <input id="recorded-by" type="text" placeholder="เช่น Aom / ฝ่ายขายเหนือ">
+    </div>
     <label class="check-row">
       <input id="show-competitors" type="checkbox">
       แสดงสถานีคู่แข่ง
@@ -200,11 +211,16 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 
   <section class="section list-card">
     <h2>Shortlist</h2>
-    <p>จุดที่คุณเลือกไว้เพื่อส่งต่อให้ทีมเซลส์หรือทีม Survey</p>
+    <p>รายการส่วนตัวในเครื่องนี้ เอาไว้คัดก่อนส่งเข้ารายการทีม</p>
     <div id="shortlist" class="list"></div>
     <div class="shortlist-actions">
       <button class="btn btn-ghost" id="clear-shortlist" type="button">ล้าง Shortlist</button>
     </div>
+  </section>
+  <section class="section list-card">
+    <h2>รายการทีมที่บันทึกแล้ว</h2>
+    <p>ใช้เช็กว่ามีคนจองสำรวจพิกัดนี้ไว้แล้วหรือยัง</p>
+    <div id="team-shortlist" class="list"></div>
   </section>
 </aside>
 
@@ -216,6 +232,7 @@ const DEFAULT_ZOOM = 11;
 const THAILAND_BOUNDS = [[5.4, 97.2], [20.9, 105.8]];
 const DEFAULT_PROVINCE = "เชียงใหม่";
 const SHORTLIST_KEY = "th-evi-phase1-shortlist";
+const RECORDER_NAME_KEY = "th-evi-planning-recorder-name";
 const PROVINCE_API_VALUES = {
   "เชียงใหม่": "Chiang Mai",
   "สมุทรปราการ": "Samut Prakan",
@@ -242,6 +259,7 @@ const HEAT_COLORS = [
   { at: 0.90, color: "#b5179e" },
   { at: 1.00, color: "#7b2cbf" }
 ];
+const HEATMAP_MIN_VISIBLE_INTENSITY = 0.30;
 const STATION_TIERS = [
   { id: "starter", maxKwh: 220, sessions: 8, label: "Starter", spec: "30 kW | 1 หัวชาร์จ", note: "เริ่มต้นในจุดทดลองหรือทำเลชุมชนขนาดเล็ก" },
   { id: "compact", maxKwh: 500, sessions: 16, label: "Compact", spec: "60 kW | 2 หัวชาร์จ", note: "เหมาะกับจุดแวะสั้นและ community retail" },
@@ -270,6 +288,7 @@ const districtLayer = L.layerGroup().addTo(map);
 const competitorLayer = L.layerGroup().addTo(map);
 let latestHeatmapData = null;
 let shortlist = readShortlist();
+let teamShortlist = [];
 
 function apiProvinceValue() {
   return PROVINCE_API_VALUES[$("province").value] || $("province").value;
@@ -298,7 +317,7 @@ function syncProvinceSearch() {
 }
 
 function colorForIntensity(intensity) {
-  const normalized = Math.max(0.30, Math.min(1, Number(intensity || 0)));
+  const normalized = Math.max(HEATMAP_MIN_VISIBLE_INTENSITY, Math.min(1, Number(intensity || 0)));
   for (let i = 1; i < HEAT_COLORS.length; i += 1) {
     const prev = HEAT_COLORS[i - 1];
     const next = HEAT_COLORS[i];
@@ -331,6 +350,28 @@ function recommendationForPoint(point) {
   return STATION_TIERS.find(tier => dailyKwh <= tier.maxKwh && sessions <= tier.sessions) || STATION_TIERS[STATION_TIERS.length - 1];
 }
 
+function currentMetric() {
+  return $("metric")?.value || "demand";
+}
+
+function pointMetricValue(point, metric = currentMetric()) {
+  if (metric === "net") {
+    return Number(point.net_opportunity_score ?? point.heat_score ?? 0);
+  }
+  return Number(point.demand_score ?? point.heat_score ?? 0);
+}
+
+function pointMetricIntensity(point, metric = currentMetric()) {
+  if (metric === "net") {
+    return Number(point.display_intensity ?? point.intensity_layers?.net ?? point.intensity ?? 0);
+  }
+  return Number(point.intensity_layers?.demand ?? point.display_intensity ?? point.intensity ?? 0);
+}
+
+function metricLabel(metric = currentMetric()) {
+  return metric === "net" ? "Net opportunity" : "Demand";
+}
+
 function evidenceText(point) {
   const chunks = [];
   if ((point.zones || []).length) chunks.push(`Hot zone: ${point.zones.slice(0, 2).join(", ")}`);
@@ -361,6 +402,14 @@ function saveShortlist() {
   window.localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist));
 }
 
+function recorderName() {
+  return $("recorded-by").value.trim();
+}
+
+function saveRecorderName() {
+  window.localStorage.setItem(RECORDER_NAME_KEY, recorderName());
+}
+
 function renderShortlist() {
   const root = $("shortlist");
   if (!shortlist.length) {
@@ -378,6 +427,28 @@ function renderShortlist() {
     node.addEventListener("click", () => {
       const item = shortlist[Number(node.dataset.index)];
       map.setView([item.lat, item.lon], 15);
+    });
+  });
+}
+
+function renderTeamShortlist() {
+  const root = $("team-shortlist");
+  const province = $("province").value;
+  const rows = teamShortlist.filter(item => item.province === province);
+  if (!rows.length) {
+    root.innerHTML = '<div class="list-item"><span>ยังไม่มีรายการทีมในจังหวัดนี้</span></div>';
+    return;
+  }
+  root.innerHTML = rows.map(item => `
+    <div class="list-item" data-lat="${item.lat}" data-lon="${item.lon}">
+      <strong>${item.name}</strong>
+      <span>${item.created_by || "ไม่ระบุชื่อ"} | ${new Date(item.created_at).toLocaleString()}</span>
+      <span>${item.zone || "-"} | ${item.lat.toFixed(4)}, ${item.lon.toFixed(4)}</span>
+    </div>
+  `).join("");
+  root.querySelectorAll(".list-item").forEach(node => {
+    node.addEventListener("click", () => {
+      map.setView([Number(node.dataset.lat), Number(node.dataset.lon)], 15);
     });
   });
 }
@@ -401,15 +472,68 @@ function addToShortlist(point) {
   $("status").textContent = "บันทึกลง Shortlist แล้ว";
 }
 
+async function loadTeamShortlist() {
+  const province = $("province").value;
+  try {
+    const resp = await fetch(`/api/planning-shortlist?province=${encodeURIComponent(province)}`);
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    teamShortlist = data.sites || [];
+    renderTeamShortlist();
+  } catch (err) {
+    $("status").textContent = `โหลดรายการทีมไม่สำเร็จ: ${err.message}`;
+    $("status").className = "status error";
+  }
+}
+
+async function saveTeamShortlistPoint(point) {
+  const who = recorderName();
+  if (!who) {
+    $("status").textContent = "กรุณาใส่ชื่อผู้บันทึกก่อน";
+    $("status").className = "status error";
+    $("recorded-by").focus();
+    return;
+  }
+  const recommendation = recommendationForPoint(point);
+  const payload = {
+    province: $("province").value,
+    lat: Number(point.lat),
+    lon: Number(point.lon),
+    recorded_by: who,
+    site_name: `${$("province").value} | ${recommendation.label}`,
+    recommendation_spec: recommendation.spec,
+    metric_label: metricLabel(),
+    metric_value: pointMetricValue(point),
+    daily_kwh: Number(point.daily_kwh || 0),
+    note: evidenceText(point).replace(/<br>/g, " | ")
+  };
+  try {
+    const resp = await fetch("/api/planning-shortlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    $("status").textContent = data.message || (data.saved ? "บันทึกรายการทีมแล้ว" : "จุดนี้มีคนบันทึกไว้แล้ว");
+    $("status").className = data.duplicate ? "status error" : "status";
+    await loadTeamShortlist();
+  } catch (err) {
+    $("status").textContent = `บันทึกรายการทีมไม่สำเร็จ: ${err.message}`;
+    $("status").className = "status error";
+  }
+}
+
 function popupHtml(point) {
   const recommendation = recommendationForPoint(point);
+  const metric = currentMetric();
   return `
     <div>
       <h3>${recommendation.label}</h3>
       <div><b>แนะนำ:</b> ${recommendation.spec}</div>
       <table>
         <tr><td>พิกัด</td><td style="text-align:right">${Number(point.lat).toFixed(4)}, ${Number(point.lon).toFixed(4)}</td></tr>
-        <tr><td>Net opportunity</td><td style="text-align:right"><b>${fmt(point.net_opportunity_score)}</b></td></tr>
+        <tr><td>${metricLabel(metric)}</td><td style="text-align:right"><b>${fmt(pointMetricValue(point, metric))}</b></td></tr>
         <tr><td>Demand score</td><td style="text-align:right">${fmt(point.demand_score)}</td></tr>
         <tr><td>Competition</td><td style="text-align:right">${fmt(point.competition_score)}</td></tr>
         <tr><td>kWh/day</td><td style="text-align:right">${fmt(point.daily_kwh)}</td></tr>
@@ -418,6 +542,7 @@ function popupHtml(point) {
       <div class="note">${evidenceText(point)}</div>
       <div class="popup-actions">
         <button class="popup-primary" onclick="window.phase1AddToShortlist(${point.lat}, ${point.lon})">เพิ่มลง Shortlist</button>
+        <button class="popup-primary" onclick="window.phase1SaveTeamPoint(${point.lat}, ${point.lon})">บันทึกให้ทีม</button>
         <button class="popup-maps" onclick="window.phase1OpenGoogleMaps(${point.lat}, ${point.lon})">เปิด Google Maps</button>
         <button class="popup-street" onclick="window.phase1OpenStreetView(${point.lat}, ${point.lon})">Street View</button>
       </div>
@@ -498,15 +623,17 @@ async function loadCompetitors() {
 function attachCell(point, data) {
   const latHalf = Number(data.lat_step_deg || 0) / 2;
   const lonHalf = Number(data.lon_step_deg || 0) / 2;
-  const fillColor = colorForIntensity(point.display_intensity ?? point.intensity_layers?.net ?? point.intensity ?? 0);
+  const intensity = pointMetricIntensity(point);
+  if (intensity < HEATMAP_MIN_VISIBLE_INTENSITY) return;
+  const fillColor = colorForIntensity(intensity);
+  const fillOpacity = Math.max(0.32, Math.min(0.78, 0.24 + 0.58 * intensity));
   const rectangle = L.rectangle([
     [point.lat - latHalf, point.lon - lonHalf],
     [point.lat + latHalf, point.lon + lonHalf]
   ], {
-    color: fillColor,
-    weight: 0,
+    stroke: false,
     fillColor,
-    fillOpacity: 0.72
+    fillOpacity
   }).addTo(heatmapLayer);
   rectangle.on("click", () => {
     L.popup({ maxWidth: 320 })
@@ -521,6 +648,7 @@ async function loadHeatmap() {
   const province = apiProvinceValue();
   const mode = $("scope").value;
   const resolution = $("resolution").value;
+  const metric = currentMetric();
   const year = new Date().getFullYear();
   $("status").textContent = "กำลังโหลด Heat Map...";
   $("status").className = "status";
@@ -542,7 +670,11 @@ async function loadHeatmap() {
       ], { padding: [18, 18] });
     }
     await loadCompetitors();
-    $("status").textContent = `โหลดแล้ว ${data.point_count} cells | Max net ${fmt(data.max_heat_score)}`;
+    await loadTeamShortlist();
+    const maxMetric = metric === "net"
+      ? Number(data.max_heat_score || 0)
+      : Number(data.layer_max_scores?.demand || data.max_heat_score || 0);
+    $("status").textContent = `โหลดแล้ว ${data.point_count} cells | Max ${metricLabel(metric)} ${fmt(maxMetric)}`;
   } catch (err) {
     $("status").textContent = `โหลด Heat Map ไม่สำเร็จ: ${err.message}`;
     $("status").className = "status error";
@@ -561,11 +693,19 @@ window.phase1AddToShortlist = (lat, lon) => {
   const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
   if (point) addToShortlist(point);
 };
+window.phase1SaveTeamPoint = (lat, lon) => {
+  const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+  if (point) saveTeamShortlistPoint(point);
+};
 
 $("province-search").addEventListener("change", syncProvinceSearch);
 $("province-search").addEventListener("blur", syncProvinceSearch);
-$("province").addEventListener("change", () => { $("province-search").value = $("province").value; });
+$("province").addEventListener("change", () => { $("province-search").value = $("province").value; renderTeamShortlist(); });
 $("show-competitors").addEventListener("change", loadCompetitors);
+$("recorded-by").addEventListener("input", saveRecorderName);
+$("metric").addEventListener("change", () => {
+  if (latestHeatmapData) loadHeatmap();
+});
 $("load-btn").addEventListener("click", loadHeatmap);
 $("reset-btn").addEventListener("click", resetView);
 $("clear-shortlist").addEventListener("click", () => {
@@ -575,8 +715,11 @@ $("clear-shortlist").addEventListener("click", () => {
 });
 
 renderProvinceOptions();
+$("recorded-by").value = window.localStorage.getItem(RECORDER_NAME_KEY) || "";
 renderShortlist();
+renderTeamShortlist();
 renderDistrictList({ district_summaries: [] });
+loadTeamShortlist();
 </script>
 </body>
 </html>
