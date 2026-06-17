@@ -6,7 +6,9 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 import html
 import importlib.util
+import io
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -15,6 +17,7 @@ import tempfile
 from typing import Any
 import re
 import struct
+import urllib.request
 import zlib
 
 from docx import Document
@@ -54,6 +57,8 @@ HEAT_COLORS = [
     (0.90, (181, 23, 158)),
     (1.00, (123, 44, 191)),
 ]
+OSM_TILE_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+OSM_USER_AGENT = "TH-EVI/1.0 (planning-report; contact pongwara.ja@tceproject.co.th)"
 
 
 @dataclass(slots=True)
@@ -330,6 +335,179 @@ def _heat_color(intensity: float) -> tuple[int, int, int]:
     return HEAT_COLORS[-1][1]
 
 
+def _pil_image_modules():
+    try:
+        from PIL import Image, ImageDraw
+    except Exception as exc:  # pragma: no cover - fallback path is tested elsewhere
+        raise RuntimeError("Pillow is not available") from exc
+    return Image, ImageDraw
+
+
+def _latlon_to_tile_xy(lat: float, lon: float, zoom: int) -> tuple[float, float]:
+    lat = max(min(lat, 85.05112878), -85.05112878)
+    lat_rad = math.radians(lat)
+    scale = 2**zoom
+    x = (lon + 180.0) / 360.0 * scale
+    y = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * scale
+    return x, y
+
+
+def _tile_basemap_image(
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
+    zoom: int,
+    width: int,
+    height: int,
+):
+    Image, _ = _pil_image_modules()
+
+    nw_x, nw_y = _latlon_to_tile_xy(lat_max, lon_min, zoom)
+    se_x, se_y = _latlon_to_tile_xy(lat_min, lon_max, zoom)
+    min_tile_x = math.floor(nw_x)
+    max_tile_x = math.floor(se_x)
+    min_tile_y = math.floor(nw_y)
+    max_tile_y = math.floor(se_y)
+    tile_count = (max_tile_x - min_tile_x + 1) * (max_tile_y - min_tile_y + 1)
+    if tile_count <= 0 or tile_count > 24:
+        raise RuntimeError("Too many tiles required for basemap render")
+
+    canvas = Image.new("RGB", ((max_tile_x - min_tile_x + 1) * 256, (max_tile_y - min_tile_y + 1) * 256), MAP_BG)
+    headers = {"User-Agent": OSM_USER_AGENT}
+    for tile_x in range(min_tile_x, max_tile_x + 1):
+        for tile_y in range(min_tile_y, max_tile_y + 1):
+            url = OSM_TILE_TEMPLATE.format(z=zoom, x=tile_x, y=tile_y)
+            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=12) as response:
+                tile_bytes = response.read()
+            tile_image = Image.open(io.BytesIO(tile_bytes)).convert("RGB")
+            canvas.paste(tile_image, ((tile_x - min_tile_x) * 256, (tile_y - min_tile_y) * 256))
+
+    left = int(round((nw_x - min_tile_x) * 256))
+    top = int(round((nw_y - min_tile_y) * 256))
+    right = int(round((se_x - min_tile_x) * 256))
+    bottom = int(round((se_y - min_tile_y) * 256))
+    right = max(right, left + 32)
+    bottom = max(bottom, top + 32)
+    cropped = canvas.crop((left, top, right, bottom))
+    resized = cropped.resize((width, height))
+    return resized
+
+
+def _render_context_map_with_tiles(req: OwnerAreaReportRequest, first_year: dict[str, Any], file_stem: str) -> Path:
+    Image, ImageDraw = _pil_image_modules()
+    width, height = 900, 560
+    margin = 42
+    features = _build_map_features(req, first_year)
+    lats = [float(item["lat"]) for item in features]
+    lons = [float(item["lon"]) for item in features]
+    lat_min, lat_max = min(lats), max(lats)
+    lon_min, lon_max = min(lons), max(lons)
+    lat_pad = max((lat_max - lat_min) * 0.28, 0.012)
+    lon_pad = max((lon_max - lon_min) * 0.28, 0.012)
+    lat_min -= lat_pad
+    lat_max += lat_pad
+    lon_min -= lon_pad
+    lon_max += lon_pad
+
+    image = _tile_basemap_image(lat_min, lat_max, lon_min, lon_max, zoom=13, width=width, height=height).convert("RGBA")
+    overlay = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    def project(lat: float, lon: float) -> tuple[int, int]:
+        x = margin + (lon - lon_min) / max(lon_max - lon_min, 1e-6) * (width - margin * 2)
+        y = height - margin - (lat - lat_min) / max(lat_max - lat_min, 1e-6) * (height - margin * 2)
+        return int(x), int(y)
+
+    sx, sy = project(req.lat, req.lon)
+    color_map = {
+        "site": MAP_SITE,
+        "poi": MAP_POI,
+        "competitor": MAP_COMPETITOR,
+        "zone": MAP_ZONE,
+        "business": MAP_BUSINESS,
+    }
+    radius_map = {"site": 10, "poi": 7, "competitor": 7, "zone": 7, "business": 7}
+
+    for feature in features:
+        x, y = project(float(feature["lat"]), float(feature["lon"]))
+        color = color_map.get(str(feature["kind"]), MAP_POI)
+        radius = radius_map.get(str(feature["kind"]), 7)
+        if feature["kind"] != "site":
+            draw.line((sx, sy, x, y), fill=(255, 255, 255, 180), width=3)
+            draw.line((sx, sy, x, y), fill=(120, 136, 153, 150), width=1)
+        draw.ellipse((x - radius - 2, y - radius - 2, x + radius + 2, y + radius + 2), fill=(255, 255, 255, 235))
+        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=(*color, 240), outline=(255, 255, 255, 255))
+
+    label_box = (14, 14, 232, 86)
+    draw.rounded_rectangle(label_box, radius=14, fill=(255, 255, 255, 225), outline=(210, 220, 230, 255), width=1)
+    image = Image.alpha_composite(image, overlay)
+    out_path = REPORT_OUTPUT_DIR / f"{file_stem}_map.png"
+    image.convert("RGB").save(out_path, format="PNG")
+    return out_path
+
+
+def _render_heatmap_with_tiles(req: OwnerAreaReportRequest, file_stem: str) -> Path:
+    from .heatmap import generate_province_heatmap
+
+    Image, ImageDraw = _pil_image_modules()
+    width, height = 900, 560
+    margin = 42
+    heatmap = generate_province_heatmap(
+        req.province,
+        year=req.start_year,
+        scenario=req.scenario,
+        resolution_km=0.5,
+        mode=req.mode,
+    )
+    points = []
+    for point in heatmap.get("points", []):
+        if abs(float(point["lat"]) - req.lat) <= 0.08 and abs(float(point["lon"]) - req.lon) <= 0.08:
+            points.append(point)
+    if not points:
+        points = heatmap.get("points", [])[:]
+
+    lats = [float(p["lat"]) for p in points] + [req.lat]
+    lons = [float(p["lon"]) for p in points] + [req.lon]
+    lat_min, lat_max = min(lats), max(lats)
+    lon_min, lon_max = min(lons), max(lons)
+    lat_pad = max((lat_max - lat_min) * 0.24, 0.01)
+    lon_pad = max((lon_max - lon_min) * 0.24, 0.01)
+    lat_min -= lat_pad
+    lat_max += lat_pad
+    lon_min -= lon_pad
+    lon_max += lon_pad
+
+    image = _tile_basemap_image(lat_min, lat_max, lon_min, lon_max, zoom=14, width=width, height=height).convert("RGBA")
+    overlay = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    def project(lat: float, lon: float) -> tuple[int, int]:
+        x = margin + (lon - lon_min) / max(lon_max - lon_min, 1e-6) * (width - margin * 2)
+        y = height - margin - (lat - lat_min) / max(lat_max - lat_min, 1e-6) * (height - margin * 2)
+        return int(x), int(y)
+
+    lat_step_deg = float(heatmap.get("lat_step_deg") or 0.0045)
+    lon_step_deg = float(heatmap.get("lon_step_deg") or 0.0045)
+    for point in points:
+        x0, y0 = project(float(point["lat"]) - lat_step_deg / 2, float(point["lon"]) - lon_step_deg / 2)
+        x1, y1 = project(float(point["lat"]) + lat_step_deg / 2, float(point["lon"]) + lon_step_deg / 2)
+        color = _heat_color(float(point.get("display_intensity") or point.get("intensity") or 0.3))
+        fill = (*color, 108)
+        outline = (*color, 155)
+        draw.rectangle((min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)), fill=fill, outline=outline, width=1)
+
+    sx, sy = project(req.lat, req.lon)
+    draw.ellipse((sx - 12, sy - 12, sx + 12, sy + 12), fill=(255, 255, 255, 235))
+    draw.ellipse((sx - 9, sy - 9, sx + 9, sy + 9), fill=(*MAP_SITE, 240))
+    draw.ellipse((sx - 15, sy - 15, sx + 15, sy + 15), outline=(*MAP_SITE, 220), width=3)
+
+    image = Image.alpha_composite(image, overlay)
+    out_path = REPORT_OUTPUT_DIR / f"{file_stem}_heatmap.png"
+    image.convert("RGB").save(out_path, format="PNG")
+    return out_path
+
+
 def _matching_feature(rows: list[dict[str, Any]], name: str, lat_key: str = "lat", lon_key: str = "lon") -> dict[str, Any] | None:
     target = (name or "").strip().lower()
     if not target:
@@ -378,6 +556,11 @@ def _build_map_features(req: OwnerAreaReportRequest, first_year: dict[str, Any])
 
 
 def _render_schematic_map(req: OwnerAreaReportRequest, first_year: dict[str, Any], file_stem: str) -> Path:
+    try:
+        return _render_context_map_with_tiles(req, first_year, file_stem)
+    except Exception:
+        pass
+
     width = 900
     height = 560
     margin = 48
@@ -438,6 +621,11 @@ def _render_schematic_map(req: OwnerAreaReportRequest, first_year: dict[str, Any
 
 
 def _render_heatmap_snapshot(req: OwnerAreaReportRequest, file_stem: str) -> Path:
+    try:
+        return _render_heatmap_with_tiles(req, file_stem)
+    except Exception:
+        pass
+
     from .heatmap import generate_province_heatmap
 
     width = 900
