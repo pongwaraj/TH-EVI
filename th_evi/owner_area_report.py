@@ -394,6 +394,31 @@ def _tile_basemap_image(
     return resized
 
 
+def _tile_count_for_bounds(lat_min: float, lat_max: float, lon_min: float, lon_max: float, zoom: int) -> int:
+    nw_x, nw_y = _latlon_to_tile_xy(lat_max, lon_min, zoom)
+    se_x, se_y = _latlon_to_tile_xy(lat_min, lon_max, zoom)
+    min_tile_x = math.floor(nw_x)
+    max_tile_x = math.floor(se_x)
+    min_tile_y = math.floor(nw_y)
+    max_tile_y = math.floor(se_y)
+    return (max_tile_x - min_tile_x + 1) * (max_tile_y - min_tile_y + 1)
+
+
+def _choose_tile_zoom(
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
+    preferred_zoom: int,
+    min_zoom: int = 11,
+    max_tiles: int = 24,
+) -> int:
+    for zoom in range(preferred_zoom, min_zoom - 1, -1):
+        if _tile_count_for_bounds(lat_min, lat_max, lon_min, lon_max, zoom) <= max_tiles:
+            return zoom
+    return min_zoom
+
+
 def _render_context_map_with_tiles(req: OwnerAreaReportRequest, first_year: dict[str, Any], file_stem: str) -> Path:
     Image, ImageDraw = _pil_image_modules()
     width, height = 900, 560
@@ -410,7 +435,8 @@ def _render_context_map_with_tiles(req: OwnerAreaReportRequest, first_year: dict
     lon_min -= lon_pad
     lon_max += lon_pad
 
-    image = _tile_basemap_image(lat_min, lat_max, lon_min, lon_max, zoom=13, width=width, height=height).convert("RGBA")
+    zoom = _choose_tile_zoom(lat_min, lat_max, lon_min, lon_max, preferred_zoom=13, min_zoom=11, max_tiles=24)
+    image = _tile_basemap_image(lat_min, lat_max, lon_min, lon_max, zoom=zoom, width=width, height=height).convert("RGBA")
     overlay = Image.new("RGBA", (width, height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
@@ -478,7 +504,8 @@ def _render_heatmap_with_tiles(req: OwnerAreaReportRequest, file_stem: str) -> P
     lon_min -= lon_pad
     lon_max += lon_pad
 
-    image = _tile_basemap_image(lat_min, lat_max, lon_min, lon_max, zoom=14, width=width, height=height).convert("RGBA")
+    zoom = _choose_tile_zoom(lat_min, lat_max, lon_min, lon_max, preferred_zoom=14, min_zoom=11, max_tiles=24)
+    image = _tile_basemap_image(lat_min, lat_max, lon_min, lon_max, zoom=zoom, width=width, height=height).convert("RGBA")
     overlay = Image.new("RGBA", (width, height), (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 

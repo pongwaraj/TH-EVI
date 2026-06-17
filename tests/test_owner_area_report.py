@@ -3,6 +3,7 @@ from zipfile import ZipFile
 
 from th_evi.owner_area_report import (
     OwnerAreaReportRequest,
+    _choose_tile_zoom,
     create_owner_area_analysis_pdf,
     create_owner_area_analysis_report,
 )
@@ -53,3 +54,17 @@ def test_owner_area_report_generates_pdf(tmp_path, monkeypatch):
     assert pdf_path.exists()
     assert pdf_path.suffix == ".pdf"
     assert pdf_path.read_bytes().startswith(b"%PDF")
+
+
+def test_choose_tile_zoom_steps_down_when_bounds_are_large():
+    zoom = _choose_tile_zoom(
+        lat_min=18.81215,
+        lat_max=18.99215,
+        lon_min=98.858371,
+        lon_max=99.038371,
+        preferred_zoom=14,
+        min_zoom=11,
+        max_tiles=24,
+    )
+    assert zoom < 14
+    assert zoom >= 11
