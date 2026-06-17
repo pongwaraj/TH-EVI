@@ -48,6 +48,11 @@ from .site import (
 )
 from . import spatial as spatial_module
 from .report import generate_location_report
+from .owner_area_report import (
+    OwnerAreaReportRequest as OwnerAreaReportDocRequest,
+    create_owner_area_analysis_pdf,
+    create_owner_area_analysis_report,
+)
 from .spatial import analyze_click_location
 from .temporal import analyze_station
 
@@ -146,6 +151,30 @@ class PlanningShortlistRequest(BaseModel):
 
 class ReferenceRecordRequest(BaseModel):
     values: dict[str, Any] = Field(default_factory=dict)
+
+
+class OwnerAreaAnalysisReportRequest(BaseModel):
+    report_type: str = Field("owner-area-analysis", max_length=80)
+    site_name: str | None = Field(None, max_length=160)
+    province: str = Field(..., min_length=1, max_length=120)
+    lat: float
+    lon: float
+    mode: str = Field("urban", pattern="^(urban|community|district)$")
+    scenario: str = Field("base", pattern="^(conservative|base|upside)$")
+    start_year: int = Field(2026, ge=2025, le=2050)
+    end_year: int = Field(2035, ge=2025, le=2055)
+    avg_kwh_per_session: float = Field(35.0, gt=0)
+    price_per_kwh: float = Field(7.9, gt=0)
+    electricity_cost_per_kwh: float = Field(4.0, ge=0)
+    cpo_gp_rate: float = Field(0.08, ge=0, le=1)
+    annual_o_and_m: float = Field(36000.0, ge=0)
+    project_capex_ex_vat: float = Field(1000000.0, ge=0)
+    perception_factor: float = Field(0.85, ge=0, le=1.5)
+    recommended_spec: str | None = Field(None, max_length=160)
+    metric_label: str | None = Field(None, max_length=80)
+    metric_value: float | None = None
+    owner_gp_per_kwh: float = Field(0.25, ge=0)
+    note: str | None = Field(None, max_length=1000)
 
 
 def _dump_model(model_obj: BaseModel) -> dict[str, Any]:
@@ -641,6 +670,87 @@ def click_analysis(req: ClickAnalysisRequest):
         mode=req.mode,
         avg_kwh_per_session=req.avg_kwh_per_session,
         price_per_kwh=req.price_per_kwh,
+    )
+
+
+@app.post("/api/owner-area-analysis.docx")
+def owner_area_analysis_report(req: OwnerAreaAnalysisReportRequest):
+    """Generate a Word Area Analysis report directly from a selected map point."""
+    if req.end_year < req.start_year:
+        raise HTTPException(status_code=400, detail="end_year must be greater than or equal to start_year")
+    if req.report_type not in {"owner-area-analysis", "owner-gp-opportunity", "investor-case"}:
+        raise HTTPException(status_code=400, detail="Unsupported report_type")
+
+    output_path = create_owner_area_analysis_report(
+        OwnerAreaReportDocRequest(
+            report_type=req.report_type,
+            site_name=req.site_name,
+            province=req.province,
+            lat=req.lat,
+            lon=req.lon,
+            mode=req.mode,
+            scenario=req.scenario,
+            start_year=req.start_year,
+            end_year=req.end_year,
+            avg_kwh_per_session=req.avg_kwh_per_session,
+            price_per_kwh=req.price_per_kwh,
+            electricity_cost_per_kwh=req.electricity_cost_per_kwh,
+            cpo_gp_rate=req.cpo_gp_rate,
+            annual_o_and_m=req.annual_o_and_m,
+            project_capex_ex_vat=req.project_capex_ex_vat,
+            perception_factor=req.perception_factor,
+            recommended_spec=req.recommended_spec,
+            metric_label=req.metric_label,
+            metric_value=req.metric_value,
+            owner_gp_per_kwh=req.owner_gp_per_kwh,
+            note=req.note,
+        )
+    )
+    download_name = output_path.name
+    return FileResponse(
+        str(output_path),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=download_name,
+    )
+
+
+@app.post("/api/owner-area-analysis.pdf")
+def owner_area_analysis_pdf(req: OwnerAreaAnalysisReportRequest):
+    """Generate a PDF Area Analysis report directly from a selected map point."""
+    if req.end_year < req.start_year:
+        raise HTTPException(status_code=400, detail="end_year must be greater than or equal to start_year")
+    if req.report_type not in {"owner-area-analysis", "owner-gp-opportunity", "investor-case"}:
+        raise HTTPException(status_code=400, detail="Unsupported report_type")
+
+    output_path = create_owner_area_analysis_pdf(
+        OwnerAreaReportDocRequest(
+            report_type=req.report_type,
+            site_name=req.site_name,
+            province=req.province,
+            lat=req.lat,
+            lon=req.lon,
+            mode=req.mode,
+            scenario=req.scenario,
+            start_year=req.start_year,
+            end_year=req.end_year,
+            avg_kwh_per_session=req.avg_kwh_per_session,
+            price_per_kwh=req.price_per_kwh,
+            electricity_cost_per_kwh=req.electricity_cost_per_kwh,
+            cpo_gp_rate=req.cpo_gp_rate,
+            annual_o_and_m=req.annual_o_and_m,
+            project_capex_ex_vat=req.project_capex_ex_vat,
+            perception_factor=req.perception_factor,
+            recommended_spec=req.recommended_spec,
+            metric_label=req.metric_label,
+            metric_value=req.metric_value,
+            owner_gp_per_kwh=req.owner_gp_per_kwh,
+            note=req.note,
+        )
+    )
+    return FileResponse(
+        str(output_path),
+        media_type="application/pdf",
+        filename=output_path.name,
     )
 
 

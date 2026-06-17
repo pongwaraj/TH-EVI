@@ -37,5 +37,21 @@ def test_planning_frontend_includes_phase1_controls():
     assert 'id="scope"' in html
     assert 'id="resolution"' in html
     assert 'Street View' in html
+    assert 'สร้างรายงาน...' in html
+    assert 'ดาวน์โหลด Word' in html
+    assert 'ดาวน์โหลด PDF' in html
+    assert 'phase1DownloadOwnerReport' in html
+    assert 'phase1DownloadOwnerReportPdf' in html
+    assert 'phase1OpenReportChooser' in html
+    assert 'id="report-template"' in html
+    assert 'id="report-site-name"' in html
+    assert 'id="report-start-year"' in html
+    assert 'id="report-end-year"' in html
+    assert 'id="report-owner-gp"' in html
+    assert 'owner-gp-opportunity' in html
+    assert 'investor-case' in html
+    assert 'id="report-capex"' in html
+    assert 'id="report-electricity-cost"' in html
+    assert 'id="report-cpo-gp-rate"' in html
     assert 'Open Google Maps' not in html
     assert '/analysis' in html

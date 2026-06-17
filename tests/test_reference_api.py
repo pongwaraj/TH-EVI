@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-
 from fastapi.testclient import TestClient
 
 import th_evi.api as api
@@ -145,3 +144,152 @@ def test_frontend_routes_include_main_and_admin_pages():
     admin = client.get("/admin")
     assert admin.status_code == 200
     assert "TH-EVI | Data Admin" in admin.text
+
+
+def test_owner_area_analysis_docx_route_returns_download(monkeypatch, tmp_path):
+    sample = tmp_path / "sample_report.docx"
+    sample.write_bytes(b"docx-placeholder")
+
+    def _fake_generate(req):
+        assert req.province == "Chiang Mai"
+        assert req.site_name == "The Kad Farang Mae Rim"
+        return sample
+
+    monkeypatch.setattr(api, "create_owner_area_analysis_report", _fake_generate)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/owner-area-analysis.docx",
+        json={
+            "report_type": "owner-area-analysis",
+            "site_name": "The Kad Farang Mae Rim",
+            "province": "Chiang Mai",
+            "lat": 18.90215,
+            "lon": 98.948371,
+            "mode": "urban",
+            "scenario": "base",
+            "start_year": 2026,
+            "end_year": 2035,
+            "avg_kwh_per_session": 35.0,
+            "price_per_kwh": 7.9,
+            "recommended_spec": "180 kW | 2 ตู้ | 4 ช่องจอด",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    assert "attachment;" in response.headers["content-disposition"]
+
+
+def test_owner_area_analysis_docx_route_rejects_unknown_template():
+    client = TestClient(app)
+    response = client.post(
+        "/api/owner-area-analysis.docx",
+        json={
+            "report_type": "not-a-real-template",
+            "province": "Chiang Mai",
+            "lat": 18.90215,
+            "lon": 98.948371,
+        },
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Unsupported report_type"
+
+
+def test_owner_gp_opportunity_docx_route_returns_download(monkeypatch, tmp_path):
+    sample = tmp_path / "sample_gp_report.docx"
+    sample.write_bytes(b"docx-placeholder")
+
+    def _fake_generate(req):
+        assert req.report_type == "owner-gp-opportunity"
+        assert req.owner_gp_per_kwh == 0.3
+        return sample
+
+    monkeypatch.setattr(api, "create_owner_area_analysis_report", _fake_generate)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/owner-area-analysis.docx",
+        json={
+            "report_type": "owner-gp-opportunity",
+            "site_name": "Kad Farang Mae Rim",
+            "province": "Chiang Mai",
+            "lat": 18.90215,
+            "lon": 98.948371,
+            "owner_gp_per_kwh": 0.3,
+            "recommended_spec": "180 kW | 2 ตู้ | 4 ช่องจอด",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+
+def test_investor_case_docx_route_returns_download(monkeypatch, tmp_path):
+    sample = tmp_path / "sample_investor_report.docx"
+    sample.write_bytes(b"docx-placeholder")
+
+    def _fake_generate(req):
+        assert req.report_type == "investor-case"
+        assert req.project_capex_ex_vat == 4000000
+        assert req.electricity_cost_per_kwh == 4.0
+        assert req.cpo_gp_rate == 0.08
+        return sample
+
+    monkeypatch.setattr(api, "create_owner_area_analysis_report", _fake_generate)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/owner-area-analysis.docx",
+        json={
+            "report_type": "investor-case",
+            "site_name": "The Kad Farang Mae Rim",
+            "province": "Chiang Mai",
+            "lat": 18.90215,
+            "lon": 98.948371,
+            "project_capex_ex_vat": 4000000,
+            "electricity_cost_per_kwh": 4.0,
+            "cpo_gp_rate": 0.08,
+            "annual_o_and_m": 36000,
+            "perception_factor": 0.85,
+            "owner_gp_per_kwh": 0.30,
+            "recommended_spec": "180 kW | 2 ตู้ | 4 ช่องจอด",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+
+def test_owner_area_analysis_pdf_route_returns_download(monkeypatch, tmp_path):
+    sample = tmp_path / "sample_owner_report.pdf"
+    sample.write_bytes(b"%PDF-1.4\n%placeholder")
+
+    def _fake_generate(req):
+        assert req.report_type == "owner-area-analysis"
+        assert req.site_name == "The Kad Farang Mae Rim"
+        return sample
+
+    monkeypatch.setattr(api, "create_owner_area_analysis_pdf", _fake_generate)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/owner-area-analysis.pdf",
+        json={
+            "report_type": "owner-area-analysis",
+            "site_name": "The Kad Farang Mae Rim",
+            "province": "Chiang Mai",
+            "lat": 18.90215,
+            "lon": 98.948371,
+            "recommended_spec": "180 kW | 2 ตู้ | 4 ช่องจอด",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
