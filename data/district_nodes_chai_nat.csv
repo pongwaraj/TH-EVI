@@ -1,0 +1,6 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+cn_mueang,Mueang Chai Nat,Chai Nat city core,district_center,15.1894135,100.1153070,4.4,1.0,Provincial capital and strongest urban service node in Chai Nat.
+cn_manorom,Manorom,Manorom Asian Highway node,transport_junction,15.3007886,100.0839331,4.0,0.88,North corridor district on the Asian Highway with stronger roadside relevance than outer rural districts.
+cn_sapphaya,Sapphaya,Sapphaya / Chao Phraya Dam node,transport_junction,15.1377361,100.2451862,3.8,0.82,Eastern district node supported by dam-side leisure trips and corridor movement.
+cn_sankhaburi,Sankhaburi,Sankhaburi district center,district_center,15.0479225,100.1613916,3.8,0.8,Large southern district service center with recurring local demand.
+cn_hankha,Hankha,Hankha district center,coverage_anchor,15.0315873,99.9683660,3.6,0.74,Western district coverage node to keep non-city demand visible without over-weighting sparse areas.

@@ -71,6 +71,10 @@ PROVINCE_SLUGS = {
     "\u0e25\u0e33\u0e1e\u0e39\u0e19": "lamphun",
     "Phitsanulok": "phitsanulok",
     "\u0e1e\u0e34\u0e29\u0e13\u0e38\u0e42\u0e25\u0e01": "phitsanulok",
+    "Chai Nat": "chai_nat",
+    "\u0e0a\u0e31\u0e22\u0e19\u0e32\u0e17": "chai_nat",
+    "Uthai Thani": "uthai_thani",
+    "\u0e2d\u0e38\u0e17\u0e31\u0e22\u0e18\u0e32\u0e19\u0e35": "uthai_thani",
     "Nan": "nan",
     "\u0e19\u0e48\u0e32\u0e19": "nan",
     "Mae Hong Son": "mae_hong_son",
@@ -95,6 +99,8 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "rayong": "Rayong",
     "nakhon_ratchasima": "Nakhon Ratchasima",
     "nakhon_nayok": "Nakhon Nayok",
+    "chai_nat": "Chai Nat",
+    "uthai_thani": "Uthai Thani",
 }
 
 SCENARIO_FACTORS = {

@@ -1,0 +1,11 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+uthai_thani_mueang_core,Mueang Uthai Thani urban core,city_center,15.3890699,100.0135268,Nominatim / OSM geocode for Mueang Uthai Thani + seed context,medium_high,"Primary civic, market, and riverfront service core of Uthai Thani city."
+uthai_thani_hospital,Uthai Thani Hospital,hospital,15.3803917,100.0194737,Nominatim / OSM geocode for Uthai Thani Hospital,high,"Main provincial hospital and one of the strongest all-day destination anchors in the city."
+wat_tha_sung,Wat Tha Sung,tourism,15.3296493,100.0691850,Nominatim / OSM geocode for Wat Tha Sung,high,"High-profile temple and tourism anchor with strong visitor and weekend trip relevance."
+ban_rai_town_center,Ban Rai town center,district_center,15.0825000,99.5211100,Nominatim / OSM geocode for Ban Rai district center,medium,"Large western district service town important for province-wide coverage."
+lan_sak_town_center,Lan Sak town center,district_center,15.4688941,99.5378790,Nominatim / OSM geocode for Lan Sak district center,medium,"Northern district center and gateway toward tourism/nature catchments."
+nong_chang_town_center,Nong Chang town center,district_center,15.3906277,99.8406409,Nominatim / OSM geocode for Nong Chang district center,medium,"Important south-west district center with everyday community demand."
+huai_khot_town_center,Huai Khot town center,district_center,15.2919651,99.5855588,Nominatim / OSM geocode for Huai Khot district center,medium,"Outer district service center relevant for local coverage and field-survey planning."
+hup_pa_tat,Hup Pa Tat,tourism,15.3767164,99.6311018,Nominatim / OSM geocode for Hup Pa Tat,medium_high,"Nature tourism anchor in Lan Sak catchment that can support destination-charging behaviour."
+lan_sak_hospital,Lan Sak Hospital,hospital,15.4613324,99.5491469,Nominatim / OSM geocode for Lan Sak Hospital,high,"District hospital anchor in the Lan Sak catchment with recurring daily demand."
+nong_chang_hospital,Nong Chang Hospital,hospital,15.3910744,99.8504924,Nominatim / OSM geocode for Nong Chang Hospital,high,"District hospital anchor in Nong Chang that strengthens non-city service demand."

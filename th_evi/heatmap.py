@@ -43,6 +43,9 @@ COMMUNITY_MIN_CONTEXT_SESSIONS = 2.4
 COMMUNITY_MIN_HEAT_SCORE = 4.0
 COMMUNITY_DISTANCE_FACTOR = 1.5
 DISTRICT_NODE_CAPTURE_FACTOR = 0.28
+ISOLATED_CELL_NEIGHBOR_FACTOR = 1.35
+ISOLATED_CELL_STRONG_HEAT_SCORE = 28.0
+ISOLATED_CELL_STRONG_CONTEXT_SCORE = 18.0
 SEASONAL_TOURISM_CATEGORIES = {
     "tourism",
     "tourism_museum",
@@ -301,6 +304,48 @@ def _point_hits_heatmap_exclusion(
         if km_between(lat, lon, center_lat, center_lon) <= radius:
             return exclusion
     return None
+
+
+def _suppress_isolated_heat_points(
+    points: list[dict[str, Any]],
+    *,
+    lat_step: float,
+    lon_step: float,
+    mode: str,
+) -> list[dict[str, Any]]:
+    if mode == "district" or len(points) <= 2:
+        return points
+
+    lat_limit = lat_step * ISOLATED_CELL_NEIGHBOR_FACTOR
+    lon_limit = lon_step * ISOLATED_CELL_NEIGHBOR_FACTOR
+    filtered: list[dict[str, Any]] = []
+
+    for idx, point in enumerate(points):
+        has_neighbor = False
+        for other_idx, other in enumerate(points):
+            if idx == other_idx:
+                continue
+            lat_gap = abs(point["lat"] - other["lat"])
+            lon_gap = abs(point["lon"] - other["lon"])
+            if lat_gap <= lat_limit and lon_gap <= lon_limit:
+                has_neighbor = True
+                break
+
+        if has_neighbor:
+            filtered.append(point)
+            continue
+
+        heat_score = _float_or_none(point.get("heat_score")) or 0.0
+        context_score = _float_or_none(point.get("supportive_context_score")) or 0.0
+        competitor_score = _float_or_none(point.get("competitor_signal_score")) or 0.0
+        if (
+            heat_score >= ISOLATED_CELL_STRONG_HEAT_SCORE
+            or context_score >= ISOLATED_CELL_STRONG_CONTEXT_SCORE
+            or competitor_score >= ISOLATED_CELL_STRONG_CONTEXT_SCORE
+        ):
+            filtered.append(point)
+
+    return filtered
 
 
 def district_node_field(
@@ -722,7 +767,7 @@ def generate_province_heatmap(
                 "competitor_signal_score": round(competitor_signal_sessions, 1),
                 "competition_score": round(competition_score, 1),
                 "supportive_context_score": round(supportive_context_sessions, 1),
-                "context_score": round(supportive_context_sessions, 1),
+                "context_score": round(evidence_context_sessions, 1),
                 "evidence_context_score": round(evidence_context_sessions, 1),
                 "demand_score": round(demand_score, 1),
                 "net_opportunity_score": round(net_opportunity_score, 1),
@@ -742,6 +787,24 @@ def generate_province_heatmap(
             lon += lon_step
         lat += lat_step
 
+    layer_max_scores = {
+        layer: max((p[field] for p in points), default=1.0)
+        for layer, field in HEATMAP_LAYER_SCORE_FIELDS.items()
+    }
+    max_heat = layer_max_scores["net"]
+    for point in points:
+        point["intensity_layers"] = {
+            layer: round(point[field] / max(layer_max_scores[layer], 0.1), 4)
+            for layer, field in HEATMAP_LAYER_SCORE_FIELDS.items()
+        }
+        point["intensity"] = point["intensity_layers"]["net"]
+
+    points = _suppress_isolated_heat_points(
+        points,
+        lat_step=lat_step,
+        lon_step=lon_step,
+        mode=mode,
+    )
     layer_max_scores = {
         layer: max((p[field] for p in points), default=1.0)
         for layer, field in HEATMAP_LAYER_SCORE_FIELDS.items()

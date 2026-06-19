@@ -1,0 +1,2 @@
+exclusion_id,name,center_lat,center_lon,radius_km,exclusion_type,confidence,reason,last_verified_date
+cn_chao_phraya_dam_open_water,Chao Phraya Dam open-water core,15.1593473,100.1799898,2.4,water,medium_high,"Open-water surface around Chao Phraya Dam where fixed public EV-station siting is not plausible for this screening stage.",2026-06-19

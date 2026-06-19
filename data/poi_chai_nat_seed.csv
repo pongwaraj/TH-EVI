@@ -1,0 +1,9 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+chai_nat_mueang_core,Mueang Chai Nat urban core,city_center,15.1894135,100.1153070,Nominatim / OSM geocode for Mueang Chai Nat + seed context,medium_high,"Primary urban service and civic core of Chai Nat; useful base anchor for city demand and nearby retail / government / hospital trips."
+lotus_chai_nat,Lotus's Chai Nat,shopping_mall,15.1827132,100.1333366,Nominatim / OSM geocode for Lotus's Chai Nat,high,"Major retail anchor in Mueang Chai Nat with broad daily local demand."
+chai_nat_bird_park,Chai Nat Bird Park,tourism,15.2070229,100.1519815,Nominatim / OSM geocode for Chai Nat Bird Park,high,"Top provincial tourism and family destination on the city side; relevant for weekend and destination charging demand."
+chao_phraya_dam,Chao Phraya Dam,bus_station,15.1593473,100.1799898,Nominatim / OSM geocode for Chao Phraya Dam,medium_high,"Regional landmark and travel stop in Sapphaya catchment with strong corridor and leisure relevance."
+manorom_town_center,Manorom town center,district_center,15.3007886,100.0839331,Nominatim / OSM geocode for Manorom district center,medium,"Important north corridor district center on the Asian Highway side."
+sapphaya_town_center,Sapphaya town center,district_center,15.1377361,100.2451862,Nominatim / OSM geocode for Sapphaya district center,medium,"Eastern district center and service node near the Chao Phraya Dam catchment."
+sankhaburi_town_center,Sankhaburi town center,district_center,15.0479225,100.1613916,Nominatim / OSM geocode for Sankhaburi district center,medium,"Large southern district center with everyday local demand and highway-linked movement."
+hankha_town_center,Hankha town center,district_center,15.0315873,99.9683660,Nominatim / OSM geocode for Hankha district center,medium,"Western district center useful for broader province coverage beyond the river corridor."

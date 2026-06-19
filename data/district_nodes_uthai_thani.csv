@@ -1,0 +1,6 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+ut_mueang,Mueang Uthai Thani,Uthai Thani city core,district_center,15.3890699,100.0135268,4.4,1.0,Provincial capital and strongest urban node in the province.
+ut_nong_chang,Nong Chang,Nong Chang district center,district_center,15.3906277,99.8406409,3.8,0.84,Important district service town with hospital and community demand.
+ut_ban_rai,Ban Rai,Ban Rai district center,coverage_anchor,15.0825000,99.5211100,3.8,0.76,Large western district service center useful for keeping outer coverage visible.
+ut_lan_sak,Lan Sak,Lan Sak district center,tourism_town,15.4688941,99.5378790,4.0,0.8,Northern district node with tourism and service-town relevance.
+ut_huai_khot,Huai Khot,Huai Khot district center,coverage_anchor,15.2919651,99.5855588,3.5,0.7,Outer district coverage node with lower intensity than the main city and service towns.

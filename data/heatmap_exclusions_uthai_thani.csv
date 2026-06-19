@@ -1,0 +1,3 @@
+exclusion_id,name,center_lat,center_lon,radius_km,exclusion_type,confidence,reason,last_verified_date
+ut_huai_kha_khaeng_forest_core,Huai Kha Khaeng protected forest core,15.4030378,99.2425764,12.0,forest,high,"Protected wildlife sanctuary and forest core where public EV-station siting is not plausible in first-pass planning.",2026-06-19
+ut_thap_salao_reservoir_open_water,Thap Salao reservoir open-water core,15.5450756,99.4373948,3.0,water,medium_high,"Open-water reservoir area where heat-map demand should be suppressed to avoid implausible siting in the lake body.",2026-06-19
