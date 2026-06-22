@@ -113,6 +113,48 @@ def _fmt_int(value: float | int | None) -> str:
     return f"{round(float(value)):,}"
 
 
+def _thai_location_type(value: Any) -> str:
+    mapping = {
+        "destination": "จุดหมายเชิงพาณิชย์",
+        "highway": "ทำเลแนวเส้นทางหลัก",
+        "urban": "ทำเลเขตเมือง",
+        "community": "ทำเลชุมชน",
+        "district": "ทำเลศูนย์กลางอำเภอ",
+    }
+    text = str(value or "").strip()
+    return mapping.get(text, text or "-")
+
+
+def _thai_eligibility(value: Any) -> str:
+    mapping = {
+        "eligible": "เหมาะสำหรับพิจารณาต่อ",
+        "low_relevance": "ศักยภาพยังไม่เด่น",
+        "ineligible": "ยังไม่เหมาะสำหรับการลงทุน",
+    }
+    text = str(value or "").strip()
+    return mapping.get(text, text or "-")
+
+
+def _thai_confidence(value: Any) -> str:
+    mapping = {
+        "high": "สูง",
+        "medium": "ปานกลาง",
+        "low": "ต่ำ",
+    }
+    text = str(value or "").strip().lower()
+    return mapping.get(text, str(value or "-"))
+
+
+def _focus_metric_text(req: OwnerAreaReportRequest) -> str:
+    if req.metric_label and req.metric_value is not None:
+        return f" จุดที่เลือกมี{req.metric_label}ประมาณ {_fmt_num(req.metric_value)}."
+    return ""
+
+
+def _user_note_text(req: OwnerAreaReportRequest) -> str:
+    return f" หมายเหตุเพิ่มเติม: {req.note}" if req.note else ""
+
+
 def _set_cell_shading(cell, fill_hex: str) -> None:
     tc_pr = cell._tc.get_or_add_tcPr()
     shd = tc_pr.find(qn("w:shd"))
@@ -726,7 +768,7 @@ def _render_heatmap_snapshot(req: OwnerAreaReportRequest, file_stem: str) -> Pat
 def _add_title_block(doc: Document, req: OwnerAreaReportRequest, site_name: str) -> None:
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(2)
-    run = p.add_run("Area Analysis สำหรับเจ้าของสถานที่")
+    run = p.add_run("รายงานวิเคราะห์พื้นที่สำหรับเจ้าของสถานที่")
     run.font.name = "Calibri"
     run.font.size = Pt(22)
     run.font.bold = True
@@ -734,7 +776,7 @@ def _add_title_block(doc: Document, req: OwnerAreaReportRequest, site_name: str)
 
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(10)
-    run = p.add_run(f"{site_name} | รายงานวิเคราะห์พื้นที่จาก Heat Map และ Click Analysis")
+    run = p.add_run(f"{site_name} | สรุปศักยภาพพื้นที่จาก Heat Map และการวิเคราะห์รายจุด")
     run.font.name = "Calibri"
     run.font.size = Pt(13)
     run.font.color.rgb = MUTED
@@ -747,10 +789,10 @@ def _add_title_block(doc: Document, req: OwnerAreaReportRequest, site_name: str)
         ("พื้นที่อ้างอิง", site_name),
         ("จังหวัด", req.province),
         ("พิกัด", f"{req.lat:.6f}, {req.lon:.6f}"),
-        ("มุมมองการวิเคราะห์", "Owner Area Analysis"),
+        ("รูปแบบเอกสาร", "รายงานวิเคราะห์พื้นที่สำหรับเจ้าของสถานที่"),
         ("โหมดแผนที่", req.mode),
         ("สมมติฐานพลังงาน", f"{_fmt_num(req.avg_kwh_per_session)} kWh/คัน"),
-        ("สเปกที่ต้องการดู", req.recommended_spec or "ใช้คำแนะนำจากระบบ"),
+        ("สเปกอ้างอิง", req.recommended_spec or "ใช้คำแนะนำจากระบบ"),
     ]
     for idx, (label, value) in enumerate(rows):
         left = meta.cell(idx, 0)
@@ -781,20 +823,18 @@ def _add_executive_summary(
     cell = box.cell(0, 0)
     _set_cell_border(cell, color="C9D6E3", size="10")
     _set_cell_shading(cell, "F4F7FA")
-    focus_metric = ""
-    if req.metric_label and req.metric_value is not None:
-        focus_metric = f" จุดที่เลือกมี {req.metric_label} ประมาณ {_fmt_num(req.metric_value)}."
-    note_text = f" หมายเหตุจากผู้ใช้: {req.note}" if req.note else ""
+    focus_metric = _focus_metric_text(req)
+    note_text = _user_note_text(req)
     text = (
-        f"{site_name} อยู่ในพื้นที่ที่ระบบอ่านเป็น {first_year['location_type']} และให้สถานะ "
-        f"{first_year['eligibility_status']} โดยในปี {req.start_year} ระบบประเมินดีมานด์รวมของพื้นที่ไว้ที่ "
-        f"{_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน ก่อนหักแรงแข่งขันของคู่แข่ง "
-        f"{_fmt_num(first_year['competitor_penalty_sessions'])} คัน/วัน เหลือดีมานด์สุทธิที่พื้นที่นี้สามารถ capture ได้ประมาณ "
-        f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน หรือราว {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
-        f"{focus_metric} จุดนี้มีแรงหนุนหลักจาก POI สำคัญอย่าง {_top_name(first_year['top_pois'], 'POI ในพื้นที่')} "
-        f"และ activity field รอบข้าง ขณะที่คู่แข่งที่กดทับหลักคือ {_top_name(first_year['top_competitors'], 'สถานีรอบข้าง')}."
-        f" หากอิงแนวโน้มปัจจุบัน ดีมานด์สุทธิในปี {req.end_year} จะขยับไปที่ประมาณ "
-        f"{_fmt_num(final_year['net_sessions_per_day'])} คัน/วัน.{note_text}"
+        f"{site_name} อยู่ในบริเวณที่ระบบประเมินว่าเป็น{_thai_location_type(first_year['location_type'])} "
+        f"และจัดอยู่ในกลุ่ม{_thai_eligibility(first_year['eligibility_status'])} "
+        f"โดยในปี {req.start_year} พื้นที่รอบจุดมีดีมานด์รวมประมาณ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
+        f"เมื่อพิจารณาแรงดึงจากสถานีคู่แข่งแล้ว คาดว่าจะยังเหลือดีมานด์สุทธิที่พื้นที่นี้รองรับได้ประมาณ "
+        f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน หรือประมาณ {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
+        f"{focus_metric} แรงหนุนสำคัญของทำเลนี้มาจาก {_top_name(first_year['top_pois'], 'จุดหมายสำคัญในพื้นที่')} "
+        f"และกิจกรรมทางเศรษฐกิจรอบข้าง ขณะที่แรงกดดันหลักมาจาก {_top_name(first_year['top_competitors'], 'สถานีชาร์จใกล้เคียง')}."
+        f" หากแนวโน้มการใช้งานเติบโตตามสมมติฐานปัจจุบัน ดีมานด์สุทธิในปี {req.end_year} จะขยับไปอยู่ที่ประมาณ "
+        f"{_fmt_num(final_year['net_sessions_per_day'])} คัน/วัน{note_text}"
     )
     p = cell.paragraphs[0]
     run = p.add_run(text)
@@ -805,7 +845,7 @@ def _add_executive_summary(
 def _add_snapshot_table(doc: Document, req: OwnerAreaReportRequest, site_name: str, first_year: dict[str, Any]) -> None:
     p = doc.add_paragraph()
     p.style = doc.styles["Heading 1"]
-    p.add_run("Snapshot ของพื้นที่")
+    p.add_run("สรุปตัวเลขสำคัญของพื้นที่")
 
     table = doc.add_table(rows=1, cols=3)
     table.style = "Table Grid"
@@ -823,12 +863,12 @@ def _add_snapshot_table(doc: Document, req: OwnerAreaReportRequest, site_name: s
     rows = [
         ("ดีมานด์รวมในพื้นที่", _fmt_num(first_year["gross_area_demand_sessions"]), "ก่อนหักผลของคู่แข่ง"),
         ("แรงแข่งขันของคู่แข่ง", _fmt_num(first_year["competitor_penalty_sessions"]), "ดีมานด์ที่คู่แข่งครองไว้แล้ว"),
-        ("ดีมานด์สุทธิในพื้นที่", _fmt_num(first_year["net_sessions_per_day"]), "ดีมานด์ที่พื้นที่นี้ยัง capture ได้"),
+        ("ดีมานด์สุทธิในพื้นที่", _fmt_num(first_year["net_sessions_per_day"]), "ดีมานด์ที่พื้นที่นี้ยังรองรับได้"),
         ("พลังงานต่อวัน", _fmt_num(first_year["daily_kwh"]), f"คำนวณที่ {_fmt_num(req.avg_kwh_per_session)} kWh/คัน"),
-        ("Location type", str(first_year["location_type"]), "ลักษณะพื้นที่ที่โมเดลอ่านออก"),
-        ("Eligibility status", str(first_year["eligibility_status"]), str(first_year["eligibility_reason"])),
+        ("ลักษณะทำเล", _thai_location_type(first_year["location_type"]), "ภาพรวมของพื้นที่ที่ระบบอ่านได้"),
+        ("ผลประเมินเบื้องต้น", _thai_eligibility(first_year["eligibility_status"]), str(first_year["eligibility_reason"])),
         ("AADT ที่ใช้", _fmt_int(first_year["aadt_used"]), "ตัวช่วยสะท้อนทราฟฟิกเบื้องต้น"),
-        ("ความเชื่อมั่น", str(first_year["confidence"]), "อิงความแน่นของ POI / competitor / context"),
+        ("ระดับความเชื่อมั่น", _thai_confidence(first_year["confidence"]), "อิงความแน่นของ POI, competitor และบริบทพื้นที่"),
     ]
     for row_idx, row in enumerate(rows, start=1):
         cells = table.add_row().cells
@@ -920,7 +960,7 @@ def _add_forecast_table(doc: Document, rows: list[dict[str, Any]]) -> None:
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     _set_table_widths(table, [0.9, 1.2, 1.4, 1.3, 1.4])
-    headers = ["ปี", "Gross", "แข่งขัน", "Net", "kWh/วัน"]
+    headers = ["ปี", "รวม", "คู่แข่ง", "สุทธิ", "kWh/วัน"]
     for idx, label in enumerate(headers):
         cell = table.cell(0, idx)
         cell.text = label
@@ -947,7 +987,7 @@ def _add_forecast_table(doc: Document, rows: list[dict[str, Any]]) -> None:
                 _set_cell_shading(cell, "F9FBFD")
 
     note = doc.add_paragraph()
-    run = note.add_run("Gross = ดีมานด์รวมในพื้นที่ก่อนหักคู่แข่ง | Net = ดีมานด์สุทธิหลังหักแรงแข่งขันแล้ว")
+    run = note.add_run("รวม = ดีมานด์รวมในพื้นที่ก่อนหักผลของคู่แข่ง | สุทธิ = ดีมานด์ที่ยังเหลือสำหรับจุดนี้หลังหักแรงแข่งขันแล้ว")
     run.font.size = Pt(9.5)
     run.font.color.rgb = MUTED
 
@@ -992,7 +1032,7 @@ def _add_map_snapshot(doc: Document, map_path: Path) -> None:
     doc.add_picture(str(map_path), width=Inches(6.45))
     caption = doc.add_paragraph()
     caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = caption.add_run("ภาพสรุปพื้นที่อัตโนมัติจากข้อมูล TH-EVI | แดง = จุดวิเคราะห์ | น้ำเงิน = POI | ม่วง = คู่แข่ง | ส้ม = Hot zone | ฟ้า = Business area")
+    run = caption.add_run("ภาพสรุปพื้นที่จากข้อมูล TH-EVI | แดง = จุดวิเคราะห์ | น้ำเงิน = POI | ม่วง = คู่แข่ง | ส้ม = Hot zone | ฟ้า = Business area")
     run.font.size = Pt(9.2)
     run.font.color.rgb = MUTED
 
@@ -1000,12 +1040,12 @@ def _add_map_snapshot(doc: Document, map_path: Path) -> None:
 def _add_heatmap_snapshot(doc: Document, image_path: Path) -> None:
     p = doc.add_paragraph()
     p.style = doc.styles["Heading 1"]
-    p.add_run("Heat Map Snapshot")
+    p.add_run("ภาพ Heat Map รอบจุดที่เลือก")
 
     doc.add_picture(str(image_path), width=Inches(6.45))
     caption = doc.add_paragraph()
     caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = caption.add_run("ภาพ Heat Map รอบจุดที่เลือกจากระบบ TH-EVI | วงสีแดง = จุดวิเคราะห์ | สีเข้ม = ความร้อนสูงกว่า")
+    run = caption.add_run("ภาพ Heat Map รอบจุดที่เลือก | วงสีแดง = จุดวิเคราะห์ | สีเข้ม = พื้นที่ที่มีความเข้มสูงกว่า")
     run.font.size = Pt(9.2)
     run.font.color.rgb = MUTED
 
@@ -1013,7 +1053,7 @@ def _add_heatmap_snapshot(doc: Document, image_path: Path) -> None:
 def _add_owner_gp_title_block(doc: Document, req: OwnerAreaReportRequest, site_name: str) -> None:
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(2)
-    run = p.add_run("Area Analysis + Owner GP Opportunity")
+    run = p.add_run("รายงานวิเคราะห์พื้นที่และโอกาสรับรายได้ GP")
     run.font.name = "Calibri"
     run.font.size = Pt(22)
     run.font.bold = True
@@ -1021,7 +1061,7 @@ def _add_owner_gp_title_block(doc: Document, req: OwnerAreaReportRequest, site_n
 
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(10)
-    run = p.add_run(f"{site_name} | ข้อเสนอรายได้ GP สำหรับเจ้าของพื้นที่")
+    run = p.add_run(f"{site_name} | แนวทางสร้างรายได้ GP สำหรับเจ้าของพื้นที่")
     run.font.name = "Calibri"
     run.font.size = Pt(13)
     run.font.color.rgb = MUTED
@@ -1055,7 +1095,7 @@ def _add_owner_gp_title_block(doc: Document, req: OwnerAreaReportRequest, site_n
 def _add_owner_gp_summary(doc: Document, req: OwnerAreaReportRequest, site_name: str, first_year: dict[str, Any], final_year: dict[str, Any]) -> None:
     p = doc.add_paragraph()
     p.style = doc.styles["Heading 1"]
-    p.add_run("สรุปสำหรับเจ้าของพื้นที่")
+    p.add_run("สรุปโอกาสสำหรับเจ้าของพื้นที่")
 
     # recalculated later in dedicated table but summarize here with first/final only
     box = doc.add_table(rows=1, cols=1)
@@ -1064,14 +1104,14 @@ def _add_owner_gp_summary(doc: Document, req: OwnerAreaReportRequest, site_name:
     _set_cell_border(cell, color="C9D6E3", size="10")
     _set_cell_shading(cell, "F4F7FA")
     text = (
-        f"{site_name} เป็นจุดที่ระบบมองว่า {first_year['eligibility_status']} และมีดีมานด์รวมในพื้นที่ประมาณ "
-        f"{_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน โดยหลังหักแรงแข่งขันแล้ว ยังเหลือดีมานด์สุทธิประมาณ "
-        f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
-        f"ถ้าพื้นที่นี้เลือกทำดีลแบบเจ้าของไม่ลงทุน แต่รับ GP {_fmt_num(req.owner_gp_per_kwh, 2)} บาทต่อหน่วยจากพลังงานที่จำหน่ายได้ "
-        f"จะมีโอกาสรับ GP ปีแรกประมาณ {_fmt_int(first_year['annual_owner_gp'])} บาท/ปี "
-        f"และในปี {req.end_year} ประมาณ {_fmt_int(final_year['annual_owner_gp'])} บาท/ปี "
-        f"โดยสเปกที่เหมาะกับการคุยเชิงพาณิชย์คือ {req.recommended_spec or 'สเปกตามคำแนะนำของระบบ'} "
-        f"ซึ่งช่วยให้เจ้าของเห็นภาพรายได้ประจำจาก EV charging โดยไม่ต้องลง CAPEX เอง."
+        f"{site_name} เป็นจุดที่ระบบประเมินว่ามีศักยภาพในระดับ{_thai_eligibility(first_year['eligibility_status'])} "
+        f"และมีดีมานด์รวมของพื้นที่รอบจุดประมาณ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
+        f"เมื่อหักแรงแข่งขันของสถานีรอบข้างแล้ว ยังเหลือดีมานด์สุทธิประมาณ {_fmt_num(first_year['net_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
+        f"หากใช้รูปแบบความร่วมมือที่เจ้าของพื้นที่ไม่ต้องลงทุนเอง แต่รับ GP {_fmt_num(req.owner_gp_per_kwh, 2)} บาทต่อหน่วยจากพลังงานที่จำหน่ายได้ "
+        f"คาดว่าจะมีโอกาสรับรายได้ปีแรกประมาณ {_fmt_int(first_year['annual_owner_gp'])} บาท/ปี "
+        f"และขยับเป็นประมาณ {_fmt_int(final_year['annual_owner_gp'])} บาท/ปีในปี {req.end_year}. "
+        f"สเปกที่เหมาะสำหรับเริ่มต้นเจรจาเชิงพาณิชย์คือ {req.recommended_spec or 'สเปกตามคำแนะนำของระบบ'} "
+        f"ซึ่งช่วยให้เจ้าของพื้นที่เห็นภาพรายได้ประจำจากสถานีชาร์จโดยไม่ต้องรับภาระเงินลงทุนเริ่มต้น."
     )
     p = cell.paragraphs[0]
     run = p.add_run(text)
@@ -1082,7 +1122,7 @@ def _add_owner_gp_summary(doc: Document, req: OwnerAreaReportRequest, site_name:
 def _add_owner_gp_forecast(doc: Document, req: OwnerAreaReportRequest, rows: list[dict[str, Any]]) -> None:
     p = doc.add_paragraph()
     p.style = doc.styles["Heading 1"]
-    p.add_run("แนวโน้มจำนวนรถ รายได้สถานี และ GP ของเจ้าของพื้นที่")
+    p.add_run("แนวโน้มจำนวนรถ รายได้สถานี และรายได้ GP ของเจ้าของพื้นที่")
 
     table = doc.add_table(rows=1, cols=5)
     table.style = "Table Grid"
@@ -1117,7 +1157,7 @@ def _add_owner_gp_forecast(doc: Document, req: OwnerAreaReportRequest, rows: lis
                 _set_cell_shading(cell, "F9FBFD")
 
     note = doc.add_paragraph()
-    run = note.add_run("รายได้/ปี เป็นรายได้รวมของสถานีจากสมมติฐานราคาขายต่อหน่วย ส่วน GP/ปี เป็นส่วนแบ่งที่เจ้าของพื้นที่จะได้รับตาม kWh ที่ขายได้")
+    run = note.add_run("รายได้/ปี คือรายได้รวมของสถานีจากสมมติฐานราคาขายต่อหน่วย ส่วน GP/ปี คือส่วนแบ่งที่เจ้าของพื้นที่จะได้รับตามพลังงานที่จำหน่ายได้จริง")
     run.font.size = Pt(9.5)
     run.font.color.rgb = MUTED
 
@@ -1169,7 +1209,7 @@ def _fmt_payback_timing(payback: tuple[int, float] | None) -> str:
 def _add_investor_title_block(doc: Document, req: OwnerAreaReportRequest, site_name: str) -> None:
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(2)
-    run = p.add_run("Area Analysis + Investor Case")
+    run = p.add_run("รายงานวิเคราะห์พื้นที่ในมุมนักลงทุน")
     run.font.name = "Calibri"
     run.font.size = Pt(22)
     run.font.bold = True
@@ -1177,7 +1217,7 @@ def _add_investor_title_block(doc: Document, req: OwnerAreaReportRequest, site_n
 
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(10)
-    run = p.add_run(f"{site_name} | มุมมองนักลงทุน")
+    run = p.add_run(f"{site_name} | ประเมินศักยภาพในมุมนักลงทุน")
     run.font.name = "Calibri"
     run.font.size = Pt(13)
     run.font.color.rgb = MUTED
@@ -1190,11 +1230,11 @@ def _add_investor_title_block(doc: Document, req: OwnerAreaReportRequest, site_n
         ("พื้นที่อ้างอิง", site_name),
         ("จังหวัด", req.province),
         ("พิกัด", f"{req.lat:.6f}, {req.lon:.6f}"),
-        ("รูปแบบเอกสาร", "Investor Case"),
+        ("รูปแบบเอกสาร", "รายงานวิเคราะห์ในมุมนักลงทุน"),
         ("มูลค่าโครงการ", f"{_fmt_int(req.project_capex_ex_vat)} บาท (ไม่รวม VAT)"),
         ("ข้อเสนอสถานี", req.recommended_spec or "ใช้คำแนะนำจากระบบ"),
         ("ช่วงพยากรณ์", f"{req.start_year}-{req.end_year}"),
-        ("Perception factor", f"{_fmt_num(req.perception_factor, 2)} ของ demand สุทธิ"),
+        ("ตัวปรับเชิงพฤติกรรม", f"{_fmt_num(req.perception_factor, 2)} ของดีมานด์สุทธิ"),
     ]
     for idx, (label, value) in enumerate(rows):
         left = meta.cell(idx, 0)
@@ -1220,13 +1260,13 @@ def _add_investor_summary(doc: Document, req: OwnerAreaReportRequest, site_name:
     _set_cell_border(cell, color="C9D6E3", size="10")
     _set_cell_shading(cell, "F4F7FA")
     text = (
-        f"{site_name} เป็นจุดที่มีดีมานด์สุทธิเริ่มต้นประมาณ {_fmt_num(first_year['modeled_cars_per_day'])} คัน/วัน "
-        f"แต่ในมุมนักลงทุน เอกสารฉบับนี้ลดลงด้วย perception factor เหลือประมาณ {_fmt_num(first_year['adjusted_cars_per_day'])} คัน/วัน "
-        f"เพื่อสะท้อนการแปลง demand ให้เป็นการใช้งานจริงของสถานี. "
+        f"{site_name} เป็นจุดที่มีดีมานด์สุทธิเริ่มต้นจากโมเดลประมาณ {_fmt_num(first_year['modeled_cars_per_day'])} คัน/วัน "
+        f"อย่างไรก็ดี ในมุมนักลงทุน เอกสารฉบับนี้ปรับตัวเลขลงด้วยตัวปรับเชิงพฤติกรรม เหลือประมาณ {_fmt_num(first_year['adjusted_cars_per_day'])} คัน/วัน "
+        f"เพื่อสะท้อนการเปลี่ยนจากดีมานด์ในพื้นที่ไปสู่การใช้งานจริงของสถานีได้อย่างระมัดระวังมากขึ้น "
         f"ภายใต้สมมติฐานราคาขาย {_fmt_num(req.price_per_kwh,1)} บาท/kWh, ค่าไฟ {_fmt_num(req.electricity_cost_per_kwh,1)} บาท/kWh, "
         f"CPO GP {_fmt_num(req.cpo_gp_rate * 100,1)}%, GP เจ้าของพื้นที่ {_fmt_num(req.owner_gp_per_kwh,2)} บาท/kWh และ O&M {_fmt_int(req.annual_o_and_m)} บาท/ปี "
-        f"โครงการให้กระแสเงินสดปีแรกประมาณ {_fmt_int(first_year['annual_investor_cf'])} บาท/ปี "
-        f"และปีสุดท้ายประมาณ {_fmt_int(final_year['annual_investor_cf'])} บาท/ปี "
+        f"โครงการให้กระแสเงินสดจากการดำเนินงานปีแรกประมาณ {_fmt_int(first_year['annual_investor_cf'])} บาท/ปี "
+        f"และในปีสุดท้ายของช่วงพยากรณ์ประมาณ {_fmt_int(final_year['annual_investor_cf'])} บาท/ปี "
         f"โดย {_fmt_payback_timing(payback)}"
     )
     p = cell.paragraphs[0]
@@ -1238,13 +1278,13 @@ def _add_investor_summary(doc: Document, req: OwnerAreaReportRequest, site_name:
 def _add_investor_forecast(doc: Document, req: OwnerAreaReportRequest, rows: list[dict[str, Any]], payback: tuple[int, float] | None) -> None:
     p = doc.add_paragraph()
     p.style = doc.styles["Heading 1"]
-    p.add_run("Forecast กระแสเงินสดและการคืนทุน")
+    p.add_run("แนวโน้มกระแสเงินสดและระยะเวลาคืนทุน")
 
     table = doc.add_table(rows=1, cols=8)
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     _set_table_widths(table, [0.9, 1.0, 1.0, 1.4, 1.2, 1.2, 1.3, 1.4])
-    headers = ["ปี", "โมเดล", "หลังปรับ", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "CF/ปี", "CF สะสม"]
+    headers = ["ปี", "ก่อนปรับ", "หลังปรับ", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "กระแสเงินสด/ปี", "กระแสเงินสดสะสม"]
     for idx, label in enumerate(headers):
         cell = table.cell(0, idx)
         cell.text = label
@@ -1443,14 +1483,14 @@ def _build_pdf_story(
     styles = _build_pdf_styles()
     story: list[Any] = []
     title_lookup = {
-        "owner-area-analysis": "Area Analysis สำหรับเจ้าของสถานที่",
-        "owner-gp-opportunity": "Area Analysis + Owner GP Opportunity",
-        "investor-case": "Area Analysis + Investor Case",
+        "owner-area-analysis": "รายงานวิเคราะห์พื้นที่สำหรับเจ้าของสถานที่",
+        "owner-gp-opportunity": "รายงานวิเคราะห์พื้นที่และโอกาสรับรายได้ GP",
+        "investor-case": "รายงานวิเคราะห์พื้นที่ในมุมนักลงทุน",
     }
     subtitle_lookup = {
-        "owner-area-analysis": f"{site_name} | รายงานวิเคราะห์พื้นที่จาก Heat Map และ Click Analysis",
-        "owner-gp-opportunity": f"{site_name} | ข้อเสนอรายได้ GP สำหรับเจ้าของพื้นที่",
-        "investor-case": f"{site_name} | มุมมองนักลงทุน",
+        "owner-area-analysis": f"{site_name} | สรุปศักยภาพพื้นที่จาก Heat Map และการวิเคราะห์รายจุด",
+        "owner-gp-opportunity": f"{site_name} | แนวทางสร้างรายได้ GP สำหรับเจ้าของพื้นที่",
+        "investor-case": f"{site_name} | ประเมินศักยภาพในมุมนักลงทุน",
     }
     story.append(_pdf_paragraph(title_lookup.get(req.report_type, title_lookup["owner-area-analysis"]), styles["title"]))
     story.append(_pdf_paragraph(subtitle_lookup.get(req.report_type, subtitle_lookup["owner-area-analysis"]), styles["subtitle"]))
@@ -1467,53 +1507,51 @@ def _build_pdf_story(
         meta_rows.append([_pdf_paragraph("GP เจ้าของพื้นที่", styles["cell_bold"]), _pdf_paragraph(f"{_fmt_num(req.owner_gp_per_kwh, 2)} บาท/kWh", styles["cell"])])
     if req.report_type == "investor-case":
         meta_rows.append([_pdf_paragraph("มูลค่าโครงการ", styles["cell_bold"]), _pdf_paragraph(f"{_fmt_int(req.project_capex_ex_vat)} บาท (ไม่รวม VAT)", styles["cell"])])
-        meta_rows.append([_pdf_paragraph("Perception factor", styles["cell_bold"]), _pdf_paragraph(_fmt_num(req.perception_factor, 2), styles["cell"])])
+        meta_rows.append([_pdf_paragraph("ตัวปรับเชิงพฤติกรรม", styles["cell_bold"]), _pdf_paragraph(_fmt_num(req.perception_factor, 2), styles["cell"])])
     story.append(_pdf_table(meta_rows, [1.8, 4.8], repeat_rows=0))
     story.append(Spacer(1, 0.14 * inch))
 
-    focus_metric = ""
-    if req.metric_label and req.metric_value is not None:
-        focus_metric = f" จุดที่เลือกมี {req.metric_label} ประมาณ {_fmt_num(req.metric_value)}."
-    note_text = f" หมายเหตุจากผู้ใช้: {req.note}" if req.note else ""
+    focus_metric = _focus_metric_text(req)
+    note_text = _user_note_text(req)
     if req.report_type == "owner-gp-opportunity":
         summary_text = (
-            f"{site_name} เป็นจุดที่ระบบมองว่า {first_year['eligibility_status']} และมีดีมานด์รวมในพื้นที่ประมาณ "
-            f"{_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน โดยหลังหักแรงแข่งขันแล้ว ยังเหลือดีมานด์สุทธิประมาณ "
-            f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
+            f"{site_name} เป็นจุดที่ระบบประเมินว่ามีศักยภาพในระดับ{_thai_eligibility(first_year['eligibility_status'])} "
+            f"และมีดีมานด์รวมของพื้นที่รอบจุดประมาณ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
+            f"เมื่อหักแรงแข่งขันของสถานีรอบข้างแล้ว ยังเหลือดีมานด์สุทธิประมาณ {_fmt_num(first_year['net_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
             f"หากเจ้าของพื้นที่เลือกทำดีลแบบไม่ลงทุนเอง แต่รับ GP {_fmt_num(req.owner_gp_per_kwh, 2)} บาทต่อหน่วยจากพลังงานที่จำหน่ายได้ "
-            f"จะมีโอกาสรับ GP ปีแรกประมาณ {_fmt_int(first_year['annual_owner_gp'])} บาท/ปี และในปี {req.end_year} ประมาณ "
-            f"{_fmt_int(final_year['annual_owner_gp'])} บาท/ปี."
+            f"คาดว่าจะมีโอกาสรับรายได้ปีแรกประมาณ {_fmt_int(first_year['annual_owner_gp'])} บาท/ปี และขยับเป็นประมาณ "
+            f"{_fmt_int(final_year['annual_owner_gp'])} บาท/ปีในปี {req.end_year}."
         )
     elif req.report_type == "investor-case":
         investor_rows, payback = _investor_projection_rows(req, projection_rows)
         summary_text = (
-            f"{site_name} มีดีมานด์สุทธิจากโมเดลเริ่มต้นประมาณ {_fmt_num(investor_rows[0]['modeled_cars_per_day'])} คัน/วัน "
-            f"และหลังปรับด้วย perception factor เหลือประมาณ {_fmt_num(investor_rows[0]['adjusted_cars_per_day'])} คัน/วัน. "
+            f"{site_name} มีดีมานด์สุทธิเริ่มต้นจากโมเดลประมาณ {_fmt_num(investor_rows[0]['modeled_cars_per_day'])} คัน/วัน "
+            f"และหลังปรับด้วยตัวปรับเชิงพฤติกรรม เหลือประมาณ {_fmt_num(investor_rows[0]['adjusted_cars_per_day'])} คัน/วัน. "
             f"ภายใต้สมมติฐานราคาขาย {_fmt_num(req.price_per_kwh,1)} บาท/kWh, ค่าไฟ {_fmt_num(req.electricity_cost_per_kwh,1)} บาท/kWh, "
             f"CPO GP {_fmt_num(req.cpo_gp_rate * 100,1)}%, GP เจ้าของพื้นที่ {_fmt_num(req.owner_gp_per_kwh,2)} บาท/kWh และ O&M {_fmt_int(req.annual_o_and_m)} บาท/ปี "
-            f"โครงการให้กระแสเงินสดปีแรกประมาณ {_fmt_int(investor_rows[0]['annual_investor_cf'])} บาท/ปี และ {_fmt_payback_timing(payback)}."
+            f"โครงการให้กระแสเงินสดจากการดำเนินงานปีแรกประมาณ {_fmt_int(investor_rows[0]['annual_investor_cf'])} บาท/ปี และ {_fmt_payback_timing(payback)}."
         )
     else:
         summary_text = (
-            f"{site_name} อยู่ในพื้นที่ที่ระบบอ่านเป็น {first_year['location_type']} และให้สถานะ {first_year['eligibility_status']} "
+            f"{site_name} อยู่ในบริเวณที่ระบบประเมินว่าเป็น{_thai_location_type(first_year['location_type'])} และจัดอยู่ในกลุ่ม{_thai_eligibility(first_year['eligibility_status'])} "
             f"โดยในปี {req.start_year} ระบบประเมินดีมานด์รวมของพื้นที่ไว้ที่ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
             f"ก่อนหักแรงแข่งขันของคู่แข่ง {_fmt_num(first_year['competitor_penalty_sessions'])} คัน/วัน เหลือดีมานด์สุทธิประมาณ "
-            f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน หรือราว {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
+            f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน หรือประมาณ {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
             f"{focus_metric}{note_text}"
         )
     story.append(_pdf_paragraph("สรุปสำหรับผู้บริหาร", styles["heading"]))
     story.append(_pdf_box(summary_text, styles))
     story.append(Spacer(1, 0.12 * inch))
 
-    story.append(_pdf_paragraph("Snapshot ของพื้นที่", styles["heading"]))
+    story.append(_pdf_paragraph("สรุปตัวเลขสำคัญของพื้นที่", styles["heading"]))
     snapshot_rows = [
         [_pdf_paragraph("รายการ", styles["cell_bold"]), _pdf_paragraph("ค่า", styles["cell_bold"]), _pdf_paragraph("คำอธิบาย", styles["cell_bold"])],
         [_pdf_paragraph("ดีมานด์รวมในพื้นที่", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["gross_area_demand_sessions"]), styles["cell"]), _pdf_paragraph("ก่อนหักผลของคู่แข่ง", styles["cell"])],
         [_pdf_paragraph("แรงแข่งขันของคู่แข่ง", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["competitor_penalty_sessions"]), styles["cell"]), _pdf_paragraph("ดีมานด์ที่คู่แข่งครองไว้แล้ว", styles["cell"])],
-        [_pdf_paragraph("ดีมานด์สุทธิในพื้นที่", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["net_sessions_per_day"]), styles["cell"]), _pdf_paragraph("ดีมานด์ที่พื้นที่นี้ยัง capture ได้", styles["cell"])],
+        [_pdf_paragraph("ดีมานด์สุทธิในพื้นที่", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["net_sessions_per_day"]), styles["cell"]), _pdf_paragraph("ดีมานด์ที่พื้นที่นี้ยังรองรับได้", styles["cell"])],
         [_pdf_paragraph("พลังงานต่อวัน", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["daily_kwh"]), styles["cell"]), _pdf_paragraph(f"คำนวณที่ {_fmt_num(req.avg_kwh_per_session)} kWh/คัน", styles["cell"])],
-        [_pdf_paragraph("Location type", styles["cell"]), _pdf_paragraph(str(first_year["location_type"]), styles["cell"]), _pdf_paragraph("ลักษณะพื้นที่ที่โมเดลอ่านออก", styles["cell"])],
-        [_pdf_paragraph("Eligibility status", styles["cell"]), _pdf_paragraph(str(first_year["eligibility_status"]), styles["cell"]), _pdf_paragraph(str(first_year["eligibility_reason"]), styles["cell"])],
+        [_pdf_paragraph("ลักษณะทำเล", styles["cell"]), _pdf_paragraph(_thai_location_type(first_year["location_type"]), styles["cell"]), _pdf_paragraph("ภาพรวมของพื้นที่ที่ระบบอ่านได้", styles["cell"])],
+        [_pdf_paragraph("ผลประเมินเบื้องต้น", styles["cell"]), _pdf_paragraph(_thai_eligibility(first_year["eligibility_status"]), styles["cell"]), _pdf_paragraph(str(first_year["eligibility_reason"]), styles["cell"])],
     ]
     story.append(_pdf_table(snapshot_rows, [2.6, 1.3, 3.2]))
     story.append(Spacer(1, 0.12 * inch))
@@ -1559,13 +1597,13 @@ def _build_pdf_story(
     story.append(RLImage(str(map_path), width=6.2 * inch, height=3.85 * inch))
     story.append(_pdf_paragraph("ภาพสรุปพื้นที่อัตโนมัติจากข้อมูล TH-EVI", styles["small"]))
     story.append(Spacer(1, 0.10 * inch))
-    story.append(_pdf_paragraph("Heat Map Snapshot", styles["heading"]))
+    story.append(_pdf_paragraph("ภาพ Heat Map รอบจุดที่เลือก", styles["heading"]))
     story.append(RLImage(str(heatmap_path), width=6.2 * inch, height=3.85 * inch))
     story.append(_pdf_paragraph("ภาพ Heat Map รอบจุดที่เลือกจากระบบ TH-EVI", styles["small"]))
     story.append(Spacer(1, 0.12 * inch))
 
     if req.report_type == "owner-gp-opportunity":
-        story.append(_pdf_paragraph("แนวโน้มจำนวนรถ รายได้สถานี และ GP ของเจ้าของพื้นที่", styles["heading"]))
+        story.append(_pdf_paragraph("แนวโน้มจำนวนรถ รายได้สถานี และรายได้ GP ของเจ้าของพื้นที่", styles["heading"]))
         cumulative_gp = 0.0
         rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "คัน/วัน", "รายได้/ปี", "GP/ปี", "GP สะสม"]]]
         for row in projection_rows:
@@ -1580,8 +1618,8 @@ def _build_pdf_story(
         story.append(_pdf_table(rows, [0.9, 1.1, 1.5, 1.5, 1.5]))
     elif req.report_type == "investor-case":
         investor_rows, payback = _investor_projection_rows(req, projection_rows)
-        story.append(_pdf_paragraph("Forecast กระแสเงินสดและการคืนทุน", styles["heading"]))
-        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "โมเดล", "หลังปรับ", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "CF/ปี", "CF สะสม"]]]
+        story.append(_pdf_paragraph("แนวโน้มกระแสเงินสดและระยะเวลาคืนทุน", styles["heading"]))
+        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "ก่อนปรับ", "หลังปรับ", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "กระแสเงินสด/ปี", "กระแสเงินสดสะสม"]]]
         for row in investor_rows:
             rows.append([
                 _pdf_paragraph(str(row["year"]), styles["cell"]),
@@ -1597,7 +1635,7 @@ def _build_pdf_story(
         story.append(_pdf_paragraph(f"เงินลงทุนตั้งต้น {_fmt_int(req.project_capex_ex_vat)} บาท | {_fmt_payback_timing(payback)}", styles["small"]))
     else:
         story.append(_pdf_paragraph("แนวโน้มดีมานด์สุทธิ 10 ปี", styles["heading"]))
-        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "Gross", "แข่งขัน", "Net", "kWh/วัน"]]]
+        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "รวม", "คู่แข่ง", "สุทธิ", "kWh/วัน"]]]
         for row in projection_rows:
             rows.append([
                 _pdf_paragraph(str(row["year"]), styles["cell"]),
@@ -1607,7 +1645,7 @@ def _build_pdf_story(
                 _pdf_paragraph(_fmt_num(row["daily_kwh"]), styles["cell"]),
             ])
         story.append(_pdf_table(rows, [0.9, 1.2, 1.4, 1.3, 1.4]))
-        story.append(_pdf_paragraph("Gross = ดีมานด์รวมในพื้นที่ก่อนหักคู่แข่ง | Net = ดีมานด์สุทธิหลังหักแรงแข่งขันแล้ว", styles["small"]))
+        story.append(_pdf_paragraph("รวม = ดีมานด์รวมในพื้นที่ก่อนหักผลของคู่แข่ง | สุทธิ = ดีมานด์ที่ยังเหลือสำหรับจุดนี้หลังหักแรงแข่งขันแล้ว", styles["small"]))
 
     warnings = first_year.get("warnings") or []
     if warnings:
