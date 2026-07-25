@@ -62,6 +62,8 @@ PROVINCE_EV_FACTOR = {
     "แพร่": 0.76,         # Pilot assumption: smaller northern province, lifted by Den Chai Route 11/101 gateway demand
     "เชียงราย": 0.95,     # Pilot assumption: large northern province with tourism, airport, and border gateways
     "อุบลราชธานี": 0.92,  # Pilot assumption: large regional hub with Route 24/231 and Chong Mek demand
+    "ภูเก็ต": 1.00,        # Major tourism island; DLT Apr 2026 ร.1 BEV share is already above 3%
+    "Phuket": 1.00,
     "default": 1.00,
 }
 
@@ -157,6 +159,12 @@ PROVINCE_NEW_CAR_RATE = {
     "แพร่": 1_000,
     "เชียงราย": 3_600,
     "อุบลราชธานี": 3_800,
+    "ภูเก็ต": 4_700,       # Pilot assumption aligned to DLT Apr 2026 ร.1 BEV fleet scale
+    "Phuket": 4_700,
+    # Calibrated so the cumulative S-curve fleet matches 3,933 registered
+    # passenger BEVs in DLT fuel30Jun26_W.xlsx (30 Jun 2026).
+    "พิษณุโลก": 3_380,
+    "Phitsanulok": 3_380,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
@@ -169,6 +177,10 @@ PROVINCE_FLEET_SIZE = {
     "แพร่": 70_000,
     "เชียงราย": 178_675,
     "อุบลราชธานี": 220_000,
+    "ภูเก็ต": 155_308,     # DLT Apr 2026 ร.1 passenger-car fleet
+    "Phuket": 155_308,
+    "พิษณุโลก": 151_213,  # DLT fuel30Jun26_W.xlsx, รย.1 passenger-car fleet
+    "Phitsanulok": 151_213,
 }
 
 # --- National Average Daily Trips per Vehicle ---

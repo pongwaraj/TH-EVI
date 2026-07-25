@@ -11,7 +11,7 @@ import numpy as np
 
 from . import constants as C
 from .adoption import EVAdoptionModel, estimate_fleet_ev_share, estimate_fleet_ev_population
-from .data import get_cm_highway_aadt
+from .data import get_cm_highway_aadt, load_doh_aadt
 from .exceptions import (
     InvalidCoordinatesError,
     InvalidLocationTypeError,
@@ -22,6 +22,59 @@ from .exceptions import (
 logger = logging.getLogger(__name__)
 
 CHIANG_MAI_HIGHWAY_AADT = None
+HIGHWAY_AADT_BY_PROVINCE = {}
+
+PROVINCE_AADT_ALIASES = {
+    "Chiang Mai": "เชียงใหม่",
+    "เชียงใหม่": "เชียงใหม่",
+    "Phitsanulok": "พิษณุโลก",
+    "พิษณุโลก": "พิษณุโลก",
+    "Phuket": "ภูเก็ต",
+    "ภูเก็ต": "ภูเก็ต",
+}
+
+ROUTE_BBOXES_BY_PROVINCE = {
+    "เชียงใหม่": [
+        (1141, (18.76, 18.80, 98.94, 98.98)),
+        (121, (18.75, 18.90, 98.90, 99.10)),
+        (1001, (18.80, 19.00, 98.85, 99.00)),
+        (107, (18.80, 19.50, 98.80, 99.10)),
+        (108, (18.20, 18.80, 98.60, 99.00)),
+        (118, (18.70, 19.30, 98.95, 99.50)),
+        (11, (18.60, 18.85, 98.85, 99.20)),
+    ],
+    "ภูเก็ต": [
+        (4024, (7.84, 7.94, 98.34, 98.40)),
+        (402, (7.93, 8.13, 98.31, 98.37)),
+        (4020, (7.88, 7.92, 98.32, 98.37)),
+        (4021, (7.82, 7.89, 98.33, 98.38)),
+        (4025, (7.96, 8.02, 98.29, 98.36)),
+        (4026, (8.08, 8.13, 98.29, 98.33)),
+        (4027, (7.97, 8.07, 98.35, 98.39)),
+        (4028, (7.81, 7.86, 98.30, 98.35)),
+        (4029, (7.88, 7.92, 98.28, 98.34)),
+        (4030, (7.78, 8.02, 98.30, 98.35)),
+        (4031, (8.06, 8.12, 98.30, 98.36)),
+        (4302, (8.10, 8.18, 98.30, 98.36)),
+    ],
+    "พิษณุโลก": [
+        # Target-side urban corridor: Route 117 is Si Harat Decho Chai Road.
+        # The DOT's Phitsanulok public-transport study identifies this road as
+        # Route 117; the broad box avoids projecting its AADT across the bypass.
+        (117, (16.775, 16.835, 100.205, 100.255)),
+        (12, (16.810, 16.875, 100.245, 100.335)),
+        (126, (16.795, 16.890, 100.280, 100.370)),
+        (1058, (16.800, 16.830, 100.240, 100.275)),
+        (1061, (16.810, 16.860, 100.200, 100.240)),
+    ],
+}
+
+LOCATION_TYPE_AADT_SHARE = {
+    "highway": 1.0,
+    "destination": 0.55,
+    "city_center": 0.35,
+    "suburban": 0.45,
+}
 
 VALID_LOCATION_TYPES = {"highway", "city_center", "destination", "suburban"}
 
@@ -269,26 +322,59 @@ class LocationDemandModel:
         Returns:
             Estimated AADT value
         """
-        global CHIANG_MAI_HIGHWAY_AADT
-        if CHIANG_MAI_HIGHWAY_AADT is None:
-            CHIANG_MAI_HIGHWAY_AADT = get_cm_highway_aadt()
+        highway_aadt = self._find_nearest_highway(lat, lon, self.province)
+        if highway_aadt:
+            share = LOCATION_TYPE_AADT_SHARE.get(loc_type, 1.0)
+            return max(self._fallback_aadt(loc_type), int(highway_aadt * share))
 
-        if loc_type == "highway" and CHIANG_MAI_HIGHWAY_AADT:
-            nearest = self._find_nearest_highway(lat, lon)
-            if nearest:
-                return nearest
-
-        if loc_type == "city_center":
-            return 10000
-        elif loc_type == "destination":
-            return 5000
-        elif loc_type == "suburban":
-            return 8000
-        else:
-            return 20000
+        return self._fallback_aadt(loc_type)
 
     @staticmethod
-    def _find_nearest_highway(lat: float, lon: float) -> Optional[int]:
+    def _fallback_aadt(loc_type: str) -> int:
+        if loc_type == "city_center":
+            return 10000
+        if loc_type == "destination":
+            return 5000
+        if loc_type == "suburban":
+            return 8000
+        return 20000
+
+    @staticmethod
+    def _load_highway_aadt_for_province(province: str) -> dict[int, dict]:
+        global CHIANG_MAI_HIGHWAY_AADT
+        canonical_province = PROVINCE_AADT_ALIASES.get(province, province)
+        if canonical_province == "เชียงใหม่":
+            if CHIANG_MAI_HIGHWAY_AADT is None:
+                CHIANG_MAI_HIGHWAY_AADT = get_cm_highway_aadt()
+            return CHIANG_MAI_HIGHWAY_AADT
+
+        if canonical_province in HIGHWAY_AADT_BY_PROVINCE:
+            return HIGHWAY_AADT_BY_PROVINCE[canonical_province]
+
+        df = load_doh_aadt(year_be=2566, province=canonical_province)
+        if df.empty:
+            HIGHWAY_AADT_BY_PROVINCE[canonical_province] = {}
+            return {}
+
+        total_col = df.columns[14]
+        route_col = df.columns[0]
+        name_col = df.columns[2]
+        km_col = df.columns[3]
+        result = {}
+        for _, row in df.iterrows():
+            route = int(row[route_col])
+            aadt = int(row[total_col])
+            if route not in result or aadt > result[route]["aadt"]:
+                result[route] = {
+                    "name": row[name_col],
+                    "aadt": aadt,
+                    "km": row[km_col],
+                }
+        HIGHWAY_AADT_BY_PROVINCE[canonical_province] = result
+        return result
+
+    @staticmethod
+    def _find_nearest_highway(lat: float, lon: float, province: str = "เชียงใหม่") -> Optional[int]:
         """Find AADT for nearest highway segment.
 
         Args:
@@ -298,20 +384,14 @@ class LocationDemandModel:
         Returns:
             AADT value or None if no highway found
         """
-        if CHIANG_MAI_HIGHWAY_AADT is None:
+        canonical_province = PROVINCE_AADT_ALIASES.get(province, province)
+        highway_aadt = LocationDemandModel._load_highway_aadt_for_province(canonical_province)
+        if not highway_aadt:
             return None
-        route_bboxes = [
-            (1141, (18.76, 18.80, 98.94, 98.98)),
-            (121,  (18.75, 18.90, 98.90, 99.10)),
-            (1001, (18.80, 19.00, 98.85, 99.00)),
-            (107,  (18.80, 19.50, 98.80, 99.10)),
-            (108,  (18.20, 18.80, 98.60, 99.00)),
-            (118,  (18.70, 19.30, 98.95, 99.50)),
-            (11,   (18.60, 18.85, 98.85, 99.20)),
-        ]
+        route_bboxes = ROUTE_BBOXES_BY_PROVINCE.get(canonical_province, [])
         for route, (lat_min, lat_max, lon_min, lon_max) in route_bboxes:
             if lat_min <= lat <= lat_max and lon_min <= lon <= lon_max:
-                entry = CHIANG_MAI_HIGHWAY_AADT.get(route)
+                entry = highway_aadt.get(route)
                 if entry:
                     return entry["aadt"]
         return None

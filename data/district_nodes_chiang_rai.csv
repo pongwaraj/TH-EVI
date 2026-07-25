@@ -5,3 +5,5 @@ cr_mae_sai,Mae Sai,Mae Sai border town,border_town,20.4335,99.8818,4.5,0.92,Bord
 cr_chiang_saen,Chiang Saen,Chiang Saen river-border community,border_town,20.2744,100.0862,4.2,0.84,Mekong tourism and border traffic node.
 cr_chiang_khong,Chiang Khong,Chiang Khong bridge and border node,border_town,20.2652,100.4046,4.6,0.9,Friendship bridge and cross-border logistics town.
 cr_phan,Phan,Phan district center on Route 1,transport_junction,19.5536,99.7406,3.9,0.8,Southbound corridor coverage node.
+cr_wiang_pa_pao,Wiang Pa Pao,Wiang Pa Pao Route 118 stopover town,transport_junction,19.3655,99.5145,4.2,0.9,High-importance intercity stop between Chiang Mai and Chiang Rai with stronger service-town behavior than ordinary rural corridor cells.
+cr_mae_suai,Mae Suai,Mae Suai Route 118 service town,transport_junction,19.6595,99.5430,3.8,0.82,Secondary district-service node on the Route 118 corridor north of Wiang Pa Pao.

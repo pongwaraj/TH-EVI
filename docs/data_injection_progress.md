@@ -55,6 +55,7 @@ Specific entries that contain unconfirmed strong claims:
 | Ubon Ratchathani | ubon_ratchathani | partial | raw_global | staged_csv | partial | partial | partial | partial | ref_imported | provisional | Verify Central/ring-road/airport competitors and recheck district-node scoring claims. |
 | Nong Khai | nong_khai | partial | raw_global | staged_csv | partial | partial | partial | partial | ref_imported | provisional | Verify border/city competitors and recheck district-node scoring claims. |
 | Mae Hong Son | mae_hong_son | partial | raw_global | staged_csv | partial | partial | partial | partial | ref_imported | blocked | Compare `data/aadt_mae_hong_son_seed.csv` against DOH `aadt_2566.csv` on route+km+aadt. Rows that do not match must be downgraded to `seed_estimate` confidence and DOH label removed. Until cross-check is complete, do not use this province as an AADT reference. |
+| Phuket | phuket | staged_csv | raw_global | staged_csv | partial | partial | partial | partial | csv_only | provisional | Verify competitor rows against operator apps and inspect heat map visually for coastal/offshore spillover. |
 
 Legend:
 
@@ -127,6 +128,33 @@ Complete when:
 - DOPA population can be matched or safely defaults to weight 1.0
 
 ## Work Log
+
+### 2026-07-08 - Phuket - Codex
+
+- Scope: prepare Phuket CSV layers for Heat Map usage and wire the app to recognize/select Phuket.
+- Files changed:
+  - `data/aadt_phuket_seed.csv` (22 AADT rows from existing DOH `aadt_2566.csv`)
+  - `data/poi_phuket_seed.csv` (20 POI rows)
+  - `data/competitors_phuket_seed.csv` (33 competitor rows)
+  - `data/hot_zones_phuket.csv` (7 hot-zone rows)
+  - `data/business_areas_phuket.csv` (6 business-area rows)
+  - `data/district_nodes_phuket.csv` (7 district-node rows)
+  - `data/heatmap_exclusions_phuket.csv` (6 open-water exclusion rows)
+  - `th_evi/spatial.py` (added Phuket province slug mapping)
+  - `th_evi/location.py` (added route-aware AADT lookup/bounding boxes for Phuket)
+  - `th_evi/constants.py` (added Phuket fleet/new-car baseline entries)
+  - `th_evi/static/index.html` and `th_evi/static/planning.html` (added Phuket to province selectors)
+- Sources added: existing project `data/aadt_2566.csv`; existing KMZ-derived public charger extract in `artifacts/dc_ev_kmz_extracted.csv`; public POI/venue coordinate references staged as seed rows.
+- Rows added or updated: 101 CSV rows across 7 Phuket files.
+- DB tables touched: none.
+- Test command run: `pytest tests\test_location.py -q`; custom loader/heatmap smoke checks for Phuket.
+- Test result: `tests\test_location.py` 4/4 passed; Phuket loader saw 20 POI, 33 competitors, 7 zones, 6 business areas, 7 district nodes, and 6 exclusions; Phuket urban Heat Map generated 116 points at 2.0 km resolution.
+- Evidence level: mixed.
+- Official-source cross-check: AADT extracted directly from existing DOH CSV rows; no external operator-app verification performed for competitor technical details.
+- Still estimated: POI notes, hot-zone demand pools, business-area demand pools, open-water exclusion circles, and several competitor gun/kW details remain seed-level and should be field/operator-app verified.
+- Scoring activation confirmed: yes for CSV loaders via `th_evi/spatial.py`; yes for Phuket route-aware AADT via `th_evi/location.py`.
+- Blockers: broader test suite still has pre-existing failures in Phitsanulok and Nakhon Ratchasima minimum competitor-anchor tests, unrelated to Phuket.
+- Next action: visually inspect Phuket Heat Map in the app and tune any coastal/offshore or over-broad hot cells.
 
 ### 2026-06-03 - Tracker created
 

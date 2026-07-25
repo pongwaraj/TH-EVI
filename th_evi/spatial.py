@@ -77,6 +77,8 @@ PROVINCE_SLUGS = {
     "\u0e2d\u0e38\u0e17\u0e31\u0e22\u0e18\u0e32\u0e19\u0e35": "uthai_thani",
     "Nan": "nan",
     "\u0e19\u0e48\u0e32\u0e19": "nan",
+    "Phuket": "phuket",
+    "\u0e20\u0e39\u0e40\u0e01\u0e47\u0e15": "phuket",
     "Mae Hong Son": "mae_hong_son",
     "\u0e41\u0e21\u0e48\u0e2e\u0e48\u0e2d\u0e07\u0e2a\u0e2d\u0e19": "mae_hong_son",
     "\u004d\u0061\u0065\u0020\u0048\u006f\u006e\u0067\u0020\u0053\u006f\u006e": "mae_hong_son",
@@ -101,6 +103,7 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "nakhon_nayok": "Nakhon Nayok",
     "chai_nat": "Chai Nat",
     "uthai_thani": "Uthai Thani",
+    "phuket": "Phuket",
 }
 
 SCENARIO_FACTORS = {
@@ -207,6 +210,9 @@ POI_CATEGORY_RULES = {
     "district_center": (16.0, 2.5),
     "gas_station": (20.0, 3.2),
     "office": (18.0, 2.0),
+    # Restaurant/cafe improves charging capture through dwell time but does not
+    # create vehicle demand in the way a mall, hospital, or transport hub does.
+    "restaurant_cafe": (6.0, 1.8),
     "target_site": (24.0, 2.2),
     "event_space": (14.0, 1.8),
 }
@@ -640,13 +646,22 @@ def _filter_and_dedupe_nakhon_ratchasima_competitors(rows: list[dict[str, Any]])
 
 
 def _filter_and_dedupe_phitsanulok_competitors(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Drop generic city placeholders once more specific Phitsanulok competitors exist."""
+    """Drop unverified inferred pins once a named official station is available."""
 
     skip_station_ids = {
+        "phitsanulok_pea_volta_headquarters_001",
+        "phitsanulok_pea_volta_wangthong_002",
+        "phitsanulok_pea_volta_bangrakam_003",
+        "phitsanulok_evpluz_ptt_bypass_004",
+        "phitsanulok_evpluz_ptt_highway11_005",
+        "phitsanulok_evpluz_ptt_nu_006",
+        "phitsanulok_evpluz_ptt_highway12_007",
         "phitsanulok_ptt_ev_central_008",
         "phitsanulok_ea_anywhere_009",
+        "phitsanulok_mg_charge_dealer_010",
         "phitsanulok_evolt_city_012",
         "phitsanulok_elexa_013",
+        "phitsanulok_rever_dealer_011",
     }
     return [
         row

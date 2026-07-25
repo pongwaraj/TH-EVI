@@ -643,9 +643,9 @@ def test_phitsanulok_loader_has_minimum_heatmap_anchor_sets():
         "phitsanulok_bus_terminal_2",
     }.issubset(poi_ids)
     assert {
-        "pea_volta_bangchak_central",
-        "elexa_tha_pho",
-        "mg_supercharge_city",
+        "pea_volta_rim_nan_official_2026",
+        "pea_volta_phitsanulok_parking_official_2026",
+        "ptt_charging_station_phitsanulok",
     }.issubset(competitor_ids)
     assert {
         "phs_central_h12_fringe",
