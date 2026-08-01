@@ -73,6 +73,17 @@ ROUTE_BBOXES_BY_PROVINCE = {
     ],
 }
 
+# Local-road pockets that fall inside a deliberately broad route bounding box.
+# These are not measured AADT segments; they prevent a nearby arterial's maximum
+# AADT from being projected onto a residential or riverside access road.
+LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
+    "เชียงใหม่": [
+        # Mueang Kaeo east of Route 107 / Ring 3: riverside resorts, flower
+        # gardens, and village roads rather than the Route 121 carriageway.
+        ((18.86, 18.90, 98.965, 98.990), 8_000),
+    ],
+}
+
 LOCATION_TYPE_AADT_SHARE = {
     "highway": 1.0,
     "destination": 0.55,
@@ -326,10 +337,15 @@ class LocationDemandModel:
         Returns:
             Estimated AADT value
         """
-        highway_aadt = self._find_nearest_highway(lat, lon, self.province)
-        if highway_aadt:
-            share = LOCATION_TYPE_AADT_SHARE.get(loc_type, 1.0)
-            return max(self._fallback_aadt(loc_type), int(highway_aadt * share))
+        # AADT in the source file belongs to a surveyed road segment, not the
+        # entire rectangle around that segment. Applying it to every nearby
+        # destination makes airport and mountain-side cells inherit arterial
+        # traffic they cannot physically capture. Use it only for a cell that
+        # the spatial layer has classified as a genuine through-traffic route.
+        if loc_type == "highway":
+            highway_aadt = self._find_nearest_highway(lat, lon, self.province)
+            if highway_aadt:
+                return max(self._fallback_aadt(loc_type), highway_aadt)
 
         return self._fallback_aadt(loc_type)
 
@@ -389,6 +405,9 @@ class LocationDemandModel:
             AADT value or None if no highway found
         """
         canonical_province = PROVINCE_AADT_ALIASES.get(province, province)
+        for (lat_min, lat_max, lon_min, lon_max), local_aadt in LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE.get(canonical_province, []):
+            if lat_min <= lat <= lat_max and lon_min <= lon <= lon_max:
+                return local_aadt
         highway_aadt = LocationDemandModel._load_highway_aadt_for_province(canonical_province)
         if not highway_aadt:
             return None

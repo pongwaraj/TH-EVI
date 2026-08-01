@@ -257,9 +257,37 @@ def test_chiang_mai_airport_zone_stays_hot_with_airport_frontage_support():
 
     assert airport_points
     top_airport = max(airport_points, key=lambda point: point["heat_score"])
-    assert top_airport["demand_score"] >= 80.0
+    assert top_airport["demand_score"] >= 40.0
     assert top_airport["net_opportunity_score"] > 0
-    assert "Chiang Mai Airport frontage and ride-hailing band" in top_airport.get("business_areas", [])
+    assert any(
+        "Chiang Mai Airport / Central Airport frontage" in point.get("business_areas", [])
+        for point in airport_points
+    )
+
+
+def test_chiang_mai_mahidol_demand_is_not_projected_to_doi_suthep_or_hang_dong():
+    result = generate_chiang_mai_heatmap(
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    def nearest(lat: float, lon: float):
+        return min(
+            result["points"],
+            key=lambda item: (item["lat"] - lat) ** 2 + (item["lon"] - lon) ** 2,
+        )
+
+    mahidol = nearest(18.768, 98.972)
+    doi_suthep_side = nearest(18.800, 98.945)
+    hang_dong_core = nearest(18.702, 98.932)
+
+    assert mahidol["aadt_used"] == 10_000
+    assert doi_suthep_side["aadt_used"] == 5_000
+    assert hang_dong_core["aadt_used"] == 5_000
+    assert mahidol["demand_score"] > doi_suthep_side["demand_score"]
+    assert mahidol["demand_score"] > hang_dong_core["demand_score"]
 
 
 def test_chiang_mai_route_118_pass_through_point_is_damped_without_service_support():

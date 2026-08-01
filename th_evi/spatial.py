@@ -710,7 +710,9 @@ def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     if slug == "lampang" and not csv_rows:
         csv_rows.extend(_read_csv(DATA_DIR / "poi_lampang_city_seed.csv"))
     db_rows = _load_db_pois_for_province(province)
-    return _merge_rows(db_rows, csv_rows, "poi_id")
+    # Heat Map reference data remains file-led while database migration is paused.
+    # A database row may fill omitted metadata, but it must not override a vetted CSV.
+    return _merge_rows(csv_rows, db_rows, "poi_id")
 
 
 @lru_cache(maxsize=32)
@@ -746,7 +748,7 @@ def load_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"hot_zones_{slug}.csv")
     db_rows = _load_db_hot_zones_for_province(province)
-    return _merge_rows(db_rows, csv_rows, "zone_id")
+    return _merge_rows(csv_rows, db_rows, "zone_id")
 
 
 @lru_cache(maxsize=32)
@@ -756,7 +758,7 @@ def load_business_areas_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"business_areas_{slug}.csv")
     db_rows = _load_db_business_areas_for_province(province)
-    return _merge_rows(db_rows, csv_rows, "business_area_id")
+    return _merge_rows(csv_rows, db_rows, "business_area_id")
 
 
 @lru_cache(maxsize=32)
@@ -766,7 +768,7 @@ def load_heatmap_exclusions_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"heatmap_exclusions_{slug}.csv")
     db_rows = _load_db_heatmap_exclusions_for_province(province)
-    return _merge_rows(db_rows, csv_rows, "exclusion_id")
+    return _merge_rows(csv_rows, db_rows, "exclusion_id")
 
 
 @lru_cache(maxsize=32)
@@ -776,7 +778,7 @@ def load_district_nodes_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"district_nodes_{slug}.csv")
     db_rows = _load_db_district_nodes_for_province(province)
-    return _merge_rows(db_rows, csv_rows, "node_id")
+    return _merge_rows(csv_rows, db_rows, "node_id")
 
 
 POPULATION_WEIGHT_MIN = 0.75
@@ -1021,6 +1023,13 @@ def poi_attraction_field(
         })
 
     contributions.sort(key=lambda item: item["sessions"], reverse=True)
+    # Nearby pins can describe one physical destination, particularly around
+    # airports, malls, hospitals, and pickup zones. Keep the strongest anchor
+    # whole and discount the rest so the same trip is not counted repeatedly.
+    if contributions:
+        primary = contributions[0]["sessions"]
+        secondary = max(0.0, total - primary) * SECONDARY_ZONE_SHARE
+        total = primary + secondary
     return round(total, 1), contributions
 
 

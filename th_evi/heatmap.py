@@ -33,6 +33,12 @@ VALID_HEATMAP_LAYERS = {"demand", "competition", "net"}
 HEATMAP_MAX_RESOLUTION_KM = 5.0
 HEATMAP_PADDING_KM = 2.0
 HEATMAP_MAX_COMPETITOR_SIGNAL_SHARE = 0.55
+HEATMAP_CORRIDOR_CAPTURE_FACTOR = 0.20
+HEATMAP_URBAN_CAPTURE_FACTORS = {
+    "city_center": 0.80,
+    "destination": 0.80,
+    "suburban": 0.70,
+}
 HEATMAP_MAX_ANCHOR_DISTANCE_KM = 6.5
 HEATMAP_MAX_POI_DISTANCE_KM = 5.5
 HEATMAP_MAX_ZONE_DISTANCE_FACTOR = 1.35
@@ -761,6 +767,17 @@ def generate_province_heatmap(
                     district_score=district_sessions,
                     competitor_signal_score=competitor_signal_sessions,
                 )
+                # The traffic model estimates public-charging potential across
+                # the full road flow. A one-kilometre heat cell can capture
+                # only a fraction of that flow, even when a roadside POI is
+                # present. This keeps Route 108/118 corridors visible without
+                # allowing them to outrank dense urban demand by default.
+                model_sessions *= HEATMAP_CORRIDOR_CAPTURE_FACTOR
+            else:
+                # The underlying location model represents area-wide charging
+                # potential. A heat-map pixel is a screening surface, so use a
+                # conservative capture share for city and destination cells.
+                model_sessions *= HEATMAP_URBAN_CAPTURE_FACTORS.get(location_type, 0.75)
             demand_score = model_sessions + supportive_context_sessions
             competition_score = competitor_signal_sessions
             net_opportunity_score = max(demand_score - competition_score, 0.0)
