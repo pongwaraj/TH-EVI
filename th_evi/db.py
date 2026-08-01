@@ -551,24 +551,28 @@ SQLITE_REFERENCE_COLUMN_PATCHES: dict[str, list[tuple[str, str]]] = {
         ("verification_note", "TEXT"),
         ("updated_by", "VARCHAR(120)"),
         ("updated_at", "DATETIME"),
+        ("active", "BOOLEAN NOT NULL DEFAULT 1"),
     ],
     "heatmap_exclusion_reference": [
         ("source_url", "VARCHAR(500)"),
         ("verification_note", "TEXT"),
         ("updated_by", "VARCHAR(120)"),
         ("updated_at", "DATETIME"),
+        ("active", "BOOLEAN NOT NULL DEFAULT 1"),
     ],
     "hot_zone_reference": [
         ("source_url", "VARCHAR(500)"),
         ("verification_note", "TEXT"),
         ("updated_by", "VARCHAR(120)"),
         ("updated_at", "DATETIME"),
+        ("active", "BOOLEAN NOT NULL DEFAULT 1"),
     ],
     "district_node_reference": [
         ("source_url", "VARCHAR(500)"),
         ("verification_note", "TEXT"),
         ("updated_by", "VARCHAR(120)"),
         ("updated_at", "DATETIME"),
+        ("active", "BOOLEAN NOT NULL DEFAULT 1"),
     ],
 }
 
@@ -587,6 +591,54 @@ def _apply_sqlite_reference_column_patches(engine) -> None:
                 if column_name in existing:
                     continue
                 conn.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {ddl}")
+
+
+def _apply_postgres_reference_column_patches(engine) -> None:
+    """Apply additive audit/reference columns to databases created before admin tools."""
+    with engine.begin() as conn:
+        for table_name, columns in SQLITE_REFERENCE_COLUMN_PATCHES.items():
+            existing = {
+                row[0]
+                for row in conn.exec_driver_sql(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = current_schema() AND table_name = %s",
+                    (table_name,),
+                ).fetchall()
+            }
+            for column_name, sqlite_ddl in columns:
+                if column_name in existing:
+                    continue
+                postgres_ddl = (
+                    sqlite_ddl.replace("DATETIME", "TIMESTAMP")
+                    .replace("BOOLEAN NOT NULL DEFAULT 1", "BOOLEAN NOT NULL DEFAULT TRUE")
+                )
+                conn.exec_driver_sql(
+                    f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {postgres_ddl}'
+                )
+
+        # Older imports used explicit ids, leaving serial sequences behind the
+        # existing records. Align them before an upsert inserts new references.
+        for table_name in (
+            "reference_sources",
+            "province_ingestion_runs",
+            "reference_dataset_releases",
+            "poi_reference",
+            "charger_competitors",
+            "business_area_reference",
+            "heatmap_exclusion_reference",
+            "hot_zone_reference",
+            "district_node_reference",
+        ):
+            sequence = conn.exec_driver_sql(
+                "SELECT pg_get_serial_sequence(%s, %s)", (table_name, "id")
+            ).scalar()
+            if not sequence:
+                continue
+            conn.exec_driver_sql(
+                f"SELECT setval(%s, COALESCE((SELECT MAX(id) FROM \"{table_name}\"), 1), "
+                f"(SELECT COUNT(*) > 0 FROM \"{table_name}\"))",
+                (sequence,),
+            )
 
 
 def get_database_url() -> str:
@@ -613,6 +665,8 @@ def create_session_factory(db_url: str | None = None) -> sessionmaker[Session]:
     Base.metadata.create_all(engine)
     if url.startswith("sqlite"):
         _apply_sqlite_reference_column_patches(engine)
+    elif url.startswith("postgresql"):
+        _apply_postgres_reference_column_patches(engine)
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
