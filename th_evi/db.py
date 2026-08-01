@@ -354,7 +354,7 @@ class POIReference(Base):
     weight: Mapped[float | None] = mapped_column(Float, nullable=True)
     source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
     source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    verification_status: Mapped[str] = mapped_column(String(40), default="seed_needs_verification", nullable=False)
+    verification_status: Mapped[str] = mapped_column(String(80), default="seed_needs_verification", nullable=False)
     verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[str] = mapped_column(String(40), default="medium", nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -391,7 +391,7 @@ class ChargerCompetitor(Base):
     status: Mapped[str | None] = mapped_column(String(40), nullable=True)
     source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
     source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    verification_status: Mapped[str] = mapped_column(String(40), default="seed_needs_verification", nullable=False)
+    verification_status: Mapped[str] = mapped_column(String(80), default="seed_needs_verification", nullable=False)
     verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[str] = mapped_column(String(40), default="low", nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -615,6 +615,11 @@ def _apply_postgres_reference_column_patches(engine) -> None:
                 conn.exec_driver_sql(
                     f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {postgres_ddl}'
                 )
+
+        for table_name in ("poi_reference", "charger_competitors"):
+            conn.exec_driver_sql(
+                f'ALTER TABLE "{table_name}" ALTER COLUMN "verification_status" TYPE VARCHAR(80)'
+            )
 
         # Older imports used explicit ids, leaving serial sequences behind the
         # existing records. Align them before an upsert inserts new references.
