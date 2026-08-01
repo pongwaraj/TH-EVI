@@ -268,6 +268,27 @@ class ProvinceIngestionRun(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class ReferenceDatasetRelease(Base):
+    """A verified, publishable DB snapshot for one province's Heat Map layers."""
+
+    __tablename__ = "reference_dataset_releases"
+    __table_args__ = (
+        UniqueConstraint("province_slug", "dataset_version", name="uq_reference_dataset_release"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    province_slug: Mapped[str] = mapped_column(String(80), nullable=False)
+    dataset_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="verified", nullable=False)
+    parity_passed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    manifest_json: Mapped[str] = mapped_column(Text, nullable=False)
+    parity_json: Mapped[str] = mapped_column(Text, nullable=False)
+    published_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class DistrictPopulation(Base):
     __tablename__ = "district_population"
     __table_args__ = (

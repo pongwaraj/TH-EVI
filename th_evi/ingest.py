@@ -3,6 +3,7 @@
 Usage:
     python -m th_evi.ingest
     python -m th_evi.ingest --province khon_kaen
+    python -m th_evi.ingest --province chiang_mai --sync-reference --publish
 """
 
 from __future__ import annotations
@@ -48,6 +49,10 @@ PROVINCE_SLUGS = [
     "rayong",
     "nakhon_ratchasima",
     "nakhon_nayok",
+    "phitsanulok",
+    "phuket",
+    "chai_nat",
+    "uthai_thani",
 ]
 
 SLUG_TO_NAME = {
@@ -67,6 +72,10 @@ SLUG_TO_NAME = {
     "rayong": "Rayong",
     "nakhon_ratchasima": "Nakhon Ratchasima",
     "nakhon_nayok": "Nakhon Nayok",
+    "phitsanulok": "Phitsanulok",
+    "phuket": "Phuket",
+    "chai_nat": "Chai Nat",
+    "uthai_thani": "Uthai Thani",
 }
 
 
@@ -401,43 +410,34 @@ def ingest_poi_reference(session, source_map: dict[str, int], slug: str) -> dict
                 source_type=str(row.get("source_type", "")).strip(),
                 source_url=str(row.get("source_url", "")).strip(),
             ) or fallback_source
-            existing = session.query(POIReference).filter_by(province=province, poi_id=poi_id).first()
-            if existing:
-                existing.name = name
-                existing.category = category
-                existing.lat = lat
-                existing.lon = lon
-                existing.confidence = confidence
-                existing.source_id = source_id
-                existing.source_url = str(row.get("source_url", "")).strip() or None
-                existing.verification_note = (
+            payload = {
+                "district": str(row.get("district", "")).strip() or None,
+                "name": name,
+                "category": category,
+                "lat": lat,
+                "lon": lon,
+                "demand_role": str(row.get("demand_role", "")).strip() or None,
+                "radius_km": _float_or_none(row.get("radius_km")),
+                "weight": _float_or_none(row.get("weight")),
+                "source_id": source_id,
+                "source_url": str(row.get("source_url", "")).strip() or None,
+                "verification_status": str(row.get("verification_status", "seed_needs_verification")).strip(),
+                "verification_note": (
                     str(row.get("verification_note", "")).strip()
                     or str(row.get("notes", "")).strip()
                     or None
-                )
-                existing.updated_by = "ingest"
-                existing.active = str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"}
+                ),
+                "confidence": confidence,
+                "notes": str(row.get("notes", "")).strip() or None,
+                "updated_by": "ingest",
+                "active": str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
+            }
+            existing = session.query(POIReference).filter_by(province=province, poi_id=poi_id).first()
+            if existing:
+                for key, value in payload.items():
+                    setattr(existing, key, value)
             else:
-                session.add(
-                    POIReference(
-                        poi_id=poi_id,
-                        province=province,
-                        name=name,
-                        category=category,
-                        lat=lat,
-                        lon=lon,
-                        confidence=confidence,
-                        source_id=source_id,
-                        source_url=str(row.get("source_url", "")).strip() or None,
-                        verification_note=(
-                            str(row.get("verification_note", "")).strip()
-                            or str(row.get("notes", "")).strip()
-                            or None
-                        ),
-                        updated_by="ingest",
-                        active=str(row.get("active", "true")).strip().lower() not in {"0", "false", "no"},
-                    )
-                )
+                session.add(POIReference(poi_id=poi_id, province=province, **payload))
                 count += 1
 
     session.flush()
@@ -893,14 +893,41 @@ def ingest_province(session, source_map: dict[str, int], slug: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest reference CSV data into DB.")
     parser.add_argument("--province", "-p", type=str, default=None, help="Province slug (e.g. khon_kaen). Ingest all if omitted.")
+    parser.add_argument(
+        "--sync-reference",
+        action="store_true",
+        help="Verify Heat Map reference layers against CSV and create a DB dataset release.",
+    )
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help="Publish a verified reference release so the app may use DB-first data.",
+    )
+    parser.add_argument("--actor", default="reference_sync", help="Audit name recorded when publishing a reference release.")
     args = parser.parse_args()
+
+    if args.publish and not args.sync_reference:
+        parser.error("--publish requires --sync-reference")
 
     factory = get_session_factory()
     with factory() as session:
+        slugs_to_run = [args.province] if args.province else PROVINCE_SLUGS
+        if args.sync_reference:
+            from .reference_sync import sync_province_reference
+
+            for slug in slugs_to_run:
+                result = sync_province_reference(session, slug, publish=args.publish, actor=args.actor)
+                parity = result["parity"]
+                print(
+                    f"{slug}: {result['status']} release={result['dataset_version']} "
+                    f"parity={'passed' if parity['passed'] else 'failed'}"
+                )
+            session.commit()
+            print("\nReference sync complete.")
+            return
+
         print("Seeding reference sources...")
         source_map = seed_reference_sources(session)
-
-        slugs_to_run = [args.province] if args.province else PROVINCE_SLUGS
 
         print("\nIngesting district population from tha_pop_adm2_2023.csv...")
         ingest_district_population(session, source_map)

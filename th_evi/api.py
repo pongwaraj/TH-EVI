@@ -31,6 +31,7 @@ from .db import (
     HeatmapExclusionReference,
     HotZoneReference,
     POIReference,
+    ReferenceDatasetRelease,
     SiteAssumption,
     get_database_url,
     session_scope,
@@ -446,6 +447,7 @@ def _duplicate_reference_values(config: dict[str, Any], row: Any) -> dict[str, A
 
 
 def _clear_reference_caches() -> None:
+    spatial_module._has_published_database_release.cache_clear()
     spatial_module.load_pois_for_province.cache_clear()
     spatial_module.load_competitors_for_province.cache_clear()
     spatial_module.load_hot_zones_for_province.cache_clear()
@@ -837,6 +839,40 @@ def database_health():
                 "error": str(exc),
                 "hint": "Set TH_EVI_DB_URL, DATABASE_URL, or POSTGRES_URL to a managed Postgres connection string for production.",
             },
+        )
+
+
+@app.get("/api/heatmap/data-status")
+def heatmap_data_status(province: str = Query("Chiang Mai", min_length=1)):
+    """Show whether a province is currently running from verified DB reference data."""
+    slug = spatial_module._slug_for_province(province)
+    if not slug:
+        raise HTTPException(status_code=404, detail="Province is not configured for Heat Map data status.")
+    try:
+        with session_scope() as session:
+            release = (
+                session.query(ReferenceDatasetRelease)
+                .filter_by(province_slug=slug)
+                .order_by(ReferenceDatasetRelease.created_at.desc(), ReferenceDatasetRelease.id.desc())
+                .first()
+            )
+            return {
+                "province": spatial_module.SLUG_TO_CANONICAL_PROVINCE.get(slug, province),
+                "province_slug": slug,
+                "runtime_source": "database" if spatial_module._has_published_database_release(province) else "csv_fallback",
+                "release": {
+                    "dataset_version": release.dataset_version,
+                    "status": release.status,
+                    "parity_passed": release.parity_passed,
+                    "published_at": release.published_at.isoformat() if release.published_at else None,
+                }
+                if release
+                else None,
+            }
+    except Exception as exc:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Reference data status is unavailable.", "error_type": type(exc).__name__},
         )
 
 

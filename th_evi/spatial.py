@@ -19,6 +19,7 @@ from .db import (
     HeatmapExclusionReference,
     HotZoneReference,
     POIReference,
+    ReferenceDatasetRelease,
     get_session_factory,
 )
 from .location import LocationDemandModel
@@ -286,6 +287,24 @@ def _canonical_province_names(province: str) -> list[str]:
     return [name for name in names if name]
 
 
+@lru_cache(maxsize=32)
+def _has_published_database_release(province: str) -> bool:
+    """Use DB-led reference rows only after a verified province release exists."""
+    slug = _slug_for_province(province)
+    if not slug:
+        return False
+    try:
+        with get_session_factory()() as session:
+            return (
+                session.query(ReferenceDatasetRelease.id)
+                .filter_by(province_slug=slug, status="published", parity_passed=True)
+                .first()
+                is not None
+            )
+    except Exception:
+        return False
+
+
 def _merge_rows(
     primary_rows: list[dict[str, Any]],
     secondary_rows: list[dict[str, Any]],
@@ -309,11 +328,27 @@ def _merge_rows(
     return ordered
 
 
+def _merge_reference_rows(
+    province: str,
+    csv_rows: list[dict[str, Any]],
+    db_rows: list[dict[str, Any]],
+    id_key: str,
+) -> list[dict[str, Any]]:
+    """CSV is the fallback authority until verified DB parity is published."""
+    if _has_published_database_release(province):
+        return _merge_rows(db_rows, csv_rows, id_key)
+    return _merge_rows(csv_rows, db_rows, id_key)
+
+
 def _load_db_pois_for_province(province: str) -> list[dict[str, Any]]:
     names = _canonical_province_names(province)
     try:
         with get_session_factory()() as session:
-            rows = session.query(POIReference).filter(POIReference.province.in_(names)).all()
+            rows = (
+                session.query(POIReference)
+                .filter(POIReference.province.in_(names), POIReference.active.is_(True))
+                .all()
+            )
     except Exception:
         return []
     return [
@@ -340,7 +375,11 @@ def _load_db_competitors_for_province(province: str) -> list[dict[str, Any]]:
     names = _canonical_province_names(province)
     try:
         with get_session_factory()() as session:
-            rows = session.query(ChargerCompetitor).filter(ChargerCompetitor.province.in_(names)).all()
+            rows = (
+                session.query(ChargerCompetitor)
+                .filter(ChargerCompetitor.province.in_(names), ChargerCompetitor.active.is_(True))
+                .all()
+            )
     except Exception:
         return []
     return [
@@ -710,9 +749,7 @@ def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     if slug == "lampang" and not csv_rows:
         csv_rows.extend(_read_csv(DATA_DIR / "poi_lampang_city_seed.csv"))
     db_rows = _load_db_pois_for_province(province)
-    # Heat Map reference data remains file-led while database migration is paused.
-    # A database row may fill omitted metadata, but it must not override a vetted CSV.
-    return _merge_rows(csv_rows, db_rows, "poi_id")
+    return _merge_reference_rows(province, csv_rows, db_rows, "poi_id")
 
 
 @lru_cache(maxsize=32)
@@ -725,9 +762,10 @@ def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
     detailed = DATA_DIR / f"competitors_{slug}_detailed.csv"
     if detailed.exists():
         rows.extend(_read_csv(detailed))
-    if slug == "chiang_mai":
-        rows.extend(_read_csv(DATA_DIR / "competitors_chiang_mai_google_verified.csv"))
-    rows = _merge_rows(_load_db_competitors_for_province(province), rows, "station_id")
+    google_verified = DATA_DIR / f"competitors_{slug}_google_verified.csv"
+    if google_verified.exists():
+        rows.extend(_read_csv(google_verified))
+    rows = _merge_reference_rows(province, rows, _load_db_competitors_for_province(province), "station_id")
     if slug == "chiang_mai":
         rows = _filter_and_dedupe_chiang_mai_competitors(rows)
     elif slug == "nakhon_ratchasima":
@@ -748,7 +786,7 @@ def load_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"hot_zones_{slug}.csv")
     db_rows = _load_db_hot_zones_for_province(province)
-    return _merge_rows(csv_rows, db_rows, "zone_id")
+    return _merge_reference_rows(province, csv_rows, db_rows, "zone_id")
 
 
 @lru_cache(maxsize=32)
@@ -758,7 +796,7 @@ def load_business_areas_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"business_areas_{slug}.csv")
     db_rows = _load_db_business_areas_for_province(province)
-    return _merge_rows(csv_rows, db_rows, "business_area_id")
+    return _merge_reference_rows(province, csv_rows, db_rows, "business_area_id")
 
 
 @lru_cache(maxsize=32)
@@ -768,7 +806,7 @@ def load_heatmap_exclusions_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"heatmap_exclusions_{slug}.csv")
     db_rows = _load_db_heatmap_exclusions_for_province(province)
-    return _merge_rows(csv_rows, db_rows, "exclusion_id")
+    return _merge_reference_rows(province, csv_rows, db_rows, "exclusion_id")
 
 
 @lru_cache(maxsize=32)
@@ -778,7 +816,7 @@ def load_district_nodes_for_province(province: str) -> list[dict[str, Any]]:
         return []
     csv_rows = _read_csv(DATA_DIR / f"district_nodes_{slug}.csv")
     db_rows = _load_db_district_nodes_for_province(province)
-    return _merge_rows(csv_rows, db_rows, "node_id")
+    return _merge_reference_rows(province, csv_rows, db_rows, "node_id")
 
 
 POPULATION_WEIGHT_MIN = 0.75
