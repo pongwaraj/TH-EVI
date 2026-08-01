@@ -169,6 +169,10 @@ BUSINESS_AREA_TYPE_RULES = {
         "suggested_location_type": "highway",
         "access_distance_km": 3.6,
     },
+    "residential_school_edge": {
+        "suggested_location_type": "suburban",
+        "access_distance_km": 2.0,
+    },
 }
 
 URBAN_SIGNAL_CATEGORIES = {
@@ -1249,12 +1253,29 @@ def _spatial_location_type(
     top_business_areas: list[dict[str, Any]] | None = None,
     top_districts: list[dict[str, Any]] | None = None,
 ) -> str:
-    categories = {item["category"] for item in top_pois[:3]}
+    # A distant city-center anchor should not classify a residential-edge click
+    # as the city center. Keep the type signal tied to genuinely local POIs.
+    local_pois = [
+        item for item in top_pois[:3]
+        if (
+            _float_or_none(item.get("distance_km"))
+            if _float_or_none(item.get("distance_km")) is not None
+            else 999.0
+        ) <= 2.5
+    ]
+    categories = {item["category"] for item in local_pois}
     if {"transport_corridor", "border_crossing"} & categories:
         return "highway"
     if "city_center" in categories:
         return "city_center"
-    for item in (top_business_areas or [])[:2]:
+    for item in sorted(
+        (top_business_areas or [])[:3],
+        key=lambda entry: (
+            _float_or_none(entry.get("distance_km"))
+            if _float_or_none(entry.get("distance_km")) is not None
+            else 999.0
+        ),
+    ):
         suggested = item.get("suggested_location_type")
         if suggested in {"highway", "city_center", "destination", "suburban"}:
             return str(suggested)

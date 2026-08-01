@@ -36,6 +36,10 @@ PROVINCE_AADT_ALIASES = {
 ROUTE_BBOXES_BY_PROVINCE = {
     "เชียงใหม่": [
         (1141, (18.76, 18.80, 98.94, 98.98)),
+        # Saraphi / Chai Sathan sits beside the Ring 3 - Highway 11 interface.
+        # Use Route 121 as the nearest mapped arterial context here, before the
+        # much broader Route 118 box can incorrectly assign north-east traffic.
+        (121, (18.70, 18.75, 99.00, 99.07)),
         (121, (18.75, 18.90, 98.90, 99.10)),
         (1001, (18.80, 19.00, 98.85, 99.00)),
         (107, (18.80, 19.50, 98.80, 99.10)),

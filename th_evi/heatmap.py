@@ -135,19 +135,37 @@ def _location_type_for_heat(
     top_business_areas: list[dict[str, Any]],
     top_districts: list[dict[str, Any]],
 ) -> str:
-    categories = {item.get("category") for item in top_pois[:3]}
+    # Only nearby POIs determine whether a grid cell is an urban destination.
+    # This prevents distant city-center or airport anchors from inflating a
+    # residential fringe cell that happens to receive a weak spillover score.
+    local_pois = [
+        item for item in top_pois[:3]
+        if (
+            _float_or_none(item.get("distance_km"))
+            if _float_or_none(item.get("distance_km")) is not None
+            else 999.0
+        ) <= 2.5
+    ]
+    categories = {item.get("category") for item in local_pois}
     if {"transport_corridor", "border_crossing"} & categories:
         return "highway"
     if any(
         item.get("category") == "city_center"
         and (_float_or_none(item.get("distance_km")) or 999.0) <= 3.5
-        for item in top_pois[:3]
+        for item in local_pois
     ):
         return "city_center"
     urban_destination_hits = sum(1 for category in categories if category in URBAN_DESTINATION_POI_CATEGORIES)
     if urban_destination_hits >= 2:
         return "destination"
-    for item in top_business_areas[:2]:
+    for item in sorted(
+        top_business_areas[:3],
+        key=lambda entry: (
+            _float_or_none(entry.get("distance_km"))
+            if _float_or_none(entry.get("distance_km")) is not None
+            else 999.0
+        ),
+    ):
         suggested = item.get("suggested_location_type")
         if suggested in {"highway", "city_center", "destination", "suburban"}:
             return str(suggested)

@@ -148,9 +148,11 @@ PROVINCE_SHEET_INDEX = {
 
 # --- Fleet Model Parameters ---
 # Annual new passenger car registrations by province (ร.1 per year)
-# Source: DLT April 2026 monthly rate × 12 (estimated)
+# Source: DLT fleet calibration. Chiang Mai is calibrated to 14,400 passenger
+# BEVs registered on 30 Jun 2026, rather than a mixed-vehicle estimate.
 PROVINCE_NEW_CAR_RATE = {
-    "เชียงใหม่": 6_200,
+    "เชียงใหม่": 12_362,
+    "Chiang Mai": 12_362,
     "ลำปาง": 2_000,
     "อุดรธานี": 3_200,
     "ขอนแก่น": 5_000,
@@ -168,7 +170,8 @@ PROVINCE_NEW_CAR_RATE = {
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
-    "เชียงใหม่": 350_000,
+    "เชียงใหม่": 455_683,
+    "Chiang Mai": 455_683,
     "ลำปาง": 115_000,
     "อุดรธานี": 180_000,
     "ขอนแก่น": 300_000,
