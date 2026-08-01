@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import html
+import hmac
 import json
 import math
 import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, text
@@ -48,6 +49,7 @@ from .site import (
     recommend_station_spec,
 )
 from . import spatial as spatial_module
+from .reference_sync import serialize_release, sync_province_reference
 from .report import generate_location_report
 from .owner_area_report import (
     OwnerAreaReportRequest as OwnerAreaReportDocRequest,
@@ -152,6 +154,12 @@ class PlanningShortlistRequest(BaseModel):
 
 class ReferenceRecordRequest(BaseModel):
     values: dict[str, Any] = Field(default_factory=dict)
+
+
+class ReferenceReleaseRequest(BaseModel):
+    province: str = Field(..., min_length=1, max_length=120)
+    publish: bool = False
+    actor: str = Field("data_admin", min_length=1, max_length=120)
 
 
 class OwnerAreaAnalysisReportRequest(BaseModel):
@@ -456,6 +464,22 @@ def _clear_reference_caches() -> None:
     spatial_module.load_district_nodes_for_province.cache_clear()
     spatial_module.load_enriched_district_nodes.cache_clear()
     heatmap_module.generate_province_heatmap.cache_clear()
+
+
+def _require_reference_admin_access(token: str | None) -> None:
+    """Protect mutations when an admin token is configured; keep local use simple."""
+    expected = os.getenv("TH_EVI_ADMIN_TOKEN")
+    if expected and (not token or not hmac.compare_digest(token, expected)):
+        raise HTTPException(status_code=403, detail="Data Admin authorization is required.")
+
+
+def _reference_release_slug(province: str) -> str:
+    slug = spatial_module._slug_for_province(province)
+    if slug:
+        return slug
+    if province in spatial_module.SLUG_TO_CANONICAL_PROVINCE:
+        return province
+    raise HTTPException(status_code=404, detail="Province is not configured for Data Admin releases.")
 
 
 def _station_type_for_queue(location_type: str | None, station_format: str) -> str:
@@ -892,6 +916,57 @@ def reference_meta():
     }
 
 
+@app.get("/api/reference/releases")
+def list_reference_releases(
+    province: str = Query(..., min_length=1),
+    x_th_evi_admin_token: str | None = Header(None),
+):
+    _require_reference_admin_access(x_th_evi_admin_token)
+    slug = _reference_release_slug(province)
+    with session_scope() as session:
+        releases = (
+            session.query(ReferenceDatasetRelease)
+            .filter_by(province_slug=slug)
+            .order_by(ReferenceDatasetRelease.created_at.desc(), ReferenceDatasetRelease.id.desc())
+            .limit(12)
+            .all()
+        )
+        published = (
+            session.query(ReferenceDatasetRelease)
+            .filter_by(province_slug=slug, status="published", parity_passed=True)
+            .order_by(ReferenceDatasetRelease.published_at.desc(), ReferenceDatasetRelease.id.desc())
+            .first()
+        )
+        return {
+            "province": spatial_module.SLUG_TO_CANONICAL_PROVINCE.get(slug, province),
+            "province_slug": slug,
+            "runtime_source": "database" if published else "csv_fallback",
+            "active_release": serialize_release(published) if published else None,
+            "releases": [serialize_release(release) for release in releases],
+        }
+
+
+@app.post("/api/reference/releases/sync")
+def sync_reference_release(
+    req: ReferenceReleaseRequest,
+    x_th_evi_admin_token: str | None = Header(None),
+):
+    _require_reference_admin_access(x_th_evi_admin_token)
+    slug = _reference_release_slug(req.province)
+    try:
+        with session_scope() as session:
+            result = sync_province_reference(session, slug, publish=req.publish, actor=req.actor)
+            release = session.get(ReferenceDatasetRelease, result["release_id"])
+            response = {
+                **result,
+                "release": serialize_release(release) if release else None,
+            }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _clear_reference_caches()
+    return _json_safe(response)
+
+
 @app.get("/api/reference/{layer}")
 def list_reference_records(
     layer: str,
@@ -937,7 +1012,12 @@ def get_reference_record(layer: str, record_id: int):
 
 
 @app.post("/api/reference/{layer}")
-def create_reference_record(layer: str, req: ReferenceRecordRequest):
+def create_reference_record(
+    layer: str,
+    req: ReferenceRecordRequest,
+    x_th_evi_admin_token: str | None = Header(None),
+):
+    _require_reference_admin_access(x_th_evi_admin_token)
     config = _reference_config(layer)
     model_cls = config["model"]
     payload = dict(config.get("defaults", {}))
@@ -955,7 +1035,13 @@ def create_reference_record(layer: str, req: ReferenceRecordRequest):
 
 
 @app.put("/api/reference/{layer}/{record_id}")
-def update_reference_record(layer: str, record_id: int, req: ReferenceRecordRequest):
+def update_reference_record(
+    layer: str,
+    record_id: int,
+    req: ReferenceRecordRequest,
+    x_th_evi_admin_token: str | None = Header(None),
+):
+    _require_reference_admin_access(x_th_evi_admin_token)
     config = _reference_config(layer)
     model_cls = config["model"]
     with session_scope() as session:
@@ -973,7 +1059,12 @@ def update_reference_record(layer: str, record_id: int, req: ReferenceRecordRequ
 
 
 @app.post("/api/reference/{layer}/{record_id}/duplicate")
-def duplicate_reference_record(layer: str, record_id: int):
+def duplicate_reference_record(
+    layer: str,
+    record_id: int,
+    x_th_evi_admin_token: str | None = Header(None),
+):
+    _require_reference_admin_access(x_th_evi_admin_token)
     config = _reference_config(layer)
     model_cls = config["model"]
     with session_scope() as session:
@@ -992,7 +1083,12 @@ def duplicate_reference_record(layer: str, record_id: int):
 
 
 @app.delete("/api/reference/{layer}/{record_id}")
-def delete_reference_record(layer: str, record_id: int):
+def delete_reference_record(
+    layer: str,
+    record_id: int,
+    x_th_evi_admin_token: str | None = Header(None),
+):
+    _require_reference_admin_access(x_th_evi_admin_token)
     config = _reference_config(layer)
     model_cls = config["model"]
     with session_scope() as session:

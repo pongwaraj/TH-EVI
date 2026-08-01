@@ -224,12 +224,14 @@ def sync_province_reference(
         )
         session.add(release)
 
-    release.manifest_json = json.dumps(manifest, ensure_ascii=True, sort_keys=True)
-    release.parity_json = json.dumps(parity, ensure_ascii=True, sort_keys=True)
-    release.parity_passed = bool(parity["passed"])
-    release.status = "published" if publish and parity["passed"] else ("verified" if parity["passed"] else "failed")
-    release.published_by = actor if release.status == "published" else None
-    release.published_at = datetime.utcnow() if release.status == "published" else None
+    keep_published_release = release.status == "published" and not publish
+    if not keep_published_release:
+        release.manifest_json = json.dumps(manifest, ensure_ascii=True, sort_keys=True)
+        release.parity_json = json.dumps(parity, ensure_ascii=True, sort_keys=True)
+        release.parity_passed = bool(parity["passed"])
+        release.status = "published" if publish and parity["passed"] else ("verified" if parity["passed"] else "failed")
+        release.published_by = actor if release.status == "published" else None
+        release.published_at = datetime.utcnow() if release.status == "published" else None
     session.flush()
 
     return {
@@ -259,4 +261,29 @@ def published_release_status(session, slug: str) -> dict[str, Any] | None:
         "parity_passed": release.parity_passed,
         "published_by": release.published_by,
         "published_at": release.published_at.isoformat() if release.published_at else None,
+    }
+
+
+def serialize_release(release: ReferenceDatasetRelease) -> dict[str, Any]:
+    """Return a compact, JSON-safe release record for the Data Admin QA view."""
+    try:
+        manifest = json.loads(release.manifest_json)
+    except (TypeError, json.JSONDecodeError):
+        manifest = {"files": [], "file_count": 0}
+    try:
+        parity = json.loads(release.parity_json)
+    except (TypeError, json.JSONDecodeError):
+        parity = {"passed": False, "layers": {}}
+    return {
+        "id": release.id,
+        "province": release.province,
+        "province_slug": release.province_slug,
+        "dataset_version": release.dataset_version,
+        "status": release.status,
+        "parity_passed": release.parity_passed,
+        "manifest": manifest,
+        "parity": parity,
+        "published_by": release.published_by,
+        "published_at": release.published_at.isoformat() if release.published_at else None,
+        "created_at": release.created_at.isoformat() if release.created_at else None,
     }

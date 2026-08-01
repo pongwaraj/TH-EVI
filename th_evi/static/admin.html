@@ -5,69 +5,303 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TH-EVI | Data Admin</title>
 <style>
+:root {
+  color-scheme: light;
+  --ink: #17324a;
+  --muted: #62758a;
+  --line: #d6e0e8;
+  --surface: #ffffff;
+  --canvas: #eef3f6;
+  --navy: #114b78;
+  --blue: #1375bc;
+  --green: #177245;
+  --amber: #a46007;
+  --red: #b3342d;
+}
+* { box-sizing: border-box; }
 body {
   margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
   font-family: "Segoe UI", Tahoma, sans-serif;
-  background: #f3f6f9;
-  color: #17324a;
 }
-main {
-  max-width: 780px;
-  margin: 48px auto;
-  padding: 0 20px;
-}
-.card {
-  background: #fff;
-  border: 1px solid #dce4eb;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 12px 28px rgba(18, 57, 91, 0.08);
-}
-h1 {
-  margin: 0 0 10px;
-  font-size: 28px;
-}
-p {
-  margin: 0 0 12px;
-  line-height: 1.6;
-  color: #4d6478;
-}
-.links {
+header {
+  min-height: 64px;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 18px;
-}
-a {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border-radius: 999px;
-  text-decoration: none;
-  font-weight: 700;
-}
-.primary {
-  background: #1565c0;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 28px;
+  background: var(--navy);
   color: #fff;
 }
-.secondary {
-  background: #edf3fa;
-  color: #12395b;
+.brand { font-size: 18px; font-weight: 700; letter-spacing: 0; }
+.brand small { margin-left: 10px; font-size: 13px; font-weight: 500; color: #c8e0ef; }
+nav { display: flex; gap: 14px; }
+nav a { color: #fff; font-size: 14px; text-decoration: none; }
+main { max-width: 1180px; margin: 28px auto; padding: 0 20px 42px; }
+.page-title { margin: 0 0 20px; font-size: 24px; }
+.panel {
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-head h2 { margin: 0; font-size: 16px; }
+.panel-body { padding: 16px; }
+.control-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(170px, 1fr) minmax(180px, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: #405568; }
+input, select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #b9c9d5;
+  border-radius: 4px;
+  padding: 7px 9px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+button {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+button:disabled { cursor: wait; opacity: .55; }
+.primary { background: var(--blue); color: #fff; }
+.publish { background: var(--green); color: #fff; }
+.secondary { background: #eef4f8; border-color: #bfd0dd; color: #1f4968; }
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ok { background: #e5f5eb; color: var(--green); }
+.warn { background: #fff2dd; color: var(--amber); }
+.fail { background: #fbe8e7; color: var(--red); }
+.neutral { background: #e8f0f5; color: #3d5a70; }
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.metric { min-height: 78px; padding: 12px; border-right: 1px solid var(--line); }
+.metric:last-child { border-right: 0; }
+.metric dt { font-size: 12px; color: var(--muted); }
+.metric dd { margin: 7px 0 0; font-size: 17px; font-weight: 700; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 700px; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
+th { color: #496176; font-size: 12px; font-weight: 700; background: #f7fafc; }
+tr:last-child td { border-bottom: 0; }
+.small { color: var(--muted); font-size: 12px; }
+.empty { padding: 20px 0 4px; color: var(--muted); font-size: 13px; }
+.error { color: var(--red); }
+@media (max-width: 860px) {
+  header { padding: 0 18px; }
+  .brand small { display: none; }
+  main { margin-top: 18px; padding: 0 14px 28px; }
+  .control-grid { grid-template-columns: 1fr 1fr; }
+  .control-grid button { width: 100%; }
+  .summary-grid { grid-template-columns: 1fr 1fr; }
+  .metric:nth-child(2) { border-right: 0; }
+  .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
 }
 </style>
 </head>
 <body>
+<header>
+  <div class="brand">TH-EVI <small>Data Admin</small></div>
+  <nav><a href="/planning">Planning</a><a href="/analysis">Analysis</a></nav>
+</header>
 <main>
-  <div class="card">
-    <h1>TH-EVI | Data Admin</h1>
-    <p>หน้านี้สงวนไว้สำหรับจัดการข้อมูลอ้างอิง เช่น POI, competitor, hot zone และ heatmap exclusions</p>
-    <p>สำหรับงานของทีมเซลส์และทีมกลยุทธ์ ให้กลับไปใช้หน้า Planning เป็นหลัก</p>
-    <div class="links">
-      <a class="primary" href="/">Go to Planning</a>
-      <a class="secondary" href="/analysis">Open Advanced Analysis</a>
+  <h1 class="page-title">ควบคุมชุดข้อมูล Heat Map</h1>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Release Control</h2><span id="runtimeBadge" class="badge neutral">Loading</span></div>
+    <div class="panel-body">
+      <div class="control-grid">
+        <label>จังหวัด
+          <select id="province">
+            <option value="Chiang Mai">เชียงใหม่</option>
+            <option value="Chiang Rai">เชียงราย</option>
+            <option value="Lampang">ลำปาง</option>
+            <option value="Lamphun">ลำพูน</option>
+            <option value="Phayao">พะเยา</option>
+            <option value="Phrae">แพร่</option>
+            <option value="Nan">น่าน</option>
+            <option value="Mae Hong Son">แม่ฮ่องสอน</option>
+            <option value="Phitsanulok">พิษณุโลก</option>
+            <option value="Phuket">ภูเก็ต</option>
+            <option value="Nakhon Ratchasima">นครราชสีมา</option>
+          </select>
+        </label>
+        <label>ผู้ดำเนินการ<input id="actor" value="data_admin" maxlength="120"></label>
+        <label>Admin Token<input id="token" type="password" autocomplete="off"></label>
+        <button id="verifyButton" class="secondary" type="button">Verify &amp; Sync</button>
+        <button id="publishButton" class="publish" type="button">Publish</button>
+      </div>
     </div>
-  </div>
+    <div id="statusText" class="status-row">กำลังโหลดสถานะ release</div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Published Snapshot</h2><button id="refreshButton" class="secondary" type="button">Refresh</button></div>
+    <div class="panel-body">
+      <dl class="summary-grid">
+        <div class="metric"><dt>Dataset version</dt><dd id="versionValue">-</dd></div>
+        <div class="metric"><dt>เผยแพร่เมื่อ</dt><dd id="publishedValue">-</dd></div>
+        <div class="metric"><dt>Parity</dt><dd id="parityValue">-</dd></div>
+        <div class="metric"><dt>Source files</dt><dd id="filesValue">-</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Layer QA</h2><span class="small">CSV เทียบกับ DB managed rows</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>Expected</th><th>DB Managed</th><th>Parity</th><th>Mismatch</th><th>Admin-only</th></tr></thead>
+        <tbody id="layerRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Release History</h2><span class="small">12 รายการล่าสุด</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Version</th><th>Status</th><th>Parity</th><th>Published by</th><th>Created</th></tr></thead>
+        <tbody id="historyRows"></tbody>
+      </table>
+    </div>
+  </section>
 </main>
+<script>
+const province = document.getElementById("province");
+const actor = document.getElementById("actor");
+const token = document.getElementById("token");
+const statusText = document.getElementById("statusText");
+const runtimeBadge = document.getElementById("runtimeBadge");
+const verifyButton = document.getElementById("verifyButton");
+const publishButton = document.getElementById("publishButton");
+
+token.value = sessionStorage.getItem("thEviAdminToken") || "";
+token.addEventListener("change", () => sessionStorage.setItem("thEviAdminToken", token.value));
+
+function headers() {
+  const values = { "Content-Type": "application/json" };
+  if (token.value.trim()) values["X-TH-EVI-Admin-Token"] = token.value.trim();
+  return values;
+}
+function text(value) { return value === null || value === undefined || value === "" ? "-" : String(value); }
+function date(value) { return value ? new Date(value).toLocaleString("th-TH") : "-"; }
+function badge(status, passed) {
+  const cls = passed === true || status === "published" ? "ok" : passed === false || status === "failed" ? "fail" : "warn";
+  return '<span class="badge ' + cls + '">' + text(status || (passed ? "passed" : "pending")) + "</span>";
+}
+function setBusy(busy, message) {
+  verifyButton.disabled = busy;
+  publishButton.disabled = busy;
+  statusText.textContent = message;
+}
+function render(data) {
+  const active = data.active_release;
+  const runtime = data.runtime_source === "database";
+  runtimeBadge.className = "badge " + (runtime ? "ok" : "warn");
+  runtimeBadge.textContent = runtime ? "Database active" : "CSV fallback";
+  document.getElementById("versionValue").textContent = active ? active.dataset_version : "-";
+  document.getElementById("publishedValue").textContent = active ? date(active.published_at) : "-";
+  document.getElementById("parityValue").innerHTML = active ? badge(active.status, active.parity_passed) : badge("not published", null);
+  document.getElementById("filesValue").textContent = active ? text(active.manifest.file_count) : "-";
+
+  const layers = active && active.parity && active.parity.layers ? active.parity.layers : {};
+  const layerRows = document.getElementById("layerRows");
+  layerRows.innerHTML = Object.entries(layers).map(([name, item]) =>
+    "<tr><td>" + name + "</td><td>" + text(item.expected_count) + "</td><td>" + text(item.managed_db_count) +
+    "</td><td>" + badge(item.passed ? "passed" : "failed", item.passed) + "</td><td>" + text((item.mismatches || []).length) +
+    "</td><td>" + text((item.admin_only_ids || []).length) + "</td></tr>"
+  ).join("") || '<tr><td colspan="6" class="empty">ยังไม่มี published snapshot</td></tr>';
+
+  const historyRows = document.getElementById("historyRows");
+  historyRows.innerHTML = (data.releases || []).map(item =>
+    "<tr><td>" + text(item.dataset_version) + "</td><td>" + badge(item.status, item.parity_passed) +
+    "</td><td>" + (item.parity_passed ? "passed" : "failed") + "</td><td>" + text(item.published_by) +
+    "</td><td>" + date(item.created_at) + "</td></tr>"
+  ).join("") || '<tr><td colspan="5" class="empty">ยังไม่มี release</td></tr>';
+  statusText.textContent = "จังหวัด " + data.province + " | " + (runtime ? "กำลังใช้ข้อมูล DB ที่ publish แล้ว" : "กำลังใช้ CSV fallback");
+}
+async function load() {
+  setBusy(true, "กำลังโหลด release และ QA snapshot");
+  try {
+    const response = await fetch("/api/reference/releases?province=" + encodeURIComponent(province.value), { headers: headers() });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "ไม่สามารถโหลด release ได้");
+    render(data);
+  } catch (error) {
+    statusText.innerHTML = '<span class="error">' + error.message + "</span>";
+  } finally {
+    setBusy(false, statusText.textContent);
+  }
+}
+async function sync(publish) {
+  const command = publish ? "publish" : "verify and sync";
+  if (publish && !confirm("Publish ชุดข้อมูลนี้ขึ้น Heat Map หรือไม่?")) return;
+  setBusy(true, "กำลัง " + command);
+  try {
+    const response = await fetch("/api/reference/releases/sync", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ province: province.value, publish, actor: actor.value.trim() || "data_admin" })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "ดำเนินการไม่สำเร็จ");
+    statusText.textContent = "Parity " + (data.parity.passed ? "passed" : "failed") + " | release " + data.dataset_version;
+    await load();
+  } catch (error) {
+    statusText.innerHTML = '<span class="error">' + error.message + "</span>";
+    setBusy(false, statusText.textContent);
+  }
+}
+province.addEventListener("change", load);
+document.getElementById("refreshButton").addEventListener("click", load);
+verifyButton.addEventListener("click", () => sync(false));
+publishButton.addEventListener("click", () => sync(true));
+load();
+</script>
 </body>
 </html>
