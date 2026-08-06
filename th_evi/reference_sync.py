@@ -206,7 +206,7 @@ def sync_province_reference(
     province = ingest.SLUG_TO_NAME[slug]
     manifest = _source_manifest(slug)
     expected = None if runtime_safe else _expected_snapshot(slug)
-    if not any(expected[layer] for layer, *_rest in REFERENCE_LAYERS):
+    if not manifest["files"]:
         raise ValueError(f"No Heat Map reference CSV files found for {slug}")
 
     source_map = ingest.seed_reference_sources(session)
