@@ -967,6 +967,7 @@ def sync_reference_release(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Reference release sync failed for %s", slug)
+        print(f"Reference release sync failed for {slug}: {type(exc).__name__}: {str(exc)[:500]}")
         raise HTTPException(status_code=500, detail="Reference release sync failed. Check server logs.") from exc
     _clear_reference_caches()
     return _json_safe(response)
