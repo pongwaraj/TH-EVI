@@ -155,7 +155,10 @@ PROVINCE_NEW_CAR_RATE = {
     "Chiang Mai": 12_362,
     "ลำปาง": 2_000,
     "อุดรธานี": 3_200,
-    "ขอนแก่น": 5_000,
+    # Calibrated against DLT April 2569: 6,050 registered รย.1 BEVs in
+    # Khon Kaen. The rate is intentionally conservative and only nudges the
+    # accumulated fleet model toward the observed DLT stock.
+    "ขอนแก่น": 5_200,
     "พะเยา": 900,
     "หนองคาย": 1_100,
     "แพร่": 1_000,
@@ -174,7 +177,8 @@ PROVINCE_FLEET_SIZE = {
     "Chiang Mai": 455_683,
     "ลำปาง": 115_000,
     "อุดรธานี": 180_000,
-    "ขอนแก่น": 300_000,
+    # DLT April 2569 รย.1 passenger-car fleet (not all vehicle classes).
+    "ขอนแก่น": 268_283,
     "พะเยา": 65_000,
     "หนองคาย": 75_000,
     "แพร่": 70_000,

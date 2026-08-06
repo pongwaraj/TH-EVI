@@ -1,5 +1,5 @@
 node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
-kk_mueang,Mueang Khon Kaen,Khon Kaen city and downtown core,district_center,16.4338,102.8257,5.0,1.0,Provincial capital with largest population (661,992); Central Khon Kaen, KKU, and hospital cluster.
+kk_mueang,Mueang Khon Kaen,Khon Kaen city and downtown core,district_center,16.4338,102.8257,5.0,1.0,Provincial capital and largest urban node; DOPA 2568 district population 100,186; Central Khon Kaen, Sri Chan, KKU, and hospital context.
 kk_chum_phae,Chum Phae,Chum Phae district center,district_center,16.5401,102.0952,4.5,0.9,Major west district with 84,332 population; Route 12 corridor hub toward Phetchabun/Loei.
 kk_nam_phong,Nam Phong,Nam Phong district center,district_center,16.6981,102.8568,4.0,0.88,Northern district with 74,432 population; Route 2 north corridor and Nam Phong area.
 kk_phon,Phon,Phon district center,district_center,15.8103,102.6052,4.0,0.86,Southern district with 67,870 population; Route 2 south corridor agricultural hub.

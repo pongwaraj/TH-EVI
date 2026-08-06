@@ -1,0 +1,13 @@
+metric_id,domain,metric_name,value,unit,reference_area,source_file,source_url,reference_date_be,verification_status,notes
+kk_dlt_all_vehicle_fleet,DLT,รถจดทะเบียนสะสมทุกประเภทรถ,941582,คัน,จังหวัดขอนแก่น,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"ใช้เป็นบริบทตลาดรวม ไม่ใช้แทน passenger-car fleet ในสูตรหลัก"
+kk_dlt_ror1_fleet,DLT,รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน (รย.1),268283,คัน,จังหวัดขอนแก่น,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"ฐาน fleet สำหรับโมเดล EV passenger-car"
+kk_dlt_ror1_bev,DLT,BEV ในกลุ่ม รย.1,6050,คัน,จังหวัดขอนแก่น,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"คิดเป็น 2.2551% ของรถ รย.1 ตามไฟล์นำเข้า"
+kk_dlt_ror1_phev,DLT,PHEV ในกลุ่ม รย.1,880,คัน,จังหวัดขอนแก่น,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"รวม phev_gasoline และ phev_diesel; ใช้เป็น cross-check ไม่รวมใน BEV heat field"
+kk_dopa_province_population,DOPA,ประชากรตามทะเบียน,1765967,คน,จังหวัดขอนแก่น,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,"ใช้เป็น provincial market context"
+kk_dopa_mueang_population,DOPA,ประชากรตามทะเบียน,100186,คน,อำเภอเมืองขอนแก่น,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,"ใช้ enrich district node ของพื้นที่เป้าหมาย; ไม่ตีความเป็น footfall"
+kk_dopa_khon_kaen_municipality,DOPA,ประชากรตามทะเบียน,98460,คน,เทศบาลนครขอนแก่น,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,"บริบทเขตเมือง; มีขอบเขตไม่เท่ากับอำเภอเมือง"
+kk_aadt_route2_city_approach,AADT,ขอนแก่น-หินลาด ทางหลวง 2,53895,คันต่อวัน,ขอนแก่น,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,"จุดสำรวจ 344+331; ไม่กระจายค่าไปยังถนนศรีจันทร์โดยตรง"
+kk_aadt_route2_thapra,AADT,ท่าพระ-ขอนแก่น ทางหลวง 2,47304,คันต่อวัน,ขอนแก่น,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,"จุดสำรวจ 334+181; city approach"
+kk_aadt_route12_banfang,AADT,บ้านฝาง-ขอนแก่น ทางหลวง 12,40107,คันต่อวัน,ขอนแก่น,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,"จุดสำรวจ 545+249; west gateway"
+kk_aadt_route230_ring,AADT,ถนนวงแหวนตะวันตก ทางหลวง 230,26174,คันต่อวัน,ขอนแก่น,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,"จุดสำรวจ 11+000; bypass context"
+kk_srichan_context,POI,ศรีจันทร์สแควร์,"16.428241,102.857154",พิกัด latitude,ศรีจันทร์สแควร์,data/poi_khon_kaen_seed.csv,https://creativecity.cea.or.th/th/districts/sri-chan/about,2569-08,user_coordinate_plus_public_context,"พิกัดเป้าหมายจากผู้ใช้; ตรวจซ้ำขอบเขตพื้นที่และทางเข้าออกก่อนใช้ทำ feasibility"

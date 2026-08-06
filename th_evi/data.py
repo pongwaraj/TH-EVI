@@ -413,6 +413,53 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
     Returns DataFrame with columns: district (English), population (int).
     Returns empty DataFrame if province not found or file missing.
     """
+    # Prefer the normalized DOPA 2568 extract when it is available for the
+    # province. The older ADM2 file remains a fallback for provinces that have
+    # not yet been imported into the current EV Hub data package.
+    dopa_province_names = {
+        "Khon Kaen": "ขอนแก่น",
+    }
+    dopa_province = dopa_province_names.get(province_en)
+    if dopa_province:
+        dopa = load_evhub_dopa_population(province=dopa_province, area_type="district")
+        if not dopa.empty:
+            district_aliases = {
+                "Mueang Khon Kaen": "อำเภอเมืองขอนแก่น",
+                "Ban Fang": "อำเภอบ้านฝาง",
+                "Phra Yuen": "อำเภอพระยืน",
+                "Nong Ruea": "อำเภอหนองเรือ",
+                "Chum Phae": "อำเภอชุมแพ",
+                "Si Chomphu": "อำเภอสีชมพู",
+                "Nam Phong": "อำเภอน้ำพอง",
+                "Ubolratana": "อำเภออุบลรัตน์",
+                "Kranuan": "อำเภอกระนวน",
+                "Ban Phai": "อำเภอบ้านไผ่",
+                "Pueai Noi": "อำเภอเปือยน้อย",
+                "Phon": "อำเภอพล",
+                "Waeng Yai": "อำเภอแวงใหญ่",
+                "Waeng Noi": "อำเภอแวงน้อย",
+                "Nong Song Hong": "อำเภอหนองสองห้อง",
+                "Phu Wiang": "อำเภอภูเวียง",
+                "Mancha Khiri": "อำเภอมัญจาคีรี",
+                "Chonnabot": "อำเภอชนบท",
+                "Khao Suan Kwang": "อำเภอเขาสวนกวาง",
+                "Phu Pha Man": "อำเภอภูผาม่าน",
+                "Sam Sung": "อำเภอซำสูง",
+                "Khok Pho Chai": "อำเภอโคกโพธิ์ไชย",
+                "Nong Na Kham": "อำเภอหนองนาคำ",
+                "Ban Haet": "อำเภอบ้านแฮด",
+                "Non Sila": "อำเภอโนนศิลา",
+                "Wiang Kao": "อำเภอเวียงเก่า",
+            }
+            reverse_aliases = {thai: english for english, thai in district_aliases.items()}
+            records = []
+            for _, row in dopa.iterrows():
+                english = reverse_aliases.get(str(row.get("area_name", "")).strip())
+                if english:
+                    records.append({"district": english, "population": int(row["population"])})
+            if records:
+                return pd.DataFrame(records).sort_values("district").reset_index(drop=True)
+
     all_pop = _load_adm2_district_population()
     records = []
     for key, pop in all_pop.items():

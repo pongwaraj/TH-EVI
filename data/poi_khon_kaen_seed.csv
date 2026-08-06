@@ -1,4 +1,4 @@
-poi_id,name,category,lat,lon,source,confidence,notes
+poi_id,name,category,lat,lon,source,confidence,notes,source_url,verification_status,verification_note,demand_role,radius_km,weight,active
 khon_kaen_city_center,Khon Kaen city center,city_center,16.4330,102.8330,public city coordinate + seed anchor,medium,"City-level coordinate anchor for first-pass screening."
 central_khon_kaen,Central Khon Kaen,shopping_mall,16.4338,102.8257,public mall listing + seed coordinate,medium_high,"Primary retail destination and known EV charging audit target."
 khon_kaen_railway_station,Khon Kaen Railway Station,transport,16.4290,102.8300,public rail station context + seed coordinate,medium,"Rail demand node in downtown Nai Mueang; verify exact pin before final report."
@@ -11,3 +11,4 @@ ton_tann_market,Ton Tann Market / lifestyle market,lifestyle,16.4130,102.8290,se
 khon_kaen_innovation_center,Khon Kaen Innovation Center / downtown office anchor,office,16.4300,102.8250,public business context + seed coordinate,low_medium,"Office/business anchor for CBD demand screening."
 route2_mittraphap_city_axis,Route 2 Friendship Highway city axis,transport_corridor,16.4400,102.8100,DOH AADT context + seed coordinate,medium,"High-volume city corridor proxy."
 western_ring_airport_axis,Western ring road / airport axis,transport_corridor,16.4550,102.7850,DOH AADT context + seed coordinate,medium,"Airport and bypass corridor proxy."
+srichan_square_target,ศรีจันทร์สแควร์,target_site,16.428241,102.857154,user-provided exact coordinate + public district context,high,"Exact target coordinate supplied by user; public district context confirms Sri Chan as a commercial/creative business district.",https://creativecity.cea.or.th/th/districts/sri-chan/about,user_coordinate_plus_public_context,"Coordinate is high confidence; site footprint, parking capacity, tenant mix, and charger access remain to be verified on site.",target_site,1.8,1.0,true
