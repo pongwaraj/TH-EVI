@@ -1,0 +1,3 @@
+exclusion_id,name,center_lat,center_lon,radius_km,reason,notes
+cb_sattahip_bay_open_water,Open water south of Sattahip town,12.610000,100.900000,4.0,open_water,"Prevents Sattahip town, beach and Fleet Command public-frontage demand from spilling into the Gulf of Thailand."
+cb_bangsaray_gulf_open_water,Open water south-west of Bang Sare,12.700000,100.855000,4.2,open_water,"Removes offshore heat while keeping the public coastal and Route 3 corridor on land."

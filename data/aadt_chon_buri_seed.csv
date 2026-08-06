@@ -1,0 +1,7 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,3,Si Racha - Pattaya,130+000,67916,Chon Buri,DOH aadt_2566.csv,"Regional north-south coastal corridor context; do not project this count onto Sattahip town streets."
+2566,3,Pattaya - Phlu Ta Luang,175+000,30305,Chon Buri,DOH aadt_2566.csv,"Sukhumvit corridor serving Bang Sare and the northern Sattahip approach."
+2566,331,Sattahip - Khao Bai Si,5+663,20579,Chon Buri,DOH aadt_2566.csv,"Inland Route 331 connector; material U-Tapao and eastern corridor context."
+2566,332,Khao Hat Yao - Thung Prong,0+550,15067,Chon Buri,DOH aadt_2566.csv,"Eastern local connector toward the U-Tapao/Ban Chang side."
+2566,3126,Phlu Ta Luang - Samae San,0+600,18930,Chon Buri,DOH aadt_2566.csv,"Public road link between Phlu Ta Luang and Samae San; not a proxy for the Fleet Command waterfront gate."
+2566,3573,King Rama VI Monument - Samae San Railway Station,1+200,11937,Chon Buri,DOH aadt_2566.csv,"Closest official local-road context for Sattahip town and Fleet Command access."

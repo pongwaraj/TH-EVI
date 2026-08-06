@@ -64,6 +64,8 @@ PROVINCE_EV_FACTOR = {
     "อุบลราชธานี": 0.92,  # Pilot assumption: large regional hub with Route 24/231 and Chong Mek demand
     "ภูเก็ต": 1.00,        # Major tourism island; DLT Apr 2026 ร.1 BEV share is already above 3%
     "Phuket": 1.00,
+    "ชลบุรี": 1.00,       # DLT Apr 2569 รย.1 BEV share: 2.223%
+    "Chon Buri": 1.00,
     "default": 1.00,
 }
 
@@ -170,6 +172,9 @@ PROVINCE_NEW_CAR_RATE = {
     # passenger BEVs in DLT fuel30Jun26_W.xlsx (30 Jun 2026).
     "พิษณุโลก": 3_380,
     "Phitsanulok": 3_380,
+    # Calibrated to DLT April 2569: 9,728 BEVs in the รย.1 fleet.
+    "ชลบุรี": 8_360,
+    "Chon Buri": 8_360,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
@@ -188,6 +193,8 @@ PROVINCE_FLEET_SIZE = {
     "Phuket": 155_308,
     "พิษณุโลก": 151_213,  # DLT fuel30Jun26_W.xlsx, รย.1 passenger-car fleet
     "Phitsanulok": 151_213,
+    "ชลบุรี": 437_604,   # DLT April 2569 รย.1 passenger-car fleet
+    "Chon Buri": 437_604,
 }
 
 # --- National Average Daily Trips per Vehicle ---

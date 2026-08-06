@@ -1,0 +1,5 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+cb_sattahip,Sattahip,Sattahip town / Fleet Command public-frontage catchment,district_center,12.666300,100.900200,3.4,0.90,"Use DOPA municipal context as an urban anchor. The model must not derive demand from restricted military activity."
+cb_phlu_ta_luang,Sattahip,Phlu Ta Luang / U-Tapao access node,transport_junction,12.704000,100.977000,4.0,0.90,"Route 3126/331 corridor, Lotus's U-Tapao and public charger competition."
+cb_bang_sare,Sattahip,Bang Sare town / Sukhumvit tourism node,tourism_town,12.757500,100.904000,3.6,0.88,"Route 3 stopover and tourism-residential cluster; several competitor stations constrain net opportunity."
+cb_na_jomtien,Sattahip,Na Jomtien resort corridor,tourism_town,12.798000,100.914000,3.8,0.82,"Northern Sattahip resort edge; distinct from Sattahip town, bound by hotel charging competition."

@@ -1,0 +1,11 @@
+metric_id,domain,metric_name,value,unit,reference_area,source_file,source_url,reference_date_be,verification_status,notes
+cb_dlt_all_vehicle_fleet,DLT,รถจดทะเบียนสะสมทุกประเภทรถ,1821073,คัน,จังหวัดชลบุรี,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"ใช้เป็นบริบทตลาดรวม ไม่ใช้แทน passenger-car fleet ในสูตรหลัก"
+cb_dlt_ror1_fleet,DLT,รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน (รย.1),437604,คัน,จังหวัดชลบุรี,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"ฐาน fleet สำหรับโมเดล EV passenger-car"
+cb_dlt_ror1_bev,DLT,BEV ในกลุ่ม รย.1,9728,คัน,จังหวัดชลบุรี,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"คิดเป็น 2.2230% ของรถ รย.1 ตามไฟล์นำเข้า"
+cb_dlt_ror1_phev,DLT,PHEV ในกลุ่ม รย.1,1862,คัน,จังหวัดชลบุรี,data/evhub_dlt_fleet_2569_04.csv,https://www.dlt.go.th,2569-04,official_imported,"รวม PHEV gasoline และ diesel; ใช้ cross-check ไม่รวมใน BEV heat field"
+cb_dopa_province_population,DOPA,ประชากรตามทะเบียน,1645985,คน,จังหวัดชลบุรี,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,"ใช้เป็น provincial market context"
+cb_dopa_sattahip_municipality,DOPA,ประชากรตามทะเบียน,20771,คน,เทศบาลเมืองสัตหีบ,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,"ใช้เป็นบริบทพื้นที่เมือง ไม่ตีความเป็น footfall หรือผู้เข้าใช้พื้นที่กองเรือ"
+cb_dopa_khet_udomsak_municipality,DOPA,ประชากรตามทะเบียน,55979,คน,เทศบาลตำบลเขตรอุดมศักดิ์,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,"ครอบคลุมบริบทชุมชนสัตหีบ-พลูตาหลวง; ไม่รวมเป็นตัวเลขเดียวกับเมืองสัตหีบ"
+cb_aadt_route3573,AADT,อนุสาวรีย์ ร.6 - สถานีรถไฟแสมสาร ทางหลวง 3573,11937,คันต่อวัน,สัตหีบ,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,"ใช้เป็น local road context ใกล้จุดเป้าหมาย"
+cb_aadt_route3126,AADT,พลูตาหลวง - แสมสาร ทางหลวง 3126,18930,คันต่อวัน,สัตหีบ,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,"คอร์ริดอร์อู่ตะเภา-แสมสาร"
+cb_aadt_route331,AADT,สัตหีบ - เขาบายศรี ทางหลวง 331,20579,คันต่อวัน,สัตหีบ,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,"คอร์ริดอร์ฝั่งตะวันออก ไม่กระจายค่าเข้าสู่ถนนชายฝั่ง"

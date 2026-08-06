@@ -31,6 +31,8 @@ PROVINCE_AADT_ALIASES = {
     "พิษณุโลก": "พิษณุโลก",
     "Phuket": "ภูเก็ต",
     "ภูเก็ต": "ภูเก็ต",
+    "Chon Buri": "ชลบุรี",
+    "ชลบุรี": "ชลบุรี",
 }
 
 ROUTE_BBOXES_BY_PROVINCE = {
@@ -71,6 +73,14 @@ ROUTE_BBOXES_BY_PROVINCE = {
         (1058, (16.800, 16.830, 100.240, 100.275)),
         (1061, (16.810, 16.860, 100.200, 100.240)),
     ],
+    "ชลบุรี": [
+        # Keep Sattahip town distinct from the much busier Pattaya corridor.
+        (3573, (12.62, 12.70, 100.86, 100.94)),
+        (3126, (12.66, 12.75, 100.94, 101.02)),
+        (331, (12.67, 12.79, 100.93, 101.03)),
+        (332, (12.67, 12.76, 100.96, 101.08)),
+        (3, (12.72, 12.87, 100.88, 100.95)),
+    ],
 }
 
 # Local-road pockets that fall inside a deliberately broad route bounding box.
@@ -81,6 +91,10 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
         # Mueang Kaeo east of Route 107 / Ring 3: riverside resorts, flower
         # gardens, and village roads rather than the Route 121 carriageway.
         ((18.86, 18.90, 98.965, 98.990), 8_000),
+    ],
+    "ชลบุรี": [
+        # Waterfront access near Fleet Command is a local destination road.
+        ((12.63, 12.69, 100.88, 100.94), 6_500),
     ],
 }
 
