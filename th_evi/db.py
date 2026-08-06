@@ -627,6 +627,7 @@ def _apply_postgres_reference_column_patches(engine) -> None:
             "reference_sources",
             "province_ingestion_runs",
             "reference_dataset_releases",
+            "aadt_segments",
             "poi_reference",
             "charger_competitors",
             "business_area_reference",
