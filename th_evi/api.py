@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import hmac
 import json
+import logging
 import math
 import os
 from pathlib import Path
@@ -65,6 +66,7 @@ STATIC_DIR = HERE / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 
 app = FastAPI(title="TH-EVI", version="0.2.0")
+logger = logging.getLogger(__name__)
 
 model = LocationDemandModel(province="เชียงใหม่")
 
@@ -963,6 +965,9 @@ def sync_reference_release(
             }
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Reference release sync failed for %s", slug)
+        raise HTTPException(status_code=500, detail="Reference release sync failed. Check server logs.") from exc
     _clear_reference_caches()
     return _json_safe(response)
 
