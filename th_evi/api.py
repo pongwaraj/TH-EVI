@@ -957,7 +957,13 @@ def sync_reference_release(
     slug = _reference_release_slug(req.province)
     try:
         with session_scope() as session:
-            result = sync_province_reference(session, slug, publish=req.publish, actor=req.actor)
+            result = sync_province_reference(
+                session,
+                slug,
+                publish=req.publish,
+                actor=req.actor,
+                runtime_safe=bool(os.getenv("VERCEL")),
+            )
             release = session.get(ReferenceDatasetRelease, result["release_id"])
             response = {
                 **result,
