@@ -177,9 +177,9 @@ PROVINCE_NEW_CAR_RATE = {
     # passenger BEVs in DLT fuel30Jun26_W.xlsx (30 Jun 2026).
     "พิษณุโลก": 3_380,
     "Phitsanulok": 3_380,
-    # Calibrated to DLT April 2569: 9,728 BEVs in the รย.1 fleet.
-    "ชลบุรี": 8_360,
-    "Chon Buri": 8_360,
+    # Calibrated to DLT 30 Jun 2569: 10,712 BEVs in the รย.1 fleet.
+    "ชลบุรี": 9_200,
+    "Chon Buri": 9_200,
     # Calibrated to DLT 30 Jun 2026: 5,964 registered รย.1 BEVs.
     "นครราชสีมา": 5_125,
     "Nakhon Ratchasima": 5_125,
@@ -201,8 +201,8 @@ PROVINCE_FLEET_SIZE = {
     "Phuket": 155_308,
     "พิษณุโลก": 151_213,  # DLT fuel30Jun26_W.xlsx, รย.1 passenger-car fleet
     "Phitsanulok": 151_213,
-    "ชลบุรี": 437_604,   # DLT April 2569 รย.1 passenger-car fleet
-    "Chon Buri": 437_604,
+    "ชลบุรี": 440_524,   # DLT 30 Jun 2569 รย.1 passenger-car fleet
+    "Chon Buri": 440_524,
     # DLT 30 Jun 2026 รย.1 passenger-car fleet.
     "นครราชสีมา": 342_842,
     "Nakhon Ratchasima": 342_842,

@@ -19,6 +19,7 @@ CHIANG_MAI = "Chiang Mai"
 PHITSANULOK = "Phitsanulok"
 NAKHON_NAYOK = "Nakhon Nayok"
 NAKHON_RATCHASIMA = "Nakhon Ratchasima"
+CHON_BURI = "Chon Buri"
 
 
 def test_poi_attraction_decays_with_distance():
@@ -777,6 +778,46 @@ def test_pak_thong_chai_target_uses_target_side_aadt_and_nearby_competition(monk
     assert result["nearest_competitor_km"] < 1.5
     assert result["competitor_penalty_sessions"] > 0
     assert result["net_sessions_per_day"] < result["gross_area_demand_sessions"]
+
+
+def test_marine_corps_commercial_target_uses_local_destination_aadt(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    result = analyze_click_location(
+        lat=12.675677,
+        lon=100.883793,
+        province=CHON_BURI,
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=35,
+        price_per_kwh=7.9,
+    )
+
+    assert result["location_type"] == "destination"
+    assert result["aadt_used"] == 5_000
+    assert result["nearest_competitor_km"] < 3.5
+    assert result["competitor_penalty_sessions"] > 0
 
 
 def test_airport_core_competitors_include_super_ev_hub():

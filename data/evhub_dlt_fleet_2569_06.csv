@@ -1,3 +1,5 @@
 source_project,source_file,source_month,source_year_be,province,vehicle_segment,total_vehicles,gasoline,diesel,bev,hev_gasoline,hev_diesel,phev_gasoline,phev_diesel,bev_share
 TH-EVI,fuel30Jun26_W.xlsx,2569-06,2569,นครราชสีมา,all_vehicle_law,1514362,947870,516207,8715,12006,113,741,2,0.0057548058
 TH-EVI,fuel30Jun26_W.xlsx,2569-06,2569,นครราชสีมา,ror1_passenger_car,342842,190274,121993,5964,11793,113,741,2,0.0173950105
+TH-EVI,fuel30Jun26_W.xlsx,2569-06,2569,ชลบุรี,all_vehicle_law,1901930,1389104,438093,15087,17771,193,2079,4,0.0079322865
+TH-EVI,fuel30Jun26_W.xlsx,2569-06,2569,ชลบุรี,ror1_passenger_car,440524,211435,187641,10712,17377,193,2079,4,0.0243167487
