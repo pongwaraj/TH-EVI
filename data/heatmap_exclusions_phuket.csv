@@ -1,0 +1,7 @@
+exclusion_id,name,center_lat,center_lon,radius_km,reason,notes
+phk_andaman_patong_west,Open water west of Patong,7.9000,98.2450,4.8,open_water,"Keeps the west-coast heat layer from spilling into open Andaman water off Patong."
+phk_andaman_kamala_west,Open water west of Kamala-Surin,7.9650,98.2450,5.0,open_water,"Removes offshore heat west of Kamala and Surin while preserving the coastal tourism belt."
+phk_andaman_bangtao_west,Open water west of Bang Tao,8.0100,98.2650,4.6,open_water,"Prevents false offshore heat west of Bang Tao and Laguna."
+phk_south_rawai_open_water,Open water south of Rawai,7.7400,98.3350,5.2,open_water,"Keeps south-coast demand from projecting into offshore water beyond Rawai and Promthep."
+phk_phangnga_east_bay,Open water east of Phuket Town,7.9000,98.4550,4.5,open_water,"Reduces spillover into open bay water east of Phuket Town and Ratsada."
+phk_northwest_sea_airport,Open water northwest of airport and Mai Khao,8.1450,98.2700,5.2,open_water,"Prevents airport and Mai Khao demand from creating false hot pixels out at sea."

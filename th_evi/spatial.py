@@ -1560,9 +1560,13 @@ def analyze_click_location(
     spatial_boost = primary_spatial + secondary_spatial * SPATIAL_OVERLAP_SHARE
     if mode in {"community", "district"}:
         spatial_boost += capturable_district_sessions
-    gross_area_demand = raw_base_sessions + (zone_score * factor) + (business_area_score * factor) + (poi_boost * factor)
+    # Keep the broad, overlapping spatial signal for diagnostics only.  It is
+    # deliberately not a sessions/day forecast because POI, zone and business
+    # anchors can describe the same trip.  The reportable pre-competition
+    # demand is calculated below from the capture-adjusted components.
+    raw_context_signal = raw_base_sessions + (zone_score * factor) + (business_area_score * factor) + (poi_boost * factor)
     if mode in {"community", "district"}:
-        gross_area_demand += district_boost * factor
+        raw_context_signal += district_boost * factor
     demand_share = 1.0
     if surface["status"] == "low_relevance":
         demand_share = LOW_RELEVANCE_DEMAND_SHARE
@@ -1626,7 +1630,11 @@ def analyze_click_location(
         "charge_probability_pct": location_result["charge_probability_pct"],
         "raw_base_sessions": round(raw_base_sessions, 1),
         "base_sessions": round(base_sessions, 1),
-        "gross_area_demand_sessions": round(gross_area_demand, 1),
+        "raw_context_signal_sessions": round(raw_context_signal, 1),
+        # This is intentionally the value immediately before the competitor
+        # deduction, so pre-competition demand - competitor penalty = net
+        # demand in every consumer-facing table.
+        "gross_area_demand_sessions": round(positive_demand, 1),
         "raw_zone_score": round(zone_score, 1),
         "zone_boost_sessions": round(capturable_zone_sessions, 1),
         "raw_business_area_score": round(business_area_score, 1),

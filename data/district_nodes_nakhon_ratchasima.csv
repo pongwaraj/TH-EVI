@@ -7,3 +7,4 @@ nrm_chok_chai,Chok Chai,Chok Chai district center,district_center,14.7280,102.16
 nrm_phimai,Phimai,Phimai district center,district_center,15.2210,102.4940,4.0,0.82,Historic district center and eastern service town with tourism and community relevance.
 nrm_bua_yai,Bua Yai,Bua Yai district center,district_center,15.5850,102.4250,4.0,0.8,Northern service town on the rail and highway axis toward Khon Kaen and Chaiyaphum.
 nrm_non_sung,Non Sung,Non Sung district center,coverage_anchor,15.1830,102.2560,3.6,0.76,Secondary east-side district node supporting province-wide coverage.
+nrm_pak_thong_chai,Pak Thong Chai,Pak Thong Chai service town and Route 24 junction,transport_junction,14.724000,102.024000,4.2,0.88,District service town with market hospital retail and Route 24 access. Keep demand concentrated near the town and junction rather than spread across the whole district.

@@ -727,16 +727,56 @@ def test_nakhon_ratchasima_loader_has_minimum_heatmap_anchor_sets():
         "nrm_pak_chong_town_center",
     }.issubset(poi_ids)
     assert {
-        "nrm_pea_volta_korat_city_seed",
         "ptt_charging_station_korat_1",
         "pea_volta_khok_kruat",
-        "elex_by_egat_pak_chong",
+        "nrm_bangchak_sanguan_phong_0125",
+        "nrm_pea_volta_pak_thong_chai",
     }.issubset(competitor_ids)
     assert {
         "nrm_korat_retail_civic_band",
         "nrm_mittraphap_modern_retail_spine",
         "nrm_pakchong_mittraphap_gateway",
     }.issubset(business_area_ids)
+
+
+def test_pak_thong_chai_target_uses_target_side_aadt_and_nearby_competition(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    result = analyze_click_location(
+        lat=14.756575,
+        lon=102.049715,
+        province=NAKHON_RATCHASIMA,
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=35,
+        price_per_kwh=7.9,
+    )
+
+    assert result["aadt_used"] == 17_539
+    assert result["nearest_competitor_km"] < 1.5
+    assert result["competitor_penalty_sessions"] > 0
+    assert result["net_sessions_per_day"] < result["gross_area_demand_sessions"]
 
 
 def test_airport_core_competitors_include_super_ev_hub():

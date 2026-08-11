@@ -276,11 +276,21 @@ def get_evhub_population(province, area_name=None, area_type=None):
 
 
 def load_evhub_dlt_fleet(province=None, vehicle_segment=None):
-    """Load normalized DLT April 2026 fleet by fuel type from the old EV Hub project."""
-    path = DATA_DIR / "evhub_dlt_fleet_2569_04.csv"
-    if not path.exists():
+    """Load the newest normalized DLT fleet row for each province and segment."""
+    paths = sorted(DATA_DIR.glob("evhub_dlt_fleet_*.csv"), reverse=True)
+    if not paths:
         return pd.DataFrame()
-    df = pd.read_csv(path)
+    frames = [pd.read_csv(path) for path in paths]
+    df = pd.concat(frames, ignore_index=True)
+    # Filenames use the Buddhist year and month (for example 2569_06).  A
+    # newer import supersedes the same province/vehicle-segment April row.
+    source_period = df.get("source_month", pd.Series("", index=df.index)).astype(str)
+    df = (
+        df.assign(_source_period=source_period)
+        .sort_values("_source_period", ascending=False)
+        .drop_duplicates(["province", "vehicle_segment"], keep="first")
+        .drop(columns="_source_period")
+    )
     if province:
         df = df[df["province"] == province].copy()
     if vehicle_segment:

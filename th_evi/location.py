@@ -33,6 +33,8 @@ PROVINCE_AADT_ALIASES = {
     "ภูเก็ต": "ภูเก็ต",
     "Chon Buri": "ชลบุรี",
     "ชลบุรี": "ชลบุรี",
+    "Nakhon Ratchasima": "นครราชสีมา",
+    "นครราชสีมา": "นครราชสีมา",
 }
 
 ROUTE_BBOXES_BY_PROVINCE = {
@@ -95,6 +97,12 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
     "ชลบุรี": [
         # Waterfront access near Fleet Command is a local destination road.
         ((12.63, 12.69, 100.88, 100.94), 6_500),
+    ],
+    "นครราชสีมา": [
+        # Official Route 24 control 201 (17,539 AADT) is the measured
+        # target-side segment. Do not back-project control 202's 28,686 AADT
+        # from the Pak Thong Chai--Chok Chai section onto this junction.
+        ((14.735, 14.775, 102.025, 102.070), 17_539),
     ],
 }
 
@@ -359,7 +367,7 @@ class LocationDemandModel:
         if loc_type == "highway":
             highway_aadt = self._find_nearest_highway(lat, lon, self.province)
             if highway_aadt:
-                return max(self._fallback_aadt(loc_type), highway_aadt)
+                return highway_aadt
 
         return self._fallback_aadt(loc_type)
 

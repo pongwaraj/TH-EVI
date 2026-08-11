@@ -1,0 +1,23 @@
+﻿year_be,route,name,km,aadt,heavy_vehicle_pct,province,source,confidence,notes
+2566,402,โคกกลอย - หมากปรก,11+206,28758,10.828,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 402 segment โคกกลอย - หมากปรก at km 11+206.
+2566,402,หมากปรก - เมืองภูเก็ต,44+656,35551,3.426,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 402 segment หมากปรก - เมืองภูเก็ต at km 44+656.
+2566,4020,เมืองภูเก็ต - กะทู้,1+112,21241,3.211,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4020 segment เมืองภูเก็ต - กะทู้ at km 1+112.
+2566,4021,เมืองภูเก็ต - ห้าแยกฉลอง,0+651,18929,1.749,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4021 segment เมืองภูเก็ต - ห้าแยกฉลอง at km 0+651.
+2566,4022,โรงเรียนวิชิตสงคราม - สนามสุรกุล,0+200,4822,0.726,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4022 segment โรงเรียนวิชิตสงคราม - สนามสุรกุล at km 0+200.
+2566,4023,เมืองภูเก็ต - แหลมพันวา,2+450,6766,3.266,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4023 segment เมืองภูเก็ต - แหลมพันวา at km 2+450.
+2566,4023,เมืองภูเก็ต - แหลมพันวา,6+800,8767,2.087,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4023 segment เมืองภูเก็ต - แหลมพันวา at km 6+800.
+2566,4024,บางคู - ตีนเขา,11+037,39300,0.718,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4024 segment บางคู - ตีนเขา at km 11+037.
+2566,4024,ตีนเขา - หาดราไวย์,19+559,8456,1.963,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4024 segment ตีนเขา - หาดราไวย์ at km 19+559.
+2566,4024,บางคู - ตีนเขา,2+000,27267,2.112,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4024 segment บางคู - ตีนเขา at km 2+000.
+2566,4025,ท่าเรือ - เชิงทะเล,3+160,12256,1.444,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4025 segment ท่าเรือ - เชิงทะเล at km 3+160.
+2566,4026,ทางเข้าสนามบินภูเก็ต,1+500,12667,2.463,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4026 segment ทางเข้าสนามบินภูเก็ต at km 1+500.
+2566,4027,ท่าเรือ - เมืองใหม่,0+500,18466,4.3,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4027 segment ท่าเรือ - เมืองใหม่ at km 0+500.
+2566,4028,ห้าแยกฉลอง - กะรน,0+500,10021,1.257,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4028 segment ห้าแยกฉลอง - กะรน at km 0+500.
+2566,4029,กะทู้ - ป่าตอง,0+000,18018,1.116,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4029 segment กะทู้ - ป่าตอง at km 0+000.
+2566,4030,ถลาง - หาดราไวย์,1+000,6560,2.591,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4030 segment ถลาง - หาดราไวย์ at km 1+000.
+2566,4030,ถลาง - หาดราไวย์,13+950,5815,2.373,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4030 segment ถลาง - หาดราไวย์ at km 13+950.
+2566,4030,ถลาง - หาดราไวย์,24+140,15564,1.169,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4030 segment ถลาง - หาดราไวย์ at km 24+140.
+2566,4031,มุดดอกขาว - สนามบินภูเก็ต,1+200,6891,4.237,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4031 segment มุดดอกขาว - สนามบินภูเก็ต at km 1+200.
+2566,4031,มุดดอกขาว - สนามบินภูเก็ต,10+722,4945,0.809,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4031 segment มุดดอกขาว - สนามบินภูเก็ต at km 10+722.
+2566,4302,หาดทรายแก้ว - ท่านุ่น,2+000,8244,15.417,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4302 segment หาดทรายแก้ว - ท่านุ่น at km 2+000.
+2566,4353,ท่าฉัตรไชย - หมวดถลาง,0+600,565,6.549,Phuket,DOH aadt_2566.csv,medium_high,DOH row for Phuket highway district; route 4353 segment ท่าฉัตรไชย - หมวดถลาง at km 0+600.

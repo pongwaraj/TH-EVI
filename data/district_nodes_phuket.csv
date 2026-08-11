@@ -1,0 +1,8 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+phk_mueang_town_core,Mueang Phuket,Phuket Town core,district_center,7.8845,98.3925,4.2,1.0,Provincial capital and strongest traditional urban node with government, retail, and transport demand.
+phk_mueang_chalong,Mueang Phuket,Chalong south gateway,transport_junction,7.8260,98.3390,4.0,0.94,South-side retail and tourism gateway linking Chalong, Rawai, and Kata-Karon movements.
+phk_kathu_central,Kathu,Kathu connector core,transport_junction,7.9060,98.3310,3.8,0.96,Mid-island connector node between Phuket Town and Patong with strong pass-through traffic.
+phk_kathu_patong,Kathu,Patong beach core,tourism_town,7.8962,98.2967,4.0,0.98,Primary west-coast tourism center with strong visitor intensity and hotel-linked charging potential.
+phk_thalang_gateway,Thalang,Thalang retail gateway,district_center,7.9820,98.3590,4.4,0.98,Major north-island retail and arterial node around Robinson Lifestyle and Thepkrasattri Road.
+phk_thalang_laguna,Thalang,Choeng Thale - Bang Tao lifestyle node,tourism_town,7.9920,98.3060,4.2,0.94,Premium west-coast tourism and lifestyle node serving Laguna, Bang Tao, and Cherng Talay.
+phk_thalang_airport,Thalang,Airport - Mai Khao gateway,transport_junction,8.0980,98.3150,4.6,0.92,Airport-led north gateway node supporting arrivals, transfers, and resort traffic.
