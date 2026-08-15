@@ -1,0 +1,5 @@
+metric_id,domain,metric_name,value,unit,reference_area,source_file,source_url,reference_date_be,verification_status,notes
+ac_snt_dopa_mueang_population_2568,DOPA,ประชากรตามทะเบียน,96555,คน,อำเภอเมืองอำนาจเจริญ,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,ใช้เป็นบริบทระดับอำเภอ ไม่ใช่ประชากรของตำบลสร้างนกทาโดยตรง
+ac_snt_aadt_route202_2566,AADT,ทางหลวง 202 บริบทฝั่งอำนาจเจริญ,11046,คันต่อวัน,จังหวัดอำนาจเจริญ,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,ใช้เป็น corridor context; จุด อบต. ไม่อยู่บนหน้าทางหลวงโดยตรง
+ac_snt_poi_sao,POI,องค์การบริหารส่วนตำบลสร้างนกทา,15.815964,พิกัด,ตำบลสร้างนกทา,data/poi_amnat_charoen_seed.csv,https://www.srangnoktha.go.th/index/,2569-08,official_site_user_coordinate,หน่วยงานราชการและจุดบริการชุมชน
+ac_snt_competitor_nearest,COMPETITOR,สถานีชาร์จสาธารณะใกล้สุดในชุดข้อมูล,16.4,กิโลเมตร,เมืองอำนาจเจริญ,data/competitors_amnat_charoen_seed.csv,https://ev.polygonmap.com/,2569-08,public_operator_feed,ระยะโดยประมาณจากจุดวิเคราะห์ถึงสถานีในเมือง; ต้องตรวจเส้นทางจริงและสถานะเปิดบริการ

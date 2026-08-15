@@ -1,0 +1,5 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+amnat_mueang,Mueang Amnat Charoen,Mueang Amnat Charoen provincial capital,district_center,15.8650,104.6250,4.5,1.0,Primary provincial service and transport node.
+amnat_pathum,Pathum Ratchawongsa,Pathum Ratchawongsa district center,district_center,15.9000,104.9900,3.5,0.78,East-side district coverage anchor.
+amnat_phana,Phana,Phana district center,district_center,15.6800,104.8200,3.5,0.72,Southwest district coverage anchor.
+amnat_sang_nok_tha,Sang Nok Tha,Sang Nok Tha local civic node,coverage_anchor,15.815964,104.761337,2.5,0.68,Local administrative and village-service node; use as a coverage anchor, not a city-center substitute.

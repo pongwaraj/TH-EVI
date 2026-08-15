@@ -1,0 +1,10 @@
+metric_id,domain,metric_name,value,unit,reference_area,source_file,source_url,reference_date_be,verification_status,notes
+ac_dlt_all_vehicle_fleet_2569_06,DLT,รถจดทะเบียนสะสมทุกประเภทรถ,136436,คัน,จังหวัดอำนาจเจริญ,data/evhub_dlt_fleet_2569_06.csv,https://gdcatalog.dlt.go.th/en/dataset/dataset_1_1_04,2569-06,official_user_provided,บริบทตลาดรวม ไม่ใช้แทนฐาน passenger-car fleet ในสูตรหลัก
+ac_dlt_ror1_fleet_2569_06,DLT,รถยนต์นั่งส่วนบุคคลไม่เกิน 7 คน (รย.1),21531,คัน,จังหวัดอำนาจเจริญ,data/evhub_dlt_fleet_2569_06.csv,https://gdcatalog.dlt.go.th/en/dataset/dataset_1_1_04,2569-06,official_user_provided,ฐาน passenger-car fleet สำหรับโมเดล EV
+ac_dlt_ror1_bev_2569_06,DLT,BEV ในกลุ่ม รย.1,146,คัน,จังหวัดอำนาจเจริญ,data/evhub_dlt_fleet_2569_06.csv,https://gdcatalog.dlt.go.th/en/dataset/dataset_1_1_04,2569-06,official_user_provided,คิดเป็น 0.6780% ของรถ รย.1
+ac_dlt_ror1_phev_2569_06,DLT,PHEV ในกลุ่ม รย.1,32,คัน,จังหวัดอำนาจเจริญ,data/evhub_dlt_fleet_2569_06.csv,https://gdcatalog.dlt.go.th/en/dataset/dataset_1_1_04,2569-06,official_user_provided,ใช้ cross-check ไม่รวมใน BEV heat field
+ac_dopa_province_population_2568,DOPA,ประชากรตามทะเบียน,370677,คน,จังหวัดอำนาจเจริญ,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,บริบทระดับจังหวัด
+ac_dopa_mueang_population_2568,DOPA,ประชากรตามทะเบียน,96555,คน,อำเภอเมืองอำนาจเจริญ,data/evhub_dopa_population_2568.csv,https://stat.bora.dopa.go.th,2568,official_imported,ฐานชุมชนเมืองหลัก ไม่ตีความเป็น footfall
+ac_aadt_route212_506_333_2566,AADT,ทางหลวง 212 ช่วงห้วยสะแบก - อำนาจเจริญ,12660,คันต่อวัน,จังหวัดอำนาจเจริญ,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,ตัวแทน corridor หลักฝั่งเมือง
+ac_aadt_route212_529_133_2566,AADT,ทางหลวง 212 ช่วงอำนาจเจริญ - ลืออำนาจ,11660,คันต่อวัน,จังหวัดอำนาจเจริญ,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,ตัวแทน corridor ฝั่งเหนือ/ตะวันออก
+ac_aadt_route202_298_680_2566,AADT,ทางหลวง 202 ช่วงสะพานคลองลำเซ - ปทุมราชวงศา,11046,คันต่อวัน,จังหวัดอำนาจเจริญ,data/aadt_2566.csv,https://bmm.doh.go.th,2566,official_imported,ตัวแทน corridor ทางหลวง 202

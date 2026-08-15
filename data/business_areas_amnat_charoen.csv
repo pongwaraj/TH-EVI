@@ -1,0 +1,5 @@
+business_area_id,name,area_type,center_lat,center_lon,radius_km,demand_pool_conservative,demand_pool_base,demand_pool_upside,location_type,confidence,notes,last_verified_date
+amnat_city_service_core,Mueang Amnat Charoen service and retail core,urban_fringe,15.8755,104.6240,3.8,28,45,68,destination,medium_high,Big C hospital bus station schools and Route 212.,2026-08-15
+amnat_route212_north_gateway,Route 212 north gateway,periurban_connector,15.9300,104.6270,5.5,18,30,46,highway,medium,Northbound intercity and fuel-service corridor.,2026-08-15
+amnat_route202_east_connector,Route 202 east connector,periurban_connector,15.8650,104.6700,5.5,16,27,42,highway,medium,Eastbound connection; avoid rural overreach.,2026-08-15
+amnat_sang_nok_tha_civic_edge,Sang Nok Tha civic and village service edge,residential_school_edge,15.815964,104.761337,2.4,4,7,12,destination,high,Small local catchment around the SAO and village services. Do not inherit the Mueang Amnat retail-core pool or Route 212 through-traffic directly.,2026-08-15

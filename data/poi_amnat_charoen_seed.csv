@@ -1,0 +1,8 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+amnat_charoen_city_core,Mueang Amnat Charoen urban core,city_center,15.8650,104.6250,OSM city and road context,medium_high,Provincial service and destination core.
+big_c_amnat_charoen,Big C Amnat Charoen,shopping_mall,15.8816617,104.6235148,OSM + public operator listing,high,Major retail anchor.
+amnat_charoen_bus_station,Amnatcharoen Bus Station,transport,15.8866519,104.6216675,OSM + Nakhonchai Air listing,high,Provincial bus terminal and dwell-time anchor.
+amnat_charoen_hospital,Amnatcharoen Hospital,hospital,15.8644857,104.6234558,OSM,high,Provincial hospital anchor.
+ramkhamhaeng_amnat_campus,Ramkhamhaeng University Amnatcharoen Campus,education,15.7911488,104.6398295,OSM,medium_high,Education anchor south of the capital.
+amnat_chayangkun_corridor,Chayangkun Road / Route 212 city corridor,highway,15.8650,104.6270,DOH AADT and OSM,high,Through-traffic context; not a citywide demand proxy.
+sang_nok_tha_sao,องค์การบริหารส่วนตำบลสร้างนกทา,government,15.815964,104.761337,Sang Nok Tha SAO official website + user-provided coordinate,high,Local civic and service anchor; demand is community and official-business related, not a mall or highway-stop demand pool.

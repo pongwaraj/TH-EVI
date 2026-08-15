@@ -182,6 +182,8 @@ PROVINCE_NEW_CAR_RATE = {
     "Chon Buri": 9_200,
     # Calibrated to DLT 30 Jun 2026: 5,964 registered รย.1 BEVs.
     "นครราชสีมา": 5_125,
+    "อำนาจเจริญ": 160,
+    "Amnat Charoen": 160,
     "Nakhon Ratchasima": 5_125,
 }
 # Total passenger car fleet by province (approx)
@@ -205,6 +207,8 @@ PROVINCE_FLEET_SIZE = {
     "Chon Buri": 440_524,
     # DLT 30 Jun 2026 รย.1 passenger-car fleet.
     "นครราชสีมา": 342_842,
+    "อำนาจเจริญ": 21_531,
+    "Amnat Charoen": 21_531,
     "Nakhon Ratchasima": 342_842,
 }
 

@@ -820,6 +820,52 @@ def test_marine_corps_commercial_target_uses_local_destination_aadt(monkeypatch)
     assert result["competitor_penalty_sessions"] > 0
 
 
+def test_grand_siri_san_phranet_uses_local_context_and_verified_competitors(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+
+    result = analyze_click_location(
+        lat=18.803613,
+        lon=99.030278,
+        province=CHIANG_MAI,
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=35,
+        price_per_kwh=7.9,
+    )
+
+    assert result["location_type"] == "destination"
+    assert result["aadt_used"] == 5_000
+    assert result["nearest_competitor_km"] < 1.0
+    assert result["competitor_penalty_sessions"] > 0
+    assert result["net_sessions_per_day"] < result["gross_area_demand_sessions"]
+    assert any(
+        row["name"] == "BCP - Pornphawit Oil (0609)"
+        for row in load_competitors_for_province(CHIANG_MAI)
+    )
+
+
 def test_airport_core_competitors_include_super_ev_hub():
     result = analyze_click_location(
         lat=18.7682469,

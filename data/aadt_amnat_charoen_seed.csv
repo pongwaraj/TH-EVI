@@ -1,0 +1,5 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,212,ห้วยสะแบก - อำนาจเจริญ,506+333,12660,Amnat Charoen,DOH aadt_2566.csv,Main Chayangkun Road approach.
+2566,212,อำนาจเจริญ - ลืออำนาจ,529+133,11660,Amnat Charoen,DOH aadt_2566.csv,North-east city corridor.
+2566,202,สะพานคลองลำเซ - ปทุมราชวงศา,298+680,11046,Amnat Charoen,DOH aadt_2566.csv,Arun Prasoet corridor.
+2566,101,ลืออำนาจ - พนา,2+000,7037,Amnat Charoen,DOH aadt_2566.csv,Local inter-district corridor.

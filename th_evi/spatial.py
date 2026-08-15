@@ -77,6 +77,8 @@ PROVINCE_SLUGS = {
     "Uthai Thani": "uthai_thani",
     "\u0e2d\u0e38\u0e17\u0e31\u0e22\u0e18\u0e32\u0e19\u0e35": "uthai_thani",
     "Nan": "nan",
+    "อำนาจเจริญ": "amnat_charoen",
+    "Amnat Charoen": "amnat_charoen",
     "\u0e19\u0e48\u0e32\u0e19": "nan",
     "Phuket": "phuket",
     "\u0e20\u0e39\u0e40\u0e01\u0e47\u0e15": "phuket",
@@ -106,6 +108,7 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "nakhon_nayok": "Nakhon Nayok",
     "chai_nat": "Chai Nat",
     "uthai_thani": "Uthai Thani",
+    "amnat_charoen": "Amnat Charoen",
     "phuket": "Phuket",
     "chon_buri": "Chon Buri",
 }
