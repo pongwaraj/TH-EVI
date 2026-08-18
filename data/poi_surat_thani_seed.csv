@@ -1,0 +1,13 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+surat_makham_tia_target,Makham Tia analysis point,target_site,9.102657,99.316291,user-provided coordinate,high,"Target coordinate on Phokhun Thale local access road in Makham Tia; use as the analysis pin, not as an independent demand source."
+surat_phokhun_thale_corridor,Phokhun Thale local commercial corridor,transport_corridor,9.102657,99.316291,OSM reverse geocode + user coordinate,medium_high,Local collector and urban-access context; keep separate from official Route 420 AADT.
+surat_makham_tia_market,Makham Tia local market,market_tourism,9.101800,99.317817,OpenStreetMap marketplace,medium,Nearby recurring community market; useful dwell-time signal but not a province-wide demand proxy.
+surat_tesco_lotus_homepro,Tesco Lotus - HomePro Surat Thani,shopping_mall,9.104029,99.307037,OpenStreetMap + public map cross-check,high,Nearby retail anchor southwest of the city core.
+surat_central_suratthani,Central Suratthani,shopping_mall,9.110734,99.301599,Central Pattana venue reference + OpenStreetMap,high,Major retail and dining destination on the west side of Mueang Surat Thani.
+surat_new_bus_terminal,Surat Thani new bus terminal,transport,9.111636,99.298288,OpenStreetMap,high,Intercity bus and passenger dwell-time anchor.
+surat_hospital,Surathani Hospital,hospital,9.124184,99.309615,Surathani Hospital public website + OpenStreetMap,high,Large healthcare destination north of the target catchment.
+surat_city_core,Mueang Surat Thani commercial core,city_center,9.144500,99.330000,OpenStreetMap city and road context,medium_high,Provincial commercial and government center.
+surat_sahathai_garden,Sahathai Garden Plaza,shopping_mall,9.149712,99.335651,OpenStreetMap,medium,City retail anchor with food and service activity.
+surat_diamond_market,Diamond Market,market_tourism,9.107146,99.307402,OpenStreetMap,medium,Local market near the southwest commercial belt.
+surat_rajabhat_university,Suratthani Rajabhat University,education,9.081639,99.363969,OpenStreetMap + university reference,medium,Large education node in the southeast of Mueang district.
+surat_airport,Surat Thani Airport,airport,9.132500,99.135000,Airports of Thailand/public map reference,medium,Airport gateway in Phunphin; kept as a separate travel-demand anchor.

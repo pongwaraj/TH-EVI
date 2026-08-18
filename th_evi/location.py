@@ -37,6 +37,8 @@ PROVINCE_AADT_ALIASES = {
     "นครราชสีมา": "นครราชสีมา",
     "Amnat Charoen": "อำนาจเจริญ",
     "อำนาจเจริญ": "อำนาจเจริญ",
+    "Surat Thani": "สุราษฎร์ธานี",
+    "สุราษฎร์ธานี": "สุราษฎร์ธานี",
 }
 
 ROUTE_BBOXES_BY_PROVINCE = {
@@ -90,6 +92,17 @@ ROUTE_BBOXES_BY_PROVINCE = {
         (202, (15.78, 15.93, 104.55, 104.75)),
         (101, (15.80, 15.95, 104.45, 104.75)),
     ],
+    "สุราษฎร์ธานี": [
+        # Main urban and intercity corridors. The Makham Tia target sits on a
+        # local collector, so its local-access override below wins over the
+        # broad Route 420 envelope.
+        (420, (9.05, 9.18, 99.28, 99.40)),
+        (4009, (9.04, 9.18, 99.18, 99.38)),
+        (401, (8.90, 9.25, 99.12, 99.48)),
+        (417, (9.04, 9.18, 99.10, 99.26)),
+        (44, (8.80, 9.45, 99.25, 99.85)),
+        (41, (8.85, 9.45, 99.05, 99.35)),
+    ],
 }
 
 # Local-road pockets that fall inside a deliberately broad route bounding box.
@@ -110,6 +123,11 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
         # target-side segment. Do not back-project control 202's 28,686 AADT
         # from the Pak Thong Chai--Chok Chai section onto this junction.
         ((14.735, 14.775, 102.025, 102.070), 17_539),
+    ],
+    "สุราษฎร์ธานี": [
+        # 9.102657, 99.316291 is on Phokhun Thale local access road near the
+        # bypass retail cluster, not on the measured Route 420 carriageway.
+        ((9.075, 9.125, 99.285, 99.335), 8_500),
     ],
 }
 

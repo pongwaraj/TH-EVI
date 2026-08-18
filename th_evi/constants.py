@@ -71,6 +71,8 @@ PROVINCE_EV_FACTOR = {
     # new-car rate below rather than a mixed vehicle-class multiplier.
     "นครราชสีมา": 1.00,
     "Nakhon Ratchasima": 1.00,
+    "สุราษฎร์ธานี": 1.00,    # DLT Apr 2569 รย.1 BEV share: 2.138%
+    "Surat Thani": 1.00,
     "default": 1.00,
 }
 
@@ -185,6 +187,10 @@ PROVINCE_NEW_CAR_RATE = {
     "อำนาจเจริญ": 160,
     "Amnat Charoen": 160,
     "Nakhon Ratchasima": 5_125,
+    # Calibrated to DLT Apr 2569: 3,722 registered passenger BEVs in 174,123
+    # รย.1 vehicles. June 2569 extract does not contain a Surat Thani row.
+    "สุราษฎร์ธานี": 3_200,
+    "Surat Thani": 3_200,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
@@ -210,6 +216,8 @@ PROVINCE_FLEET_SIZE = {
     "อำนาจเจริญ": 21_531,
     "Amnat Charoen": 21_531,
     "Nakhon Ratchasima": 342_842,
+    "สุราษฎร์ธานี": 174_123,
+    "Surat Thani": 174_123,
 }
 
 # --- National Average Daily Trips per Vehicle ---

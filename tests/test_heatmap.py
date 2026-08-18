@@ -3,6 +3,7 @@ from th_evi.heatmap import (
     generate_chiang_mai_heatmap,
     generate_province_heatmap,
 )
+from th_evi.spatial import analyze_click_location, load_competitors_for_province, load_pois_for_province
 
 
 def test_heatmap_includes_grid_step_metadata():
@@ -46,6 +47,36 @@ def test_province_heatmap_supports_non_chiang_mai():
     assert "business_area_count" in result["metadata"]
     assert result["metadata"]["urban_mask"] == "poi_zone_competitor"
     assert all(point["context_score"] >= 5.0 for point in result["points"])
+
+
+def test_surat_thani_heatmap_supports_makham_tia_scope_and_competitor_pressure():
+    pois = load_pois_for_province("Surat Thani")
+    competitors = load_competitors_for_province("Surat Thani")
+
+    assert any(poi["poi_id"] == "surat_makham_tia_target" for poi in pois)
+    assert any(station["station_id"] == "surat_ptt_k_kit_bypass" for station in competitors)
+
+    result = generate_province_heatmap(
+        "Surat Thani",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+    target = analyze_click_location(
+        9.102657,
+        99.316291,
+        "Surat Thani",
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+
+    assert result["point_count"] > 0
+    assert result["metadata"]["poi_count"] >= 10
+    assert result["metadata"]["competitor_count"] >= 10
+    assert target["nearest_competitor_km"] < 0.5
+    assert target["net_sessions_per_day"] < target["gross_area_demand_sessions"]
 
 
 def test_samut_prakan_heatmap_supports_bang_pu_scope():

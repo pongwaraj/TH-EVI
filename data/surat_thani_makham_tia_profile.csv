@@ -1,0 +1,5 @@
+metric_id,domain,metric_name,value,unit,reference_area,source_file,source_url,reference_date_be,verification_status,notes
+st_makham_tia_coordinate,LOCATION,จุดวิเคราะห์,9.102657|99.316291,พิกัด,มะขามเตี้ย,User-provided coordinate,,2569-08,user_provided,Point reverse-geocodes to Phokhun Thale Road and Wat Pradu municipality.
+st_makham_tia_aadt,AADT,บริบท traffic ของถนนท้องถิ่น,8500,คันต่อวัน,มะขามเตี้ย,data/surat_thani_market_profile.csv,https://www.openstreetmap.org,2569-08,model_context,"Do not substitute the 25,426 AADT measured on the city bypass."
+st_makham_tia_poi,POI,จุดวิเคราะห์และ retail anchors,5,จุด,รัศมีใกล้เคียง,data/poi_surat_thani_seed.csv,https://www.openstreetmap.org,2569-08,osm_user_coordinate,"Target, local market, Tesco Lotus HomePro, Central Suratthani, and new bus terminal are the primary local context."
+st_makham_tia_competitors,COMPETITOR,คู่แข่ง DC ใกล้จุดวิเคราะห์,3,สถานีในระยะประมาณ 4 กม.,มะขามเตี้ย,data/competitors_surat_thani_seed.csv,https://ev.polygonmap.com/,2569-08,public_operator_feed,Includes PTT K. Kit Bypass at approximately 0.2 km and PEA Bypass KM5 at approximately 3.5 km; verify live status before field use.

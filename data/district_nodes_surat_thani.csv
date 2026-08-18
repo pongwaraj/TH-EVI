@@ -1,0 +1,9 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+surat_mueang,Mueang Surat Thani,Mueang Surat Thani city and provincial service node,district_center,9.1445,99.3300,5.0,1.0,"Primary provincial retail, civic, hospital, and transport anchor."
+surat_makham_tia,Mueang Surat Thani,Makham Tia southwest commercial node,district_mall,9.1060,99.3130,3.5,0.92,Target-side local commercial node; keep distinct from the downtown core and apply nearby competitor pressure.
+surat_phunphin,Phunphin,Phunphin airport and railway gateway,transport_junction,9.1250,99.1800,4.8,0.92,"Intercity gateway with airport, railway, and Route 417 context."
+surat_kanchanadit,Kanchanadit,Kanchanadit east corridor node,transport_junction,9.1800,99.4700,4.0,0.82,East-side connector toward Don Sak and ferry traffic.
+surat_donsak,Don Sak,Don Sak ferry gateway,tourism_town,9.3140,99.6910,4.5,0.86,Ferry and island-transfer demand anchor; separate from mainland Mueang heat.
+surat_wiang_sa,Wiang Sa,Wiang Sa regional town,district_center,8.6300,99.3700,3.5,0.78,Route 41 and Route 44 regional service node.
+surat_chaiya,Chaiya,Chaiya northern corridor town,district_center,9.3870,99.1980,3.5,0.78,Northbound Route 41 service and tourism node.
+surat_koh_samui,Ko Samui,Ko Samui tourism gateway,tourism_town,9.5120,100.0130,5.0,0.90,Island tourism and airport/port demand; map separately from mainland corridors.

@@ -1,0 +1,9 @@
+year_be,route,name,km,aadt,province,source,notes
+2566,420,Surat Thani city bypass,5+482,25426,Surat Thani,DOH aadt_2566.csv,Highest current official city-bypass count; do not project directly onto local Phokhun Thale access road.
+2566,420,Surat Thani city bypass,3+282,22884,Surat Thani,DOH aadt_2566.csv,Urban ring-road context for Mueang Surat Thani.
+2566,4009,Bang Yai - Soi Sip,18+000,12396,Surat Thani,DOH aadt_2566.csv,South-west urban connector context.
+2566,401,Bang Kung - Khao Hua Chang,196+779,19088,Surat Thani,DOH aadt_2566.csv,East-side regional corridor count.
+2566,401,Bang Kung - Khao Hua Chang,168+379,19730,Surat Thani,DOH aadt_2566.csv,East-side regional corridor count.
+2566,417,Surat Thani Airport - Kho Lang,11+196,22142,Surat Thani,DOH aadt_2566.csv,Airport and Phunphin access corridor.
+2566,44,Tha Ruea - Hin Ngok,110+057,11181,Surat Thani,DOH aadt_2566.csv,Route 44 eastbound regional connector.
+2566,41,Tha Chi - Tham Phannara,225+603,34655,Surat Thani,DOH aadt_2566.csv,Route 41 long-distance corridor context; not a proxy for Mueang local streets.
