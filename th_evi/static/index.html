@@ -176,6 +176,7 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
           <option value="ขอนแก่น">ขอนแก่น</option>
           <option value="อุบลราชธานี">อุบลราชธานี</option>
           <option value="ภูเก็ต">ภูเก็ต</option>
+          <option value="สุราษฎร์ธานี">สุราษฎร์ธานี</option>
         </select>
         <datalist id="heatmap-province-options"></datalist>
         </div>
@@ -259,6 +260,7 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
             <option value="ขอนแก่น">ขอนแก่น</option>
             <option value="อุบลราชธานี">อุบลราชธานี</option>
             <option value="ภูเก็ต">ภูเก็ต</option>
+            <option value="สุราษฎร์ธานี">สุราษฎร์ธานี</option>
           </select>
           <datalist id="province-options"></datalist>
           </div>
@@ -836,7 +838,8 @@ const PROVINCE_API_VALUES = {
   "อุดรธานี": "Udon Thani",
   "ขอนแก่น": "Khon Kaen",
   "อุบลราชธานี": "Ubon Ratchathani",
-  "ภูเก็ต": "Phuket"
+  "ภูเก็ต": "Phuket",
+  "สุราษฎร์ธานี": "Surat Thani"
 };
 const REFERENCE_PROVINCES = Object.entries(PROVINCE_API_VALUES).map(([th, en]) => ({ th, en }));
 let referenceMeta = null;
