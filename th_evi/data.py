@@ -428,6 +428,8 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
     # not yet been imported into the current EV Hub data package.
     dopa_province_names = {
         "Khon Kaen": "ขอนแก่น",
+        "Chaiyaphum": "ชัยภูมิ",
+        "ชัยภูมิ": "ชัยภูมิ",
     }
     dopa_province = dopa_province_names.get(province_en)
     if dopa_province:
@@ -454,6 +456,7 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
                 "Chonnabot": "อำเภอชนบท",
                 "Khao Suan Kwang": "อำเภอเขาสวนกวาง",
                 "Phu Pha Man": "อำเภอภูผาม่าน",
+                "Phu Khiao": "อำเภอภูเขียว",
                 "Sam Sung": "อำเภอซำสูง",
                 "Khok Pho Chai": "อำเภอโคกโพธิ์ไชย",
                 "Nong Na Kham": "อำเภอหนองนาคำ",

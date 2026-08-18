@@ -1,0 +1,6 @@
+year_be,route,name,km,aadt,heavy_vehicle_pct,province,source,notes
+2566,2037,Phu Khiao - Kaset Sombun,9+000,7080,15.48,Chaiyaphum,DOH aadt_2566.csv,"Nearest measured regional corridor to Phu Khiao town; use local-access override for the requested point."
+2566,2159,Huai Yang Dam - Kaset Sombun,67+850,5875,13.702,Chaiyaphum,DOH aadt_2566.csv,"Secondary Kaset Sombun approach; regional context only."
+2566,201,Ban Li - Si Yaek Rong Tom,125+164,15789,14.13,Chaiyaphum,DOH aadt_2566.csv,"Route 201 provincial corridor; do not project this count onto local town streets."
+2566,201,Chong Sam Mo - Ban Khae,163+067,18620,23.303,Chaiyaphum,DOH aadt_2566.csv,"Higher-volume Route 201 segment outside the immediate target catchment."
+2566,201,Chong Sam Mo - Ban Khae,191+731,9085,18.778,Chaiyaphum,DOH aadt_2566.csv,"Lower-volume Route 201 segment; retained for province corridor context."

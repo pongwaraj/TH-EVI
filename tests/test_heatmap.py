@@ -79,6 +79,38 @@ def test_surat_thani_heatmap_supports_makham_tia_scope_and_competitor_pressure()
     assert target["net_sessions_per_day"] < target["gross_area_demand_sessions"]
 
 
+def test_chaiyaphum_heatmap_supports_phu_khiao_scope_and_competitor_signal():
+    pois = load_pois_for_province("ชัยภูมิ")
+    competitors = load_competitors_for_province("ชัยภูมิ")
+
+    assert any(poi["poi_id"] == "chaiyaphum_phu_khiao_target" for poi in pois)
+    assert any(station["station_id"] == "chaiyaphum_phu_khiao_ev_candidate" for station in competitors)
+
+    result = generate_province_heatmap(
+        "ชัยภูมิ",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+    target = analyze_click_location(
+        16.348279,
+        102.128044,
+        "ชัยภูมิ",
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+
+    assert result["point_count"] > 0
+    assert result["metadata"]["poi_count"] >= 5
+    assert result["metadata"]["competitor_count"] >= 1
+    assert target["aadt_used"] == 8500
+    assert target["nearest_competitor_km"] < 2.5
+    assert target["net_sessions_per_day"] < target["gross_area_demand_sessions"]
+    assert target["top_districts"][0]["population"] == 106493
+
+
 def test_samut_prakan_heatmap_supports_bang_pu_scope():
     result = generate_province_heatmap(
         "Samut Prakan",

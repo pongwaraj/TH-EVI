@@ -1,0 +1,3 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+chy_phu_khiao,Phu Khiao,Phu Khiao district civic and service node,district_center,16.3660,102.1320,4.2,0.84,"District center supported by municipality, hospital, bus station, and local retail."
+chy_phu_khiao_transport,Phu Khiao,Phu Khiao Route 2037 transport junction,transport_junction,16.3639,102.1287,4.2,0.82,"Regional connector toward Kaset Sombun and Chum Phae; keep separate from full Route 201 corridor traffic."

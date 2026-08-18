@@ -62,6 +62,8 @@ PROVINCE_EV_FACTOR = {
     "แพร่": 0.76,         # Pilot assumption: smaller northern province, lifted by Den Chai Route 11/101 gateway demand
     "เชียงราย": 0.95,     # Pilot assumption: large northern province with tourism, airport, and border gateways
     "อุบลราชธานี": 0.92,  # Pilot assumption: large regional hub with Route 24/231 and Chong Mek demand
+    "ชัยภูมิ": 1.00,       # DLT Apr 2569 รย.1 BEV stock is low; calibrate fleet size and rate below
+    "Chaiyaphum": 1.00,
     "ภูเก็ต": 1.00,        # Major tourism island; DLT Apr 2026 ร.1 BEV share is already above 3%
     "Phuket": 1.00,
     "ชลบุรี": 1.00,       # DLT Apr 2569 รย.1 BEV share: 2.223%
@@ -191,6 +193,10 @@ PROVINCE_NEW_CAR_RATE = {
     # รย.1 vehicles. June 2569 extract does not contain a Surat Thani row.
     "สุราษฎร์ธานี": 3_200,
     "Surat Thani": 3_200,
+    # Calibrated to DLT Apr 2569: 305 BEVs in the รย.1 passenger-car fleet.
+    # This is deliberately conservative for a lower-density provincial market.
+    "ชัยภูมิ": 270,
+    "Chaiyaphum": 270,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
@@ -218,6 +224,8 @@ PROVINCE_FLEET_SIZE = {
     "Nakhon Ratchasima": 342_842,
     "สุราษฎร์ธานี": 174_123,
     "Surat Thani": 174_123,
+    "ชัยภูมิ": 59_757,
+    "Chaiyaphum": 59_757,
 }
 
 # --- National Average Daily Trips per Vehicle ---

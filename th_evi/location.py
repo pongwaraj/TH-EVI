@@ -39,6 +39,8 @@ PROVINCE_AADT_ALIASES = {
     "อำนาจเจริญ": "อำนาจเจริญ",
     "Surat Thani": "สุราษฎร์ธานี",
     "สุราษฎร์ธานี": "สุราษฎร์ธานี",
+    "Chaiyaphum": "ชัยภูมิ",
+    "ชัยภูมิ": "ชัยภูมิ",
 }
 
 ROUTE_BBOXES_BY_PROVINCE = {
@@ -103,6 +105,12 @@ ROUTE_BBOXES_BY_PROVINCE = {
         (44, (8.80, 9.45, 99.25, 99.85)),
         (41, (8.85, 9.45, 99.05, 99.35)),
     ],
+    "ชัยภูมิ": [
+        # Phu Khiao town-side regional road context. Route 2037 is the
+        # measured Phu Khiao - Kaset Sombun corridor nearest the target.
+        (2037, (16.27, 16.43, 102.05, 102.25)),
+        (2159, (16.25, 16.43, 102.05, 102.25)),
+    ],
 }
 
 # Local-road pockets that fall inside a deliberately broad route bounding box.
@@ -128,6 +136,12 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
         # 9.102657, 99.316291 is on Phokhun Thale local access road near the
         # bypass retail cluster, not on the measured Route 420 carriageway.
         ((9.075, 9.125, 99.285, 99.335), 8_500),
+    ],
+    "ชัยภูมิ": [
+        # The requested point is on a local urban access road near Phak Pang,
+        # not a direct carriageway count. Keep the nearest route context from
+        # being projected at full value onto the town-side grid cells.
+        ((16.30, 16.40, 102.08, 102.17), 8_500),
     ],
 }
 

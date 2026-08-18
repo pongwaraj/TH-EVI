@@ -1,0 +1,8 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+chaiyaphum_phu_khiao_target,Phak Pang analysis point,target_site,16.348279,102.128044,user_supplied_coordinate,high,"Requested candidate point in Phak Pang, Phu Khiao District."
+chaiyaphum_phu_khiao_hospital,Phu Khiao Hospital,hospital,16.3750123,102.1303868,https://mapcarta.com/N7856667609,high,"Publicly mapped hospital and the strongest health-service anchor near the target."
+chaiyaphum_phu_khiao_bus_station,Phu Khiao Bus Station,transport,16.3638945,102.1286783,Nominatim_OSM,medium_high,"District bus and local transport anchor on Route 2037."
+chaiyaphum_phu_khiao_municipality,Phu Khiao Municipality,city_center,16.3665359,102.1335235,https://www.pkcity.go.th/history-rev2,medium_high,"Municipal and civic-service anchor; official municipal site identifies the town location in Phak Pang."
+chaiyaphum_phu_khiao_2037_corridor,Phu Khiao - Kaset Sombun corridor,transport_corridor,16.3638945,102.1286783,DOH_and_OSM_context,medium_high,"Regional road corridor connecting Phu Khiao with Kaset Sombun; use as corridor context, not full frontage AADT."
+chaiyaphum_phu_khiao_convenience_cluster,Phu Khiao roadside convenience cluster,supermarket,16.3628719,102.1423486,Nominatim_OSM,medium,"7-Eleven / roadside commercial cluster near the PTT station; small local demand support, not a mall-scale anchor."
+chaiyaphum_phu_khiao_civic_health_band,Phu Khiao civic and health-service band,office,16.3700000,102.1320000,municipality_and_hospital_context,medium,"Composite local-service anchor used to keep heat attached to the town-side civic and hospital area."
