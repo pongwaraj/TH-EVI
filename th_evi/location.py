@@ -132,6 +132,12 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
         # from the Pak Thong Chai--Chok Chai section onto this junction.
         ((14.735, 14.775, 102.025, 102.070), 17_539),
     ],
+    "พิษณุโลก": [
+        # The requested Kaeng Sopha point sits on the measured Route 12
+        # Wang Thong - Khek Noi segment. Use that official 2566 counter
+        # instead of the province-wide maximum for Route 12.
+        ((16.845, 16.900, 100.620, 100.700), 6_946),
+    ],
     "สุราษฎร์ธานี": [
         # 9.102657, 99.316291 is on Phokhun Thale local access road near the
         # bypass retail cluster, not on the measured Route 420 carriageway.

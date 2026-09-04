@@ -27,3 +27,4 @@ noen_maprang_town_center,Noen Maprang town center,city_center,16.5660,100.6240,s
 bang_rakam_town_center,Bang Rakam town center,city_center,16.7580,100.1180,seed estimate + district context,medium,"Western district center with local civic and market trips."
 phrom_phiram_town_center,Phrom Phiram town center,city_center,17.0330,100.2010,seed estimate + district context,medium,"Northern district center on the rail/highway axis toward Uttaradit."
 wat_bot_town_center,Wat Bot town center,city_center,16.9830,100.3350,seed estimate + district context,low_medium,"District support node north-east of Mueang Phitsanulok."
+pornpat_petroleum,บริษัท พรพัฒน์ ปิโตรเลียม จำกัด (ปั๊ม PT),gas_station,16.874795,100.664664,DataForThai company listing + user-provided coordinates,high,"Existing PT fuel-station anchor on Highway 12 in Kaeng Sopha; verify frontage, parking, operating hours, and EV electrical readiness on site."

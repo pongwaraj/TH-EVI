@@ -8,3 +8,4 @@ phs_bang_krathum,Bang Krathum,Bang Krathum district center,coverage_anchor,16.57
 phs_phrom_phiram,Phrom Phiram,Phrom Phiram district center,district_center,17.0330,100.2010,3.8,0.8,Northern district center on the rail and highway axis.
 phs_wat_bot,Wat Bot,Wat Bot district center,coverage_anchor,16.9830,100.3350,3.2,0.72,Northeast district support node between Mueang and the mountain-side districts.
 phs_noen_maprang,Noen Maprang,Noen Maprang district center,tourism_town,16.5660,100.6240,3.6,0.76,Southeast district center with nature-tourism and local community relevance.
+phs_kaeng_sopha,Kaeng Sopha,Kaeng Sopha Route 12 gateway,transport_junction,16.874795,100.664664,3.8,0.82,Mountain-corridor node on Route 12 with fuel, rest-stop, local-community, and tourism access relevance; kept separate from Wang Thong town.

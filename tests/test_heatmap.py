@@ -49,6 +49,36 @@ def test_province_heatmap_supports_non_chiang_mai():
     assert all(point["context_score"] >= 5.0 for point in result["points"])
 
 
+def test_phitsanulok_heatmap_supports_kaeng_sopha_pt_scope():
+    pois = load_pois_for_province("Phitsanulok")
+    assert any(poi["poi_id"] == "pornpat_petroleum" for poi in pois)
+
+    target = analyze_click_location(
+        16.874795,
+        100.664664,
+        "Phitsanulok",
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+    result = generate_province_heatmap(
+        "Phitsanulok",
+        year=2030,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+
+    assert target["aadt_used"] == 6_946
+    assert target["location_type"] == "highway"
+    assert target["net_sessions_per_day"] > 0
+    assert any(
+        abs(point["lat"] - 16.872306) < 0.001
+        and abs(point["lon"] - 100.664174) < 0.001
+        for point in result["points"]
+    )
+
+
 def test_surat_thani_heatmap_supports_makham_tia_scope_and_competitor_pressure():
     pois = load_pois_for_province("Surat Thani")
     competitors = load_competitors_for_province("Surat Thani")
