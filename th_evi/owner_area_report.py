@@ -1079,6 +1079,8 @@ def _add_warnings(doc: Document, warnings: list[str]) -> None:
             "ไม่สามารถตรวจสอบชั้นข้อมูลน้ำได้ภายในเวลาที่กำหนด ควรตรวจสอบความเสี่ยงน้ำและภูมิประเทศเพิ่มเติมก่อนลงทุน",
         "Building-layer lookup unavailable: TimeoutError.":
             "ไม่สามารถตรวจสอบชั้นข้อมูลอาคารได้ภายในเวลาที่กำหนด ควรตรวจสอบกิจกรรมเชิงพาณิชย์และสิ่งปลูกสร้างจริงหน้างานเพิ่มเติม",
+        "Station demand calibration has no out-of-sample validation; treat demand as screening only.":
+            "โมเดลดีมานด์สถานียังไม่มีข้อมูลยืนยันนอกชุดที่ใช้ปรับเทียบเพียงพอ จึงควรใช้ตัวเลขนี้เป็นการคัดกรองเบื้องต้นและยืนยันด้วยข้อมูลหน้างานก่อนลงทุน",
     }
     for warning in warnings[:6]:
         warning = translations.get(str(warning), str(warning))

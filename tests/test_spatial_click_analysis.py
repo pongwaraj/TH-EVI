@@ -93,6 +93,64 @@ def test_competitor_penalty_decays_with_distance_and_skips_missing_coordinates()
     assert near_rows[0]["name"] == "Nearby DC Hub"
 
 
+def test_reference_confidence_scales_zone_business_and_competitor_evidence():
+    high_zone = [{
+        "name": "Verified zone",
+        "center_lat": 18.0,
+        "center_lon": 99.0,
+        "radius_km": 2.0,
+        "demand_pool_base": 100.0,
+        "confidence": "high",
+    }]
+    low_zone = [dict(high_zone[0], confidence="low")]
+    high_business = [{
+        "name": "Verified retail area",
+        "area_type": "urban_core",
+        "center_lat": 18.0,
+        "center_lon": 99.0,
+        "radius_km": 2.0,
+        "demand_pool_base": 100.0,
+        "confidence": "high",
+    }]
+    low_business = [dict(high_business[0], confidence="low")]
+    high_competitor = [{
+        "name": "Verified charger",
+        "lat": 18.0,
+        "lon": 99.0,
+        "guns": 4,
+        "max_kw": 180,
+        "verification_status": "verified",
+        "confidence": "high",
+    }]
+    low_competitor = [dict(high_competitor[0], confidence="low")]
+
+    high_zone_score, _ = zone_influence_field(18.0, 99.0, high_zone)
+    low_zone_score, _ = zone_influence_field(18.0, 99.0, low_zone)
+    high_business_score, _ = business_area_field(18.0, 99.0, high_business)
+    low_business_score, _ = business_area_field(18.0, 99.0, low_business)
+    high_penalty, _, _ = competitor_penalty_field(18.0, 99.0, high_competitor)
+    low_penalty, _, _ = competitor_penalty_field(18.0, 99.0, low_competitor)
+
+    assert high_zone_score > low_zone_score
+    assert high_business_score > low_business_score
+    assert high_penalty > low_penalty
+
+
+def test_click_analysis_exposes_validation_guardrail():
+    result = analyze_click_location(
+        18.902150,
+        98.948371,
+        CHIANG_MAI,
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+
+    assert "validation_summary" in result
+    assert result["validation_summary"]["has_loo_metrics"] is False
+    assert any("out-of-sample validation" in warning for warning in result["warnings"])
+
+
 def test_zone_influence_decays_and_feeds_click_sessions():
     zones = [
         {

@@ -24,6 +24,7 @@ from .db import (
 )
 from .location import LocationDemandModel
 from .data import load_district_population_for_province
+from .validation import station_calibration_summary
 
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -1173,7 +1174,8 @@ def zone_influence_field(
             continue
 
         weight = max(0.0, 1.0 - distance / (radius * 1.8)) ** 2
-        score = demand_pool * weight
+        confidence_multiplier = _confidence_multiplier(zone.get("confidence"))
+        score = demand_pool * weight * confidence_multiplier
         if score <= 0.2:
             continue
 
@@ -1185,6 +1187,7 @@ def zone_influence_field(
             "zone_score": round(score, 1),
             "competition_pressure": zone.get("competition_pressure") or "unknown",
             "confidence": zone.get("confidence") or "medium",
+            "confidence_multiplier": round(confidence_multiplier, 2),
         })
 
     contributions.sort(key=lambda item: item["zone_score"], reverse=True)
@@ -1220,7 +1223,8 @@ def business_area_field(
             continue
 
         weight = max(0.0, 1.0 - distance / (radius * 1.7)) ** 2
-        score = demand_pool * weight
+        confidence_multiplier = _confidence_multiplier(area.get("confidence"))
+        score = demand_pool * weight * confidence_multiplier
         if score <= 0.2:
             continue
 
@@ -1232,6 +1236,7 @@ def business_area_field(
             "radius_km": round(radius, 1),
             "area_score": round(score, 1),
             "confidence": area.get("confidence") or "medium",
+            "confidence_multiplier": round(confidence_multiplier, 2),
             "suggested_location_type": rules["suggested_location_type"],
         })
 
@@ -1349,11 +1354,13 @@ def competitor_penalty_field(
         guns = _parse_guns(competitor)
         max_kw = _parse_power_kw(competitor)
         status_mult = _competitor_status_multiplier(competitor.get("verification_status"))
+        confidence_value = str(competitor.get("confidence") or "").strip()
+        confidence_mult = _confidence_multiplier(confidence_value) if confidence_value else 1.0
         guns_factor = max(guns, 1) ** 0.55
         power_factor = max(0.45, min(max_kw / 120.0, 2.2)) ** 0.45
         radius = max(2.5, min(7.0, 2.0 + guns * 0.35 + max_kw / 140.0))
         weight = exp(-((distance / radius) ** 2))
-        sessions = 9.0 * guns_factor * power_factor * status_mult * weight
+        sessions = 9.0 * guns_factor * power_factor * status_mult * confidence_mult * weight
         if sessions <= 0.2:
             continue
 
@@ -1367,6 +1374,8 @@ def competitor_penalty_field(
             "max_kw": round(max_kw, 0),
             "sessions": round(sessions, 1),
             "verification_status": competitor.get("verification_status") or "unknown",
+            "confidence": competitor.get("confidence") or "unknown",
+            "confidence_multiplier": round(confidence_mult, 2),
         })
 
     contributions.sort(key=lambda item: item["sessions"], reverse=True)
@@ -1683,6 +1692,7 @@ def analyze_click_location(
         year,
         location_type=location_type,
     )
+    validation_summary = station_calibration_summary()
 
     demand_share = 1.0
     if surface["status"] == "low_relevance":
@@ -1743,6 +1753,10 @@ def analyze_click_location(
         warnings.append("No strong POI within radius; demand relies mostly on base area model.")
     if surface.get("surface_warning"):
         warnings.append(surface["surface_warning"])
+    if not validation_summary.get("has_loo_metrics", False):
+        warnings.append(
+            "Station demand calibration has no out-of-sample validation; treat demand as screening only."
+        )
     if surface["status"] != "eligible":
         warnings.append(surface["reason"])
     if (poi_contributions or zone_contributions) and competitor_contributions:
@@ -1813,4 +1827,5 @@ def analyze_click_location(
         "nearest_zone_center_km": surface["nearest_zone_center_km"],
         "confidence": confidence,
         "warnings": warnings,
+        "validation_summary": validation_summary,
     }
