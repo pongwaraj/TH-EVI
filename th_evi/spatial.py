@@ -156,6 +156,10 @@ BUSINESS_AREA_URBAN_SCORE_THRESHOLD = 12.0
 POI_URBAN_SCORE_THRESHOLD = 16.0
 LOW_RELEVANCE_CONTEXT_DISTANCE_KM = 4.5
 LOW_RELEVANCE_CONTEXT_SCORE = 4.0
+
+
+def _clamp(value: float, lower: float, upper: float) -> float:
+    return max(lower, min(upper, value))
 WATER_QUERY_ROUNDING = 4
 OVERPASS_URL = os.getenv("TH_EVI_OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 
@@ -241,6 +245,27 @@ POI_CATEGORY_RULES = {
     "event_space": (14.0, 1.8),
 }
 
+_ANALYSIS_ONLY_TARGET_MARKERS = (
+    "candidate point",
+    "analysis point",
+    "analysis pin",
+    "target coordinate",
+    "user-supplied coordinate",
+    "user-provided coordinate",
+    "user_supplied_coordinate",
+    "not an independent demand source",
+)
+
+
+def is_analysis_only_target_poi(poi: dict[str, Any]) -> bool:
+    """Identify a user-selected analysis pin that must not create demand."""
+    if str(poi.get("category") or "").strip() != "target_site":
+        return False
+    evidence = " ".join(
+        str(poi.get(key) or "") for key in ("source", "notes", "demand_role")
+    ).lower()
+    return any(marker in evidence for marker in _ANALYSIS_ONLY_TARGET_MARKERS)
+
 DISTRICT_NODE_RULES = {
     "district_center": (18.0, 3.6, "destination"),
     "transport_junction": (18.0, 4.0, "highway"),
@@ -289,6 +314,34 @@ def _float_or_none(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _analysis_target_rows(
+    lat: float,
+    lon: float,
+    pois: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return analysis pins for explanation without adding demand weight."""
+    rows = []
+    for poi in pois:
+        if not is_analysis_only_target_poi(poi):
+            continue
+        poi_lat = _float_or_none(poi.get("lat"))
+        poi_lon = _float_or_none(poi.get("lon"))
+        if poi_lat is None or poi_lon is None:
+            continue
+        radius = _float_or_none(poi.get("radius_km")) or 0.0
+        rows.append({
+            "name": poi.get("name") or poi.get("poi_id") or "Analysis point",
+            "category": poi.get("category") or "target_site",
+            "distance_km": round(km_between(lat, lon, poi_lat, poi_lon), 2),
+            "radius_km": radius,
+            "sessions": 0.0,
+            "confidence": poi.get("confidence") or "unknown",
+            "is_analysis_pin": True,
+        })
+    rows.sort(key=lambda item: item["distance_km"])
+    return rows
 
 
 def _read_csv(path: Path) -> list[dict[str, Any]]:
@@ -1053,6 +1106,12 @@ def poi_attraction_field(
     total = 0.0
     contributions = []
     for poi in pois:
+        # The analysis pin describes where the user wants to test a site. It is
+        # not evidence that vehicles already visit that point. Real venues
+        # tagged target_site remain eligible when their source/notes describe
+        # an independently observed destination.
+        if is_analysis_only_target_poi(poi):
+            continue
         poi_lat = _float_or_none(poi.get("lat"))
         poi_lon = _float_or_none(poi.get("lon"))
         if poi_lat is None or poi_lon is None:
@@ -1329,7 +1388,10 @@ def _spatial_location_type(
             else 999.0
         ) <= 2.5
     ]
-    categories = {item["category"] for item in local_pois}
+    categories = {
+        item["category"] for item in local_pois
+        if not is_analysis_only_target_poi(item)
+    }
     if {"transport_corridor", "border_crossing"} & categories:
         return "highway"
     if "city_center" in categories:
@@ -1352,6 +1414,66 @@ def _spatial_location_type(
     if categories:
         return "destination"
     return "suburban"
+
+
+def compose_area_demand(
+    *,
+    base_sessions_per_day: float,
+    zone_score: float,
+    business_area_score: float,
+    poi_score: float,
+    district_score: float,
+    scenario: str = "base",
+    mode: str = "urban",
+    demand_share: float = 1.0,
+) -> dict[str, float]:
+    """Compose one explainable area-demand pipeline for all consumers.
+
+    The inputs are area signals, not site revenue. This function intentionally
+    stops before station capacity; the site layer applies capture and service
+    capacity afterwards. Zone and business-area fields already carry the
+    selected scenario pool, while POI/district fields use the scenario factor.
+    """
+    factor = SCENARIO_FACTORS.get(scenario, 1.0)
+    raw_base_sessions = max(0.0, float(base_sessions_per_day)) * factor
+    capturable_zone_sessions = max(0.0, float(zone_score)) * ZONE_CAPTURE_FACTOR
+    capturable_business_area_sessions = max(0.0, float(business_area_score)) * BUSINESS_AREA_CAPTURE_FACTOR
+    capturable_poi_sessions = max(0.0, float(poi_score)) * POI_CAPTURE_FACTOR * factor
+    capturable_district_sessions = max(0.0, float(district_score)) * DISTRICT_NODE_CAPTURE_FACTOR * factor
+
+    spatial_components = [
+        capturable_zone_sessions,
+        capturable_business_area_sessions,
+        capturable_poi_sessions,
+    ]
+    primary_spatial = max(spatial_components, default=0.0)
+    secondary_spatial = max(0.0, sum(spatial_components) - primary_spatial)
+    spatial_boost = primary_spatial + secondary_spatial * SPATIAL_OVERLAP_SHARE
+    supportive_context_sessions = (
+        capturable_zone_sessions
+        + capturable_business_area_sessions
+        + capturable_poi_sessions
+    )
+    if mode in {"community", "district"}:
+        spatial_boost += capturable_district_sessions
+        supportive_context_sessions += capturable_district_sessions
+
+    share = _clamp(float(demand_share), 0.0, 1.0)
+    base_sessions = raw_base_sessions * share
+    effective_spatial_boost = spatial_boost * share
+    gross_area_demand_sessions = base_sessions + effective_spatial_boost
+    return {
+        "raw_base_sessions": round(raw_base_sessions, 1),
+        "base_sessions": round(base_sessions, 1),
+        "zone_boost_sessions": round(capturable_zone_sessions, 1),
+        "business_area_boost_sessions": round(capturable_business_area_sessions, 1),
+        "poi_boost_sessions": round(capturable_poi_sessions, 1),
+        "district_boost_sessions": round(capturable_district_sessions, 1),
+        "raw_spatial_boost_sessions": round(spatial_boost / max(share, 0.0001), 1) if share else 0.0,
+        "spatial_boost_sessions": round(effective_spatial_boost, 1),
+        "supportive_context_sessions": round(supportive_context_sessions, 1),
+        "gross_area_demand_sessions": round(gross_area_demand_sessions, 1),
+    }
 
 
 def assess_surface_access(
@@ -1523,6 +1645,7 @@ def analyze_click_location(
     zones = load_hot_zones_for_province(province)
     business_areas = load_business_areas_for_province(province)
     district_nodes = load_enriched_district_nodes(province)
+    analysis_target_rows = _analysis_target_rows(lat, lon, pois)
 
     zone_score, zone_contributions = zone_influence_field(lat, lon, zones, scenario=scenario)
     business_area_score, business_area_contributions = business_area_field(
@@ -1561,37 +1684,33 @@ def analyze_click_location(
         location_type=location_type,
     )
 
-    raw_base_sessions = location_result["charging_sessions_per_day"] * factor
-    capturable_zone_sessions = zone_score * ZONE_CAPTURE_FACTOR
-    capturable_business_area_sessions = business_area_score * BUSINESS_AREA_CAPTURE_FACTOR
-    capturable_poi_sessions = poi_boost * POI_CAPTURE_FACTOR * factor
-    capturable_district_sessions = district_boost * DISTRICT_NODE_CAPTURE_FACTOR * factor
-    spatial_components = [
-        capturable_zone_sessions,
-        capturable_business_area_sessions,
-        capturable_poi_sessions,
-    ]
-    primary_spatial = max(spatial_components, default=0.0)
-    secondary_spatial = max(0.0, sum(spatial_components) - primary_spatial)
-    spatial_boost = primary_spatial + secondary_spatial * SPATIAL_OVERLAP_SHARE
-    if mode in {"community", "district"}:
-        spatial_boost += capturable_district_sessions
+    demand_share = 1.0
+    if surface["status"] == "low_relevance":
+        demand_share = LOW_RELEVANCE_DEMAND_SHARE
+    area_demand = compose_area_demand(
+        base_sessions_per_day=location_result["charging_sessions_per_day"],
+        zone_score=zone_score,
+        business_area_score=business_area_score,
+        poi_score=poi_boost,
+        district_score=district_boost,
+        scenario=scenario,
+        mode=mode,
+        demand_share=demand_share,
+    )
     # Keep the broad, overlapping spatial signal for diagnostics only.  It is
     # deliberately not a sessions/day forecast because POI, zone and business
     # anchors can describe the same trip.  The reportable pre-competition
     # demand is calculated below from the capture-adjusted components.
-    raw_context_signal = raw_base_sessions + (zone_score * factor) + (business_area_score * factor) + (poi_boost * factor)
+    raw_context_signal = area_demand["raw_base_sessions"] + (zone_score * factor) + (business_area_score * factor) + (poi_boost * factor)
     if mode in {"community", "district"}:
         raw_context_signal += district_boost * factor
-    demand_share = 1.0
     if surface["status"] == "low_relevance":
-        demand_share = LOW_RELEVANCE_DEMAND_SHARE
-
-    base_sessions = raw_base_sessions * demand_share
-    if surface["status"] == "low_relevance":
-        base_sessions = min(base_sessions, LOW_RELEVANCE_MAX_SESSIONS)
-    effective_spatial_boost = spatial_boost * demand_share
-    positive_demand = base_sessions + effective_spatial_boost
+        area_demand["base_sessions"] = min(area_demand["base_sessions"], LOW_RELEVANCE_MAX_SESSIONS)
+        area_demand["gross_area_demand_sessions"] = min(
+            area_demand["gross_area_demand_sessions"],
+            LOW_RELEVANCE_MAX_SESSIONS + area_demand["spatial_boost_sessions"],
+        )
+    positive_demand = area_demand["gross_area_demand_sessions"]
     effective_competitor_penalty = min(
         competitor_penalty,
         positive_demand * MAX_COMPETITOR_PENALTY_SHARE,
@@ -1644,23 +1763,23 @@ def analyze_click_location(
         "aadt_used": location_result["aadt_used"],
         "fleet_ev_share_pct": location_result["fleet_ev_share_pct"],
         "charge_probability_pct": location_result["charge_probability_pct"],
-        "raw_base_sessions": round(raw_base_sessions, 1),
-        "base_sessions": round(base_sessions, 1),
+        "raw_base_sessions": area_demand["raw_base_sessions"],
+        "base_sessions": area_demand["base_sessions"],
         "raw_context_signal_sessions": round(raw_context_signal, 1),
         # This is intentionally the value immediately before the competitor
         # deduction, so pre-competition demand - competitor penalty = net
         # demand in every consumer-facing table.
         "gross_area_demand_sessions": round(positive_demand, 1),
         "raw_zone_score": round(zone_score, 1),
-        "zone_boost_sessions": round(capturable_zone_sessions, 1),
+        "zone_boost_sessions": area_demand["zone_boost_sessions"],
         "raw_business_area_score": round(business_area_score, 1),
-        "business_area_boost_sessions": round(capturable_business_area_sessions, 1),
+        "business_area_boost_sessions": area_demand["business_area_boost_sessions"],
         "raw_poi_field_sessions": round(poi_boost * factor, 1),
-        "poi_boost_sessions": round(capturable_poi_sessions, 1),
+        "poi_boost_sessions": area_demand["poi_boost_sessions"],
         "raw_district_field_sessions": round(district_boost * factor, 1),
-        "district_boost_sessions": round(capturable_district_sessions, 1),
-        "raw_spatial_boost_sessions": round(spatial_boost, 1),
-        "spatial_boost_sessions": round(effective_spatial_boost, 1),
+        "district_boost_sessions": area_demand["district_boost_sessions"],
+        "raw_spatial_boost_sessions": area_demand["raw_spatial_boost_sessions"],
+        "spatial_boost_sessions": area_demand["spatial_boost_sessions"],
         "raw_competitor_penalty_sessions": round(competitor_penalty, 1),
         "competitor_penalty_sessions": round(effective_competitor_penalty, 1),
         "net_sessions_per_day": net_sessions_rounded,
@@ -1668,7 +1787,10 @@ def analyze_click_location(
         "daily_revenue": round(net_sessions_rounded * avg_kwh_per_session * price_per_kwh, 0),
         "avg_kwh_per_session": avg_kwh_per_session,
         "price_per_kwh": price_per_kwh,
-        "top_pois": poi_contributions[:5],
+        # Keep the selected pin visible for explainability, but append it only
+        # after demand POIs and mark it with zero demand contribution.
+        "top_pois": (poi_contributions + analysis_target_rows)[:5],
+        "analysis_pins": analysis_target_rows[:5],
         "top_zones": zone_contributions[:5],
         "top_business_areas": business_area_contributions[:5],
         "top_districts": district_contributions[:5],

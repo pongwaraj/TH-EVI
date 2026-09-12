@@ -41,6 +41,32 @@ def test_poi_attraction_decays_with_distance():
     assert far_rows == [] or far_rows[0]["sessions"] < near_rows[0]["sessions"]
 
 
+def test_analysis_pin_is_visible_only_as_reference_not_demand():
+    rows = [
+        {
+            "name": "Selected candidate",
+            "category": "target_site",
+            "lat": 18.0,
+            "lon": 99.0,
+            "source": "user_supplied_coordinate",
+            "confidence": "high",
+        },
+        {
+            "name": "Observed mall",
+            "category": "shopping_mall",
+            "lat": 18.0,
+            "lon": 99.0,
+            "source": "public listing",
+            "confidence": "high",
+        },
+    ]
+
+    score, contributions = poi_attraction_field(18.0, 99.0, rows)
+
+    assert score > 0
+    assert [item["name"] for item in contributions] == ["Observed mall"]
+
+
 def test_competitor_penalty_decays_with_distance_and_skips_missing_coordinates():
     competitors = [
         {

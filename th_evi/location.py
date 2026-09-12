@@ -24,29 +24,7 @@ logger = logging.getLogger(__name__)
 CHIANG_MAI_HIGHWAY_AADT = None
 HIGHWAY_AADT_BY_PROVINCE = {}
 
-PROVINCE_AADT_ALIASES = {
-    "Chiang Mai": "เชียงใหม่",
-    "เชียงใหม่": "เชียงใหม่",
-    "Phitsanulok": "พิษณุโลก",
-    "พิษณุโลก": "พิษณุโลก",
-    "Phuket": "ภูเก็ต",
-    "ภูเก็ต": "ภูเก็ต",
-    "Chon Buri": "ชลบุรี",
-    "ชลบุรี": "ชลบุรี",
-    "Si Sa Ket": "ศรีสะเกษ",
-    "Sisaket": "ศรีสะเกษ",
-    "ศรีสะเกษ": "ศรีสะเกษ",
-    "Nakhon Ratchasima": "นครราชสีมา",
-    "นครราชสีมา": "นครราชสีมา",
-    "Amnat Charoen": "อำนาจเจริญ",
-    "อำนาจเจริญ": "อำนาจเจริญ",
-    "Surat Thani": "สุราษฎร์ธานี",
-    "สุราษฎร์ธานี": "สุราษฎร์ธานี",
-    "Chaiyaphum": "ชัยภูมิ",
-    "ชัยภูมิ": "ชัยภูมิ",
-    "Kamphaeng Phet": "กำแพงเพชร",
-    "กำแพงเพชร": "กำแพงเพชร",
-}
+PROVINCE_AADT_ALIASES = C.PROVINCE_CANONICAL_NAMES
 
 ROUTE_BBOXES_BY_PROVINCE = {
     "เชียงใหม่": [

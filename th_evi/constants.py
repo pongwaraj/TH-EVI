@@ -28,6 +28,47 @@ S_CURVE = {
     "midpoint_year": 2032,       # 50% adoption year (was 2028 — too aggressive)
 }
 
+# Keep the public API free to accept Thai and English province names while
+# making every demand path use the same calibrated parameter row.  Without a
+# canonical name, an English label can silently fall through to the generic
+# fleet and new-car defaults even when the Thai row has DLT calibration.
+PROVINCE_CANONICAL_NAMES = {
+    "เชียงใหม่": "เชียงใหม่", "Chiang Mai": "เชียงใหม่",
+    "เชียงราย": "เชียงราย", "Chiang Rai": "เชียงราย",
+    "ลำปาง": "ลำปาง", "Lampang": "ลำปาง",
+    "ลำพูน": "ลำพูน", "Lamphun": "ลำพูน",
+    "น่าน": "น่าน", "Nan": "น่าน",
+    "พะเยา": "พะเยา", "Phayao": "พะเยา",
+    "แพร่": "แพร่", "Phrae": "แพร่",
+    "หนองคาย": "หนองคาย", "Nong Khai": "หนองคาย",
+    "อุดรธานี": "อุดรธานี", "Udon Thani": "อุดรธานี",
+    "ขอนแก่น": "ขอนแก่น", "Khon Kaen": "ขอนแก่น",
+    "อุบลราชธานี": "อุบลราชธานี", "Ubon Ratchathani": "อุบลราชธานี",
+    "ชัยภูมิ": "ชัยภูมิ", "Chaiyaphum": "ชัยภูมิ",
+    "กำแพงเพชร": "กำแพงเพชร", "Kamphaeng Phet": "กำแพงเพชร",
+    "แม่ฮ่องสอน": "แม่ฮ่องสอน", "Mae Hong Son": "แม่ฮ่องสอน",
+    "สมุทรปราการ": "สมุทรปราการ", "Samut Prakan": "สมุทรปราการ",
+    "ระยอง": "ระยอง", "Rayong": "ระยอง",
+    "นครราชสีมา": "นครราชสีมา", "Nakhon Ratchasima": "นครราชสีมา",
+    "นครนายก": "นครนายก", "Nakhon Nayok": "นครนายก",
+    "ชัยนาท": "ชัยนาท", "Chai Nat": "ชัยนาท",
+    "อุทัยธานี": "อุทัยธานี", "Uthai Thani": "อุทัยธานี",
+    "อำนาจเจริญ": "อำนาจเจริญ", "Amnat Charoen": "อำนาจเจริญ",
+    "สุราษฎร์ธานี": "สุราษฎร์ธานี", "Surat Thani": "สุราษฎร์ธานี",
+    "ภูเก็ต": "ภูเก็ต", "Phuket": "ภูเก็ต",
+    "ชลบุรี": "ชลบุรี", "Chon Buri": "ชลบุรี",
+    "ศรีสะเกษ": "ศรีสะเกษ", "Si Sa Ket": "ศรีสะเกษ", "Sisaket": "ศรีสะเกษ",
+    "พิษณุโลก": "พิษณุโลก", "Phitsanulok": "พิษณุโลก",
+}
+
+
+def canonical_province_name(province: str) -> str:
+    """Return the Thai canonical key used by calibrated province data."""
+    if not isinstance(province, str):
+        return province
+    value = province.strip()
+    return PROVINCE_CANONICAL_NAMES.get(value, value)
+
 # --- EV Efficiency (Thailand context) ---
 EV_EFFICIENCY_KWH_PER_KM = 0.20
 

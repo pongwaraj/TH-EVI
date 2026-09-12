@@ -2,7 +2,7 @@
 
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from th_evi.adoption import EVAdoptionModel
+from th_evi.adoption import EVAdoptionModel, estimate_fleet_ev_share
 
 
 def test_ev_share_increases():
@@ -33,6 +33,10 @@ def test_calibrated_to_fti_2025():
     m = EVAdoptionModel(province='unknown')
     assert abs(m.get_ev_share(2025) - 0.194) < 0.02, \
         "2025 share should be within 2pp of FTI actual 19.4%"
+
+
+def test_english_and_thai_province_names_share_calibrated_fleet_data():
+    assert estimate_fleet_ev_share(2026, "Khon Kaen") == estimate_fleet_ev_share(2026, "ขอนแก่น")
 
 if __name__ == '__main__':
     test_ev_share_increases()

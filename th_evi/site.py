@@ -35,6 +35,65 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
+def service_capacity_for_demand(
+    demand_sessions_per_day: float,
+    station: "StationSpec",
+    avg_kwh_per_session: float = 35.0,
+    *,
+    operating_hours: float = 24.0,
+    availability: float = 0.95,
+    energy_utilization_ceiling: float = 0.85,
+    sessions_per_port_day: float = 22.0,
+) -> dict:
+    """Convert site demand into sessions the installed station can serve.
+
+    The area may contain more potential demand than one station can physically
+    process. Capacity is bounded by both daily energy throughput and connector
+    turnover, so revenue forecasts cannot exceed the selected station design.
+    """
+    if not isinstance(demand_sessions_per_day, (int, float)):
+        raise TypeError("demand_sessions_per_day must be a number")
+    if demand_sessions_per_day < 0:
+        raise ValueError("demand_sessions_per_day must be non-negative")
+    if not isinstance(station, StationSpec):
+        raise TypeError("station must be a StationSpec")
+    if avg_kwh_per_session <= 0:
+        raise ValueError("avg_kwh_per_session must be positive")
+    if operating_hours <= 0 or availability <= 0 or availability > 1:
+        raise ValueError("operating_hours must be positive and availability must be in (0, 1]")
+    if energy_utilization_ceiling <= 0 or energy_utilization_ceiling > 1:
+        raise ValueError("energy_utilization_ceiling must be in (0, 1]")
+    if sessions_per_port_day <= 0:
+        raise ValueError("sessions_per_port_day must be positive")
+
+    daily_energy_capacity = (
+        station.total_site_kw
+        * operating_hours
+        * availability
+        * energy_utilization_ceiling
+    )
+    energy_session_capacity = daily_energy_capacity / avg_kwh_per_session
+    connector_session_capacity = station.guns * sessions_per_port_day
+    service_capacity = min(energy_session_capacity, connector_session_capacity)
+    served_sessions = min(float(demand_sessions_per_day), service_capacity)
+
+    return {
+        "demand_sessions_per_day": round(float(demand_sessions_per_day), 1),
+        "served_sessions_per_day": round(served_sessions, 1),
+        "service_capacity_sessions_per_day": round(service_capacity, 1),
+        "daily_energy_capacity_kwh": round(daily_energy_capacity, 1),
+        "energy_session_capacity": round(energy_session_capacity, 1),
+        "connector_session_capacity": round(connector_session_capacity, 1),
+        "capacity_limited": demand_sessions_per_day > service_capacity,
+        "capacity_assumptions": {
+            "operating_hours": operating_hours,
+            "availability": availability,
+            "energy_utilization_ceiling": energy_utilization_ceiling,
+            "sessions_per_port_day": sessions_per_port_day,
+        },
+    }
+
+
 STATION_FORMAT_WEIGHTS = {
     "highway_hub": 1.18,
     "roadside_destination": 1.15,
@@ -675,7 +734,13 @@ class CompetitiveCaptureModel:
         )
         capture = self.capture_share(case.station, case.readiness, case.competitors)
         mature_sessions = case.raw_daily_sessions * readiness_multiplier * capture
-        captured_sessions = mature_sessions * ramp
+        uncapped_captured_sessions = mature_sessions * ramp
+        service = service_capacity_for_demand(
+            uncapped_captured_sessions,
+            case.station,
+            avg_kwh_per_session=case.avg_kwh_per_session,
+        )
+        captured_sessions = service["served_sessions_per_day"]
         utilization = _clamp(captured_sessions / max(1.0, case.station.guns * 22.0), 0.0, 1.0)
         effective_kw = case.station.effective_kw_at_utilization(utilization)
 
@@ -686,7 +751,11 @@ class CompetitiveCaptureModel:
             "competitive_capture_share": capture,
             "ramp_up_factor": ramp,
             "mature_daily_sessions": round(mature_sessions, 1),
+            "uncapped_captured_daily_sessions": round(uncapped_captured_sessions, 1),
             "captured_daily_sessions": round(captured_sessions, 1),
+            "service_capacity_sessions_per_day": service["service_capacity_sessions_per_day"],
+            "daily_energy_capacity_kwh": service["daily_energy_capacity_kwh"],
+            "capacity_limited": service["capacity_limited"],
             "daily_kwh": round(captured_sessions * case.avg_kwh_per_session, 1),
             "daily_revenue": round(captured_sessions * case.avg_kwh_per_session * case.price_per_kwh, 0),
             "effective_kw_at_expected_load": round(effective_kw, 1),

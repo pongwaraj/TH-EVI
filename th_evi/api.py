@@ -186,6 +186,12 @@ class OwnerAreaAnalysisReportRequest(BaseModel):
     metric_value: float | None = None
     owner_gp_per_kwh: float = Field(0.25, ge=0)
     note: str | None = Field(None, max_length=1000)
+    station_guns: int | None = Field(None, ge=1)
+    station_total_site_kw: float | None = Field(None, gt=0)
+    station_max_kw_per_gun: float | None = Field(None, gt=0)
+    station_operating_hours: float = Field(24.0, gt=0, le=24)
+    station_availability: float = Field(0.95, gt=0, le=1)
+    station_energy_utilization_ceiling: float = Field(0.85, gt=0, le=1)
 
 
 def _dump_model(model_obj: BaseModel) -> dict[str, Any]:
@@ -732,6 +738,12 @@ def owner_area_analysis_report(req: OwnerAreaAnalysisReportRequest):
             metric_value=req.metric_value,
             owner_gp_per_kwh=req.owner_gp_per_kwh,
             note=req.note,
+            station_guns=req.station_guns,
+            station_total_site_kw=req.station_total_site_kw,
+            station_max_kw_per_gun=req.station_max_kw_per_gun,
+            station_operating_hours=req.station_operating_hours,
+            station_availability=req.station_availability,
+            station_energy_utilization_ceiling=req.station_energy_utilization_ceiling,
         )
     )
     download_name = output_path.name
@@ -773,6 +785,12 @@ def owner_area_analysis_pdf(req: OwnerAreaAnalysisReportRequest):
             metric_value=req.metric_value,
             owner_gp_per_kwh=req.owner_gp_per_kwh,
             note=req.note,
+            station_guns=req.station_guns,
+            station_total_site_kw=req.station_total_site_kw,
+            station_max_kw_per_gun=req.station_max_kw_per_gun,
+            station_operating_hours=req.station_operating_hours,
+            station_availability=req.station_availability,
+            station_energy_utilization_ceiling=req.station_energy_utilization_ceiling,
         )
     )
     return FileResponse(

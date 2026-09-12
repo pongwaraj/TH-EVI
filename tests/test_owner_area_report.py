@@ -3,10 +3,58 @@ from zipfile import ZipFile
 
 from th_evi.owner_area_report import (
     OwnerAreaReportRequest,
+    _projection_rows,
+    _report_station_spec,
     _choose_tile_zoom,
     create_owner_area_analysis_pdf,
     create_owner_area_analysis_report,
 )
+
+
+def test_report_uses_station_spec_to_cap_served_sessions(monkeypatch):
+    import th_evi.spatial as spatial
+
+    monkeypatch.setattr(
+        spatial,
+        "analyze_click_location",
+        lambda **kwargs: {
+            "net_sessions_per_day": 100.0,
+            "daily_kwh": 3500.0,
+        },
+    )
+    request = OwnerAreaReportRequest(
+        site_name="Capacity test",
+        province="Chiang Mai",
+        lat=18.8,
+        lon=98.9,
+        start_year=2026,
+        end_year=2026,
+        station_guns=2,
+        station_total_site_kw=60.0,
+        station_max_kw_per_gun=30.0,
+    )
+
+    row = _projection_rows(request)[0]
+
+    assert row["served_sessions_per_day"] < row["net_sessions_per_day"]
+    assert row["served_sessions_per_day"] == row["service_capacity_sessions_per_day"]
+    assert row["capacity_limited"] is True
+
+
+def test_report_parses_legacy_recommended_spec():
+    request = OwnerAreaReportRequest(
+        site_name="Legacy spec",
+        province="Chiang Mai",
+        lat=18.8,
+        lon=98.9,
+        recommended_spec="180 kW | 2 ตู้ | 4 ช่องจอด",
+    )
+
+    spec = _report_station_spec(request)
+
+    assert spec.guns == 4
+    assert spec.total_site_kw == 360
+    assert spec.max_kw_per_gun == 180
 
 
 def test_owner_area_report_includes_generated_map_image(tmp_path, monkeypatch):

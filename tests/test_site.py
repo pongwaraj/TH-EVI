@@ -13,6 +13,7 @@ from th_evi.site import (
     StationSpec,
     recommend_station_spec,
     ramp_up_factor,
+    service_capacity_for_demand,
 )
 
 
@@ -76,6 +77,18 @@ def test_competitors_reduce_capture_share():
         ],
     )
     assert with_competitor < no_competitor
+
+
+def test_service_capacity_caps_demand_by_energy_and_ports():
+    result = service_capacity_for_demand(
+        demand_sessions_per_day=500,
+        station=StationSpec(guns=2, total_site_kw=60, max_kw_per_gun=30),
+        avg_kwh_per_session=35,
+    )
+
+    assert result["service_capacity_sessions_per_day"] < result["demand_sessions_per_day"]
+    assert result["served_sessions_per_day"] == result["service_capacity_sessions_per_day"]
+    assert result["capacity_limited"] is True
 
 
 def test_power_sharing_for_720kw_12_guns():

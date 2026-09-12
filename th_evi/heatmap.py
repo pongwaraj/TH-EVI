@@ -15,6 +15,7 @@ from .spatial import (
     ZONE_CAPTURE_FACTOR,
     business_area_field,
     competitor_penalty_field,
+    compose_area_demand,
     km_between,
     load_business_areas_for_province,
     load_competitors_for_province,
@@ -22,6 +23,7 @@ from .spatial import (
     load_heatmap_exclusions_for_province,
     load_hot_zones_for_province,
     load_pois_for_province,
+    is_analysis_only_target_poi,
     poi_attraction_field,
     zone_influence_field,
 )
@@ -721,17 +723,31 @@ def generate_province_heatmap(
                 competitors,
             )
 
-            zone_sessions = zone_score * ZONE_CAPTURE_FACTOR
-            business_area_sessions = business_area_score * BUSINESS_AREA_CAPTURE_FACTOR
-            poi_sessions = poi_score * POI_CAPTURE_FACTOR * scenario_factor
-            district_sessions = district_score * DISTRICT_NODE_CAPTURE_FACTOR * scenario_factor
+            location_type = _location_type_for_heat(
+                poi_contributions,
+                business_area_contributions,
+                district_contributions,
+            )
+            estimate = demand.estimate(lat, lon, year, location_type=location_type)
+
+            area_demand = compose_area_demand(
+                base_sessions_per_day=estimate["charging_sessions_per_day"],
+                zone_score=zone_score,
+                business_area_score=business_area_score,
+                poi_score=poi_score,
+                district_score=district_score,
+                scenario=scenario,
+                mode=mode,
+            )
+            zone_sessions = area_demand["zone_boost_sessions"]
+            business_area_sessions = area_demand["business_area_boost_sessions"]
+            poi_sessions = area_demand["poi_boost_sessions"]
+            district_sessions = area_demand["district_boost_sessions"]
             competitor_signal_sessions = min(
                 competitor_signal_raw * HEATMAP_MAX_COMPETITOR_SIGNAL_SHARE,
                 max(zone_sessions + business_area_sessions + poi_sessions + district_sessions, competitor_signal_raw * 0.35),
             )
-            supportive_context_sessions = zone_sessions + business_area_sessions + poi_sessions
-            if mode != "urban":
-                supportive_context_sessions += district_sessions
+            supportive_context_sessions = area_demand["supportive_context_sessions"]
             evidence_context_sessions = supportive_context_sessions + competitor_signal_sessions
 
             if evidence_context_sessions < min_context:
@@ -749,13 +765,7 @@ def generate_province_heatmap(
                 lon += lon_step
                 continue
 
-            location_type = _location_type_for_heat(
-                poi_contributions,
-                business_area_contributions,
-                district_contributions,
-            )
-            estimate = demand.estimate(lat, lon, year, location_type=location_type)
-            model_sessions = estimate["charging_sessions_per_day"] * scenario_factor
+            model_sessions = area_demand["base_sessions"]
             if location_type == "highway":
                 model_sessions *= _highway_support_multiplier(
                     top_pois=poi_contributions,
@@ -783,11 +793,34 @@ def generate_province_heatmap(
             net_opportunity_score = max(demand_score - competition_score, 0.0)
             heat_score = net_opportunity_score
 
-            if heat_score < min_heat:
+            # Keep the three layers independent. A cell may have strong gross
+            # demand but weak net opportunity because competitors are present,
+            # or it may be useful for the competition layer even when its net
+            # score does not pass the demand threshold.
+            layer_is_material = (
+                demand_score >= min_heat
+                or net_opportunity_score >= min_heat
+                or competition_score >= min_context
+            )
+            if not layer_is_material:
                 lon += lon_step
                 continue
 
             avg_kwh_per_session = _average_kwh_per_session_for_heat(location_type)
+
+            analysis_pin_names = [
+                str(poi.get("name") or poi.get("poi_id") or "Analysis point")
+                for poi in pois
+                if is_analysis_only_target_poi(poi)
+                and _float_or_none(poi.get("lat")) is not None
+                and _float_or_none(poi.get("lon")) is not None
+                and km_between(
+                    lat,
+                    lon,
+                    float(poi["lat"]),
+                    float(poi["lon"]),
+                ) <= HEATMAP_MAX_POI_DISTANCE_KM
+            ]
 
             points.append({
                 "lat": round(lat, 6),
@@ -812,7 +845,9 @@ def generate_province_heatmap(
                 "daily_kwh": round(net_opportunity_score * avg_kwh_per_session, 1),
                 "zones": [item["name"] for item in zone_contributions[:3]],
                 "business_areas": [item["name"] for item in business_area_contributions[:3]],
-                "pois": [item["name"] for item in poi_contributions[:3]],
+                # Analysis pins are shown for map explainability only. They
+                # never enter poi_score or any demand calculation.
+                "pois": [item["name"] for item in poi_contributions[:3]] + analysis_pin_names[:2],
                 "districts": [item["name"] for item in district_contributions[:3]],
                 "district_name": (
                     district_contributions[0]["district_name"] if district_contributions else None

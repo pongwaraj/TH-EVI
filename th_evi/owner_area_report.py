@@ -28,6 +28,8 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
+from .site import StationSpec, service_capacity_for_demand
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if os.environ.get("VERCEL"):
     DEFAULT_REPORT_OUTPUT_DIR = Path(tempfile.gettempdir()) / "th-evi-generated-reports"
@@ -84,6 +86,50 @@ class OwnerAreaReportRequest:
     metric_value: float | None = None
     owner_gp_per_kwh: float = 0.25
     note: str | None = None
+    station_guns: int | None = None
+    station_total_site_kw: float | None = None
+    station_max_kw_per_gun: float | None = None
+    station_operating_hours: float = 24.0
+    station_availability: float = 0.95
+    station_energy_utilization_ceiling: float = 0.85
+
+
+def _report_station_spec(req: OwnerAreaReportRequest) -> StationSpec:
+    """Resolve explicit charger inputs, with a conservative report default."""
+    if (
+        req.station_guns is not None
+        and req.station_total_site_kw is not None
+        and req.station_max_kw_per_gun is not None
+    ):
+        return StationSpec(
+            guns=req.station_guns,
+            total_site_kw=req.station_total_site_kw,
+            max_kw_per_gun=req.station_max_kw_per_gun,
+        )
+
+    # Existing callers historically supplied only recommended_spec. Parse the
+    # common Thai/English proposal forms so old reports also receive a physical
+    # service-capacity check instead of treating area demand as revenue.
+    text = str(req.recommended_spec or "")
+    power_match = re.search(r"(\d+(?:\.\d+)?)\s*kW", text, flags=re.IGNORECASE)
+    count_match = re.search(r"(\d+)\s*(?:ตู้|cabinet|charger)", text, flags=re.IGNORECASE)
+    port_match = re.search(r"(\d+)(?:\s*-\s*\d+)?\s*(?:ช่อง|port)", text, flags=re.IGNORECASE)
+    power = float(power_match.group(1)) if power_match else 180.0
+    cabinets = int(count_match.group(1)) if count_match else 1
+    guns = int(port_match.group(1)) if port_match else cabinets * 2
+    total_kw = power * cabinets
+    return StationSpec(guns=max(1, guns), total_site_kw=max(power, total_kw), max_kw_per_gun=power)
+
+
+def _service_result(req: OwnerAreaReportRequest, demand_sessions: float) -> dict[str, Any]:
+    return service_capacity_for_demand(
+        demand_sessions,
+        _report_station_spec(req),
+        avg_kwh_per_session=req.avg_kwh_per_session,
+        operating_hours=req.station_operating_hours,
+        availability=req.station_availability,
+        energy_utilization_ceiling=req.station_energy_utilization_ceiling,
+    )
 
 
 def _safe_filename(value: str) -> str:
@@ -277,6 +323,16 @@ def _projection_rows(req: OwnerAreaReportRequest) -> list[dict[str, Any]]:
             avg_kwh_per_session=req.avg_kwh_per_session,
             price_per_kwh=req.price_per_kwh,
         )
+        result["area_daily_kwh"] = result["daily_kwh"]
+        service = _service_result(req, result["net_sessions_per_day"])
+        result.update({
+            "uncapped_site_sessions_per_day": service["demand_sessions_per_day"],
+            "served_sessions_per_day": service["served_sessions_per_day"],
+            "service_capacity_sessions_per_day": service["service_capacity_sessions_per_day"],
+            "service_capacity_kwh_per_day": service["daily_energy_capacity_kwh"],
+            "capacity_limited": service["capacity_limited"],
+        })
+        result["daily_kwh"] = round(result["served_sessions_per_day"] * req.avg_kwh_per_session, 1)
         annual_kwh = result["daily_kwh"] * 365.0
         annual_revenue = annual_kwh * req.price_per_kwh
         annual_owner_gp = annual_kwh * req.owner_gp_per_kwh
@@ -842,7 +898,8 @@ def _add_executive_summary(
         f"และจัดอยู่ในกลุ่ม{_thai_eligibility(first_year['eligibility_status'])} "
         f"โดยในปี {req.start_year} พื้นที่รอบจุดมีดีมานด์ก่อนหักคู่แข่งประมาณ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
         f"เมื่อพิจารณาแรงดึงจากสถานีคู่แข่งแล้ว คาดว่าจะยังเหลือดีมานด์สุทธิที่พื้นที่นี้รองรับได้ประมาณ "
-        f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน หรือประมาณ {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
+        f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน โดยสเปกสถานีที่ระบุให้บริการได้ประมาณ "
+        f"{_fmt_num(first_year['served_sessions_per_day'])} คัน/วัน หรือประมาณ {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
         f"{focus_metric} แรงหนุนสำคัญของทำเลนี้มาจาก {_top_name(first_year['top_pois'], 'จุดหมายสำคัญในพื้นที่')} "
         f"และกิจกรรมทางเศรษฐกิจรอบข้าง ขณะที่แรงกดดันหลักมาจาก {_top_name(first_year['top_competitors'], 'สถานีชาร์จใกล้เคียง')}."
         f" หากแนวโน้มการใช้งานเติบโตตามสมมติฐานปัจจุบัน ดีมานด์สุทธิในปี {req.end_year} จะขยับไปอยู่ที่ประมาณ "
@@ -876,7 +933,8 @@ def _add_snapshot_table(doc: Document, req: OwnerAreaReportRequest, site_name: s
         ("ดีมานด์ก่อนหักคู่แข่ง", _fmt_num(first_year["gross_area_demand_sessions"]), "จำนวนคัน/วันที่จุดมีโอกาสรองรับได้ก่อนหักคู่แข่ง"),
         ("แรงกดจากคู่แข่งที่ยืนยันพิกัด", _fmt_num(first_year["competitor_penalty_sessions"]), "จำนวนคัน/วันที่หักจากสถานีคู่แข่งซึ่งมีพิกัดในฐานข้อมูล"),
         ("ดีมานด์สุทธิในพื้นที่", _fmt_num(first_year["net_sessions_per_day"]), "ดีมานด์ก่อนหักคู่แข่ง ลบแรงกดจากคู่แข่ง"),
-        ("พลังงานต่อวัน", _fmt_num(first_year["daily_kwh"]), f"คำนวณที่ {_fmt_num(req.avg_kwh_per_session)} kWh/คัน"),
+        ("สถานีให้บริการได้", _fmt_num(first_year["served_sessions_per_day"]), "จำนวนคัน/วันที่สเปคตู้และช่องจอดรองรับได้จริงโดยประมาณ"),
+        ("พลังงานต่อวัน", _fmt_num(first_year["daily_kwh"]), f"คำนวณที่ {_fmt_num(req.avg_kwh_per_session)} kWh/คัน และไม่เกินความสามารถของสถานี"),
         ("ลักษณะทำเล", _thai_location_type(first_year["location_type"]), "ภาพรวมของพื้นที่ที่ระบบอ่านได้"),
         ("ผลประเมินเบื้องต้น", _thai_eligibility(first_year["eligibility_status"]), _thai_eligibility_reason(first_year["eligibility_reason"])),
         ("AADT ที่ใช้", _fmt_int(first_year["aadt_used"]), "ตัวช่วยสะท้อนทราฟฟิกเบื้องต้น"),
@@ -970,11 +1028,11 @@ def _add_forecast_table(doc: Document, rows: list[dict[str, Any]]) -> None:
     p.style = doc.styles["Heading 1"]
     p.add_run("แนวโน้มดีมานด์สุทธิ 10 ปี")
 
-    table = doc.add_table(rows=1, cols=5)
+    table = doc.add_table(rows=1, cols=6)
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
-    _set_table_widths(table, [0.9, 1.2, 1.4, 1.3, 1.4])
-    headers = ["ปี", "ก่อนหัก", "คู่แข่ง", "สุทธิ", "kWh/วัน"]
+    _set_table_widths(table, [0.75, 1.05, 1.1, 1.05, 1.15, 1.15])
+    headers = ["ปี", "ก่อนหัก", "คู่แข่ง", "สุทธิพื้นที่", "สถานีรับได้", "kWh/วัน"]
     for idx, label in enumerate(headers):
         cell = table.cell(0, idx)
         cell.text = label
@@ -989,6 +1047,7 @@ def _add_forecast_table(doc: Document, rows: list[dict[str, Any]]) -> None:
             _fmt_num(row["gross_area_demand_sessions"]),
             _fmt_num(row["competitor_penalty_sessions"]),
             _fmt_num(row["net_sessions_per_day"]),
+            _fmt_num(row["served_sessions_per_day"]),
             _fmt_num(row["daily_kwh"]),
         ]
         cells = table.add_row().cells
@@ -1001,7 +1060,7 @@ def _add_forecast_table(doc: Document, rows: list[dict[str, Any]]) -> None:
                 _set_cell_shading(cell, "F9FBFD")
 
     note = doc.add_paragraph()
-    run = note.add_run("รวม = ดีมานด์รวมในพื้นที่ก่อนหักผลของคู่แข่ง | สุทธิ = ดีมานด์ที่ยังเหลือสำหรับจุดนี้หลังหักแรงแข่งขันแล้ว")
+    run = note.add_run("สุทธิพื้นที่ = ดีมานด์หลังหักคู่แข่ง | สถานีรับได้ = จำนวนที่จำกัดด้วยกำลังไฟ ความพร้อมใช้งาน และจำนวนช่องจอด")
     run.font.size = Pt(9.5)
     run.font.color.rgb = MUTED
 
@@ -1129,7 +1188,8 @@ def _add_owner_gp_summary(doc: Document, req: OwnerAreaReportRequest, site_name:
     text = (
         f"{site_name} เป็นจุดที่ระบบประเมินว่ามีศักยภาพในระดับ{_thai_eligibility(first_year['eligibility_status'])} "
         f"และมีดีมานด์ก่อนหักคู่แข่งของพื้นที่รอบจุดประมาณ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
-        f"เมื่อหักแรงแข่งขันของสถานีรอบข้างแล้ว ยังเหลือดีมานด์สุทธิประมาณ {_fmt_num(first_year['net_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
+        f"เมื่อหักแรงแข่งขันของสถานีรอบข้างแล้ว ยังเหลือดีมานด์สุทธิประมาณ {_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน "
+        f"และสถานีตามสเปคสามารถให้บริการได้ประมาณ {_fmt_num(first_year['served_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
         f"หากใช้รูปแบบความร่วมมือที่เจ้าของพื้นที่ไม่ต้องลงทุนเอง แต่รับ GP {_fmt_num(req.owner_gp_per_kwh, 2)} บาทต่อหน่วยจากพลังงานที่จำหน่ายได้ "
         f"คาดว่าจะมีโอกาสรับรายได้ปีแรกประมาณ {_fmt_int(first_year['annual_owner_gp'])} บาท/ปี "
         f"และขยับเป็นประมาณ {_fmt_int(final_year['annual_owner_gp'])} บาท/ปีในปี {req.end_year}. "
@@ -1165,7 +1225,7 @@ def _add_owner_gp_forecast(doc: Document, req: OwnerAreaReportRequest, rows: lis
         cumulative_gp += float(row["annual_owner_gp"])
         values = [
             str(row["year"]),
-            _fmt_num(row["net_sessions_per_day"]),
+            _fmt_num(row["served_sessions_per_day"]),
             _fmt_int(row["annual_revenue"]),
             _fmt_int(row["annual_owner_gp"]),
             _fmt_int(cumulative_gp),
@@ -1191,7 +1251,9 @@ def _investor_projection_rows(req: OwnerAreaReportRequest, rows: list[dict[str, 
     payback: tuple[int, float] | None = None
     for row in rows:
         adjusted_cars = float(row["net_sessions_per_day"]) * req.perception_factor
-        annual_kwh = adjusted_cars * req.avg_kwh_per_session * 365.0
+        service = _service_result(req, adjusted_cars)
+        served_cars = service["served_sessions_per_day"]
+        annual_kwh = served_cars * req.avg_kwh_per_session * 365.0
         annual_revenue = annual_kwh * req.price_per_kwh
         annual_cpo_gp = annual_revenue * req.cpo_gp_rate
         annual_electricity_cost = annual_kwh * req.electricity_cost_per_kwh
@@ -1206,6 +1268,9 @@ def _investor_projection_rows(req: OwnerAreaReportRequest, rows: list[dict[str, 
             "year": row["year"],
             "modeled_cars_per_day": row["net_sessions_per_day"],
             "adjusted_cars_per_day": adjusted_cars,
+            "served_cars_per_day": served_cars,
+            "service_capacity_sessions_per_day": service["service_capacity_sessions_per_day"],
+            "capacity_limited": service["capacity_limited"],
             "annual_kwh": annual_kwh,
             "annual_revenue": annual_revenue,
             "annual_cpo_gp": annual_cpo_gp,
@@ -1285,6 +1350,7 @@ def _add_investor_summary(doc: Document, req: OwnerAreaReportRequest, site_name:
     text = (
         f"{site_name} เป็นจุดที่มีดีมานด์สุทธิเริ่มต้นจากโมเดลประมาณ {_fmt_num(first_year['modeled_cars_per_day'])} คัน/วัน "
         f"อย่างไรก็ดี ในมุมนักลงทุน เอกสารฉบับนี้ปรับตัวเลขลงด้วยตัวปรับเชิงพฤติกรรม เหลือประมาณ {_fmt_num(first_year['adjusted_cars_per_day'])} คัน/วัน "
+        f"และเมื่อจำกัดด้วยสเปคสถานี จะให้บริการได้ประมาณ {_fmt_num(first_year['served_cars_per_day'])} คัน/วัน "
         f"เพื่อสะท้อนการเปลี่ยนจากดีมานด์ในพื้นที่ไปสู่การใช้งานจริงของสถานีได้อย่างระมัดระวังมากขึ้น "
         f"ภายใต้สมมติฐานราคาขาย {_fmt_num(req.price_per_kwh,1)} บาท/kWh, ค่าไฟ {_fmt_num(req.electricity_cost_per_kwh,1)} บาท/kWh, "
         f"CPO GP {_fmt_num(req.cpo_gp_rate * 100,1)}%, GP เจ้าของพื้นที่ {_fmt_num(req.owner_gp_per_kwh,2)} บาท/kWh และ O&M {_fmt_int(req.annual_o_and_m)} บาท/ปี "
@@ -1307,7 +1373,7 @@ def _add_investor_forecast(doc: Document, req: OwnerAreaReportRequest, rows: lis
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.LEFT
     _set_table_widths(table, [0.9, 1.0, 1.0, 1.4, 1.2, 1.2, 1.3, 1.4])
-    headers = ["ปี", "ก่อนปรับ", "หลังปรับ", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "กระแสเงินสด/ปี", "กระแสเงินสดสะสม"]
+    headers = ["ปี", "ก่อนปรับ", "หลังปรับ/รับได้", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "กระแสเงินสด/ปี", "กระแสเงินสดสะสม"]
     for idx, label in enumerate(headers):
         cell = table.cell(0, idx)
         cell.text = label
@@ -1320,7 +1386,7 @@ def _add_investor_forecast(doc: Document, req: OwnerAreaReportRequest, rows: lis
         values = [
             str(row["year"]),
             _fmt_num(row["modeled_cars_per_day"]),
-            _fmt_num(row["adjusted_cars_per_day"]),
+            _fmt_num(row["served_cars_per_day"]),
             _fmt_int(row["annual_revenue"]),
             _fmt_int(row["annual_cpo_gp"]),
             _fmt_int(row["annual_electricity_cost"]),
@@ -1540,7 +1606,8 @@ def _build_pdf_story(
         summary_text = (
             f"{site_name} เป็นจุดที่ระบบประเมินว่ามีศักยภาพในระดับ{_thai_eligibility(first_year['eligibility_status'])} "
             f"และมีดีมานด์ก่อนหักคู่แข่งของพื้นที่รอบจุดประมาณ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
-            f"เมื่อหักแรงแข่งขันของสถานีรอบข้างแล้ว ยังเหลือดีมานด์สุทธิประมาณ {_fmt_num(first_year['net_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
+            f"เมื่อหักแรงแข่งขันของสถานีรอบข้างแล้ว ยังเหลือดีมานด์สุทธิประมาณ {_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน "
+            f"และสถานีตามสเปคสามารถให้บริการได้ประมาณ {_fmt_num(first_year['served_sessions_per_day'])} คัน/วันในปี {req.start_year}. "
             f"หากเจ้าของพื้นที่เลือกทำดีลแบบไม่ลงทุนเอง แต่รับ GP {_fmt_num(req.owner_gp_per_kwh, 2)} บาทต่อหน่วยจากพลังงานที่จำหน่ายได้ "
             f"คาดว่าจะมีโอกาสรับรายได้ปีแรกประมาณ {_fmt_int(first_year['annual_owner_gp'])} บาท/ปี และขยับเป็นประมาณ "
             f"{_fmt_int(final_year['annual_owner_gp'])} บาท/ปีในปี {req.end_year}."
@@ -1559,7 +1626,8 @@ def _build_pdf_story(
             f"{site_name} อยู่ในบริเวณที่ระบบประเมินว่าเป็น{_thai_location_type(first_year['location_type'])} และจัดอยู่ในกลุ่ม{_thai_eligibility(first_year['eligibility_status'])} "
             f"โดยในปี {req.start_year} ระบบประเมินดีมานด์ก่อนหักคู่แข่งไว้ที่ {_fmt_num(first_year['gross_area_demand_sessions'])} คัน/วัน "
             f"ก่อนหักแรงแข่งขันของคู่แข่ง {_fmt_num(first_year['competitor_penalty_sessions'])} คัน/วัน เหลือดีมานด์สุทธิประมาณ "
-            f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน หรือประมาณ {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
+            f"{_fmt_num(first_year['net_sessions_per_day'])} คัน/วัน โดยสเปกสถานีที่ระบุให้บริการได้ประมาณ "
+            f"{_fmt_num(first_year['served_sessions_per_day'])} คัน/วัน หรือประมาณ {_fmt_num(first_year['daily_kwh'])} kWh/วัน."
             f"{focus_metric}{note_text}"
         )
     story.append(_pdf_paragraph("สรุปสำหรับผู้บริหาร", styles["heading"]))
@@ -1572,7 +1640,8 @@ def _build_pdf_story(
         [_pdf_paragraph("ดีมานด์ก่อนหักคู่แข่ง", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["gross_area_demand_sessions"]), styles["cell"]), _pdf_paragraph("จำนวน session/วัน ที่จุดมีโอกาสรองรับได้ก่อนหักคู่แข่ง", styles["cell"])],
         [_pdf_paragraph("แรงกดจากคู่แข่งที่ยืนยันพิกัด", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["competitor_penalty_sessions"]), styles["cell"]), _pdf_paragraph("จำนวน session/วัน ที่หักจากสถานีคู่แข่งซึ่งมีพิกัดในฐานข้อมูล", styles["cell"])],
         [_pdf_paragraph("ดีมานด์สุทธิในพื้นที่", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["net_sessions_per_day"]), styles["cell"]), _pdf_paragraph("ดีมานด์ก่อนหักคู่แข่ง ลบแรงกดจากคู่แข่ง", styles["cell"])],
-        [_pdf_paragraph("พลังงานต่อวัน", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["daily_kwh"]), styles["cell"]), _pdf_paragraph(f"คำนวณที่ {_fmt_num(req.avg_kwh_per_session)} kWh/คัน", styles["cell"])],
+        [_pdf_paragraph("สถานีให้บริการได้", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["served_sessions_per_day"]), styles["cell"]), _pdf_paragraph("จำกัดด้วยกำลังไฟ ความพร้อมใช้งาน และจำนวนช่องจอด", styles["cell"])],
+        [_pdf_paragraph("พลังงานต่อวัน", styles["cell"]), _pdf_paragraph(_fmt_num(first_year["daily_kwh"]), styles["cell"]), _pdf_paragraph(f"คำนวณที่ {_fmt_num(req.avg_kwh_per_session)} kWh/คัน และไม่เกินความสามารถของสถานี", styles["cell"])],
         [_pdf_paragraph("ลักษณะทำเล", styles["cell"]), _pdf_paragraph(_thai_location_type(first_year["location_type"]), styles["cell"]), _pdf_paragraph("ภาพรวมของพื้นที่ที่ระบบอ่านได้", styles["cell"])],
         [_pdf_paragraph("ผลประเมินเบื้องต้น", styles["cell"]), _pdf_paragraph(_thai_eligibility(first_year["eligibility_status"]), styles["cell"]), _pdf_paragraph(str(first_year["eligibility_reason"]), styles["cell"])],
     ]
@@ -1633,7 +1702,7 @@ def _build_pdf_story(
             cumulative_gp += float(row["annual_owner_gp"])
             rows.append([
                 _pdf_paragraph(str(row["year"]), styles["cell"]),
-                _pdf_paragraph(_fmt_num(row["net_sessions_per_day"]), styles["cell"]),
+                _pdf_paragraph(_fmt_num(row["served_sessions_per_day"]), styles["cell"]),
                 _pdf_paragraph(_fmt_int(row["annual_revenue"]), styles["cell"]),
                 _pdf_paragraph(_fmt_int(row["annual_owner_gp"]), styles["cell"]),
                 _pdf_paragraph(_fmt_int(cumulative_gp), styles["cell"]),
@@ -1642,12 +1711,12 @@ def _build_pdf_story(
     elif req.report_type == "investor-case":
         investor_rows, payback = _investor_projection_rows(req, projection_rows)
         story.append(_pdf_paragraph("แนวโน้มกระแสเงินสดและระยะเวลาคืนทุน", styles["heading"]))
-        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "ก่อนปรับ", "หลังปรับ", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "กระแสเงินสด/ปี", "กระแสเงินสดสะสม"]]]
+        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "ก่อนปรับ", "หลังปรับ/รับได้", "รายได้/ปี", "CPO/ปี", "ค่าไฟ/ปี", "กระแสเงินสด/ปี", "กระแสเงินสดสะสม"]]]
         for row in investor_rows:
             rows.append([
                 _pdf_paragraph(str(row["year"]), styles["cell"]),
                 _pdf_paragraph(_fmt_num(row["modeled_cars_per_day"]), styles["cell"]),
-                _pdf_paragraph(_fmt_num(row["adjusted_cars_per_day"]), styles["cell"]),
+                _pdf_paragraph(_fmt_num(row["served_cars_per_day"]), styles["cell"]),
                 _pdf_paragraph(_fmt_int(row["annual_revenue"]), styles["cell"]),
                 _pdf_paragraph(_fmt_int(row["annual_cpo_gp"]), styles["cell"]),
                 _pdf_paragraph(_fmt_int(row["annual_electricity_cost"]), styles["cell"]),
@@ -1658,17 +1727,18 @@ def _build_pdf_story(
         story.append(_pdf_paragraph(f"เงินลงทุนตั้งต้น {_fmt_int(req.project_capex_ex_vat)} บาท | {_fmt_payback_timing(payback)}", styles["small"]))
     else:
         story.append(_pdf_paragraph("แนวโน้มดีมานด์สุทธิ 10 ปี", styles["heading"]))
-        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "ก่อนหัก", "คู่แข่ง", "สุทธิ", "kWh/วัน"]]]
+        rows = [[_pdf_paragraph(label, styles["cell_bold"]) for label in ["ปี", "ก่อนหัก", "คู่แข่ง", "สุทธิพื้นที่", "สถานีรับได้", "kWh/วัน"]]]
         for row in projection_rows:
             rows.append([
                 _pdf_paragraph(str(row["year"]), styles["cell"]),
                 _pdf_paragraph(_fmt_num(row["gross_area_demand_sessions"]), styles["cell"]),
                 _pdf_paragraph(_fmt_num(row["competitor_penalty_sessions"]), styles["cell"]),
                 _pdf_paragraph(_fmt_num(row["net_sessions_per_day"]), styles["cell"]),
+                _pdf_paragraph(_fmt_num(row["served_sessions_per_day"]), styles["cell"]),
                 _pdf_paragraph(_fmt_num(row["daily_kwh"]), styles["cell"]),
             ])
-        story.append(_pdf_table(rows, [0.9, 1.2, 1.4, 1.3, 1.4]))
-        story.append(_pdf_paragraph("ก่อนหัก = ดีมานด์ที่จุดมีโอกาสรองรับได้ก่อนหักคู่แข่ง | สุทธิ = ก่อนหัก ลบแรงกดจากคู่แข่งที่มีพิกัดยืนยัน", styles["small"]))
+        story.append(_pdf_table(rows, [0.75, 1.05, 1.1, 1.05, 1.15, 1.15]))
+        story.append(_pdf_paragraph("สุทธิพื้นที่ = ดีมานด์หลังหักคู่แข่ง | สถานีรับได้ = จำนวนที่จำกัดด้วยกำลังไฟ ความพร้อมใช้งาน และจำนวนช่องจอด", styles["small"]))
 
     warnings = first_year.get("warnings") or []
     if warnings:

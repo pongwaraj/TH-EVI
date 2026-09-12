@@ -51,6 +51,8 @@ def estimate_fleet_ev_population(year: int, province: str = "default") -> int:
     
     if not isinstance(province, str):
         raise TypeError(f"Province must be a string, got {type(province).__name__}")
+
+    province = C.canonical_province_name(province)
     
     model = EVAdoptionModel(province=province, use_fleet_model=False)
     annual_new = C.PROVINCE_NEW_CAR_RATE.get(province, 6_200)
@@ -91,6 +93,8 @@ def estimate_fleet_ev_share(year: int, province: str = "default") -> float:
     
     if not isinstance(province, str):
         raise TypeError(f"Province must be a string, got {type(province).__name__}")
+
+    province = C.canonical_province_name(province)
     
     fleet = C.PROVINCE_FLEET_SIZE.get(province, 350_000)
     
@@ -143,11 +147,11 @@ class EVAdoptionModel:
         if not isinstance(use_fleet_model, bool):
             raise TypeError(f"use_fleet_model must be a boolean, got {type(use_fleet_model).__name__}")
         
-        self.province = province
+        self.province = C.canonical_province_name(province)
         self.max_share = C.S_CURVE["carrying_capacity"]
         self.growth_rate = C.S_CURVE["growth_rate"]
         self.midpoint = C.S_CURVE["midpoint_year"]
-        self.province_factor = C.PROVINCE_EV_FACTOR.get(province, C.PROVINCE_EV_FACTOR["default"])
+        self.province_factor = C.PROVINCE_EV_FACTOR.get(self.province, C.PROVINCE_EV_FACTOR["default"])
         self.use_fleet_model = use_fleet_model
         
         logger.debug(
