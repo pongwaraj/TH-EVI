@@ -16,3 +16,10 @@ data/*.xls
 Proposal/**
 Analysis/**
 TCE_logo.png
+artifacts/**
+outputs/**
+node_modules/**
+survey_preview.png
+analysis.json
+executive_analysis.json
+*.mjs
