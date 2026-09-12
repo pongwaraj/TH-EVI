@@ -64,10 +64,16 @@ PROVINCE_EV_FACTOR = {
     "อุบลราชธานี": 0.92,  # Pilot assumption: large regional hub with Route 24/231 and Chong Mek demand
     "ชัยภูมิ": 1.00,       # DLT Apr 2569 รย.1 BEV stock is low; calibrate fleet size and rate below
     "Chaiyaphum": 1.00,
+    # DLT Apr 2569 รย.1 BEV share: 669 / 65,182 = 1.03%. Keep the national
+    # passenger-car S-curve neutral and calibrate through the local fleet data.
+    "กำแพงเพชร": 1.00,
+    "Kamphaeng Phet": 1.00,
     "ภูเก็ต": 1.00,        # Major tourism island; DLT Apr 2026 ร.1 BEV share is already above 3%
     "Phuket": 1.00,
     "ชลบุรี": 1.00,       # DLT Apr 2569 รย.1 BEV share: 2.223%
     "Chon Buri": 1.00,
+    "ศรีสะเกษ": 1.00,     # DLT Apr 2569 รย.1 BEV share: 0.89%; keep neutral and calibrate fleet size.
+    "Si Sa Ket": 1.00,
     # DLT 30 Jun 2026 รย.1 BEV share: 1.7395%. Keep the national curve
     # neutral; the observed provincial stock is represented by the calibrated
     # new-car rate below rather than a mixed vehicle-class multiplier.
@@ -184,6 +190,9 @@ PROVINCE_NEW_CAR_RATE = {
     # Calibrated to DLT 30 Jun 2569: 10,712 BEVs in the รย.1 fleet.
     "ชลบุรี": 9_200,
     "Chon Buri": 9_200,
+    # Calibrated to DLT Apr 2569: 556 registered passenger BEVs.
+    "ศรีสะเกษ": 1_200,
+    "Si Sa Ket": 1_200,
     # Calibrated to DLT 30 Jun 2026: 5,964 registered รย.1 BEVs.
     "นครราชสีมา": 5_125,
     "อำนาจเจริญ": 160,
@@ -197,6 +206,11 @@ PROVINCE_NEW_CAR_RATE = {
     # This is deliberately conservative for a lower-density provincial market.
     "ชัยภูมิ": 270,
     "Chaiyaphum": 270,
+    # Calibrated to DLT Apr 2569: 669 BEVs in 65,182 registered รย.1 vehicles.
+    # The provincial market is kept conservative rather than borrowing a nearby
+    # city or highway corridor's growth rate.
+    "กำแพงเพชร": 575,
+    "Kamphaeng Phet": 575,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
@@ -217,6 +231,8 @@ PROVINCE_FLEET_SIZE = {
     "Phitsanulok": 151_213,
     "ชลบุรี": 440_524,   # DLT 30 Jun 2569 รย.1 passenger-car fleet
     "Chon Buri": 440_524,
+    "ศรีสะเกษ": 62_499,  # DLT Apr 2569 รย.1 passenger-car fleet
+    "Si Sa Ket": 62_499,
     # DLT 30 Jun 2026 รย.1 passenger-car fleet.
     "นครราชสีมา": 342_842,
     "อำนาจเจริญ": 21_531,
@@ -226,6 +242,9 @@ PROVINCE_FLEET_SIZE = {
     "Surat Thani": 174_123,
     "ชัยภูมิ": 59_757,
     "Chaiyaphum": 59_757,
+    # DLT April 2569 รย.1 passenger-car fleet.
+    "กำแพงเพชร": 65_182,
+    "Kamphaeng Phet": 65_182,
 }
 
 # --- National Average Daily Trips per Vehicle ---

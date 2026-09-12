@@ -135,10 +135,22 @@ def _thai_eligibility(value: Any) -> str:
     return mapping.get(text, text or "-")
 
 
+def _thai_eligibility_reason(value: Any) -> str:
+    mapping = {
+        "Point is close enough to urban access anchors to run a demand estimate.":
+            "จุดวิเคราะห์อยู่ใกล้แหล่งกิจกรรมและทางเข้าถึงเพียงพอสำหรับประเมินดีมานด์",
+        "No nearby urban access anchor, corridor, or verified competitor.":
+            "ไม่พบแหล่งกิจกรรม แนวเส้นทาง หรือคู่แข่งที่ยืนยันพิกัดได้ใกล้จุดวิเคราะห์",
+    }
+    text = str(value or "").strip()
+    return mapping.get(text, text or "-")
+
+
 def _thai_confidence(value: Any) -> str:
     mapping = {
         "high": "สูง",
         "medium": "ปานกลาง",
+        "medium_high": "ปานกลางถึงสูง",
         "low": "ต่ำ",
     }
     text = str(value or "").strip().lower()
@@ -861,12 +873,12 @@ def _add_snapshot_table(doc: Document, req: OwnerAreaReportRequest, site_name: s
         cell.paragraphs[0].runs[0].font.color.rgb = INK
 
     rows = [
-        ("ดีมานด์ก่อนหักคู่แข่ง", _fmt_num(first_year["gross_area_demand_sessions"]), "จำนวน session/วัน ที่จุดมีโอกาสรองรับได้ก่อนหักคู่แข่ง"),
-        ("แรงกดจากคู่แข่งที่ยืนยันพิกัด", _fmt_num(first_year["competitor_penalty_sessions"]), "จำนวน session/วัน ที่หักจากสถานีคู่แข่งซึ่งมีพิกัดในฐานข้อมูล"),
+        ("ดีมานด์ก่อนหักคู่แข่ง", _fmt_num(first_year["gross_area_demand_sessions"]), "จำนวนคัน/วันที่จุดมีโอกาสรองรับได้ก่อนหักคู่แข่ง"),
+        ("แรงกดจากคู่แข่งที่ยืนยันพิกัด", _fmt_num(first_year["competitor_penalty_sessions"]), "จำนวนคัน/วันที่หักจากสถานีคู่แข่งซึ่งมีพิกัดในฐานข้อมูล"),
         ("ดีมานด์สุทธิในพื้นที่", _fmt_num(first_year["net_sessions_per_day"]), "ดีมานด์ก่อนหักคู่แข่ง ลบแรงกดจากคู่แข่ง"),
         ("พลังงานต่อวัน", _fmt_num(first_year["daily_kwh"]), f"คำนวณที่ {_fmt_num(req.avg_kwh_per_session)} kWh/คัน"),
         ("ลักษณะทำเล", _thai_location_type(first_year["location_type"]), "ภาพรวมของพื้นที่ที่ระบบอ่านได้"),
-        ("ผลประเมินเบื้องต้น", _thai_eligibility(first_year["eligibility_status"]), str(first_year["eligibility_reason"])),
+        ("ผลประเมินเบื้องต้น", _thai_eligibility(first_year["eligibility_status"]), _thai_eligibility_reason(first_year["eligibility_reason"])),
         ("AADT ที่ใช้", _fmt_int(first_year["aadt_used"]), "ตัวช่วยสะท้อนทราฟฟิกเบื้องต้น"),
         ("ระดับความเชื่อมั่น", _thai_confidence(first_year["confidence"]), "อิงความแน่นของ POI, competitor และบริบทพื้นที่"),
     ]
@@ -922,6 +934,8 @@ def _add_rank_table(
                     text = _fmt_num(value)
                 else:
                     text = str(value)
+            elif key == "confidence":
+                text = _thai_confidence(value)
             else:
                 text = str(value if value not in (None, "") else "-")
             cells[col_idx].text = text
@@ -999,7 +1013,16 @@ def _add_warnings(doc: Document, warnings: list[str]) -> None:
     p.style = doc.styles["Heading 1"]
     p.add_run("ข้อควรระวังในการตีความ")
 
+    translations = {
+        "No coordinate-verified competitor within radius; penalty may be understated.":
+            "ยังไม่มีคู่แข่งที่ยืนยันพิกัดได้ภายในรัศมีแบบจำลอง แรงหักจากคู่แข่งอาจต่ำกว่าความเป็นจริง",
+        "Water-layer lookup unavailable: TimeoutError.":
+            "ไม่สามารถตรวจสอบชั้นข้อมูลน้ำได้ภายในเวลาที่กำหนด ควรตรวจสอบความเสี่ยงน้ำและภูมิประเทศเพิ่มเติมก่อนลงทุน",
+        "Building-layer lookup unavailable: TimeoutError.":
+            "ไม่สามารถตรวจสอบชั้นข้อมูลอาคารได้ภายในเวลาที่กำหนด ควรตรวจสอบกิจกรรมเชิงพาณิชย์และสิ่งปลูกสร้างจริงหน้างานเพิ่มเติม",
+    }
     for warning in warnings[:6]:
+        warning = translations.get(str(warning), str(warning))
         para = doc.add_paragraph(style=None)
         para.paragraph_format.left_indent = Inches(0.2)
         run = para.add_run(f"- {warning}")

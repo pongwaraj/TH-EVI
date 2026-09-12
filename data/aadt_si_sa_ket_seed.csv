@@ -1,0 +1,4 @@
+year_be,route,control,segment,km,aadt,province,source,notes
+2566,226,402,ศรีสะเกษ - ห้วยขะยุง,278+212,19006,Si Sa Ket,DOH aadt_2566.csv,Closest official 2566 urban-side Route 226 count used for Highway Cafe target context.
+2566,226,402,ศรีสะเกษ - ห้วยขะยุง,300+712,12640,Si Sa Ket,DOH aadt_2566.csv,Additional eastbound Route 226 context; not substituted for target-side segment.
+2566,226,402,ศรีสะเกษ - ห้วยขะยุง,311+884,11286,Si Sa Ket,DOH aadt_2566.csv,Additional corridor context toward Huai Khayung.

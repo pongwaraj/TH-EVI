@@ -33,6 +33,9 @@ PROVINCE_AADT_ALIASES = {
     "ภูเก็ต": "ภูเก็ต",
     "Chon Buri": "ชลบุรี",
     "ชลบุรี": "ชลบุรี",
+    "Si Sa Ket": "ศรีสะเกษ",
+    "Sisaket": "ศรีสะเกษ",
+    "ศรีสะเกษ": "ศรีสะเกษ",
     "Nakhon Ratchasima": "นครราชสีมา",
     "นครราชสีมา": "นครราชสีมา",
     "Amnat Charoen": "อำนาจเจริญ",
@@ -41,6 +44,8 @@ PROVINCE_AADT_ALIASES = {
     "สุราษฎร์ธานี": "สุราษฎร์ธานี",
     "Chaiyaphum": "ชัยภูมิ",
     "ชัยภูมิ": "ชัยภูมิ",
+    "Kamphaeng Phet": "กำแพงเพชร",
+    "กำแพงเพชร": "กำแพงเพชร",
 }
 
 ROUTE_BBOXES_BY_PROVINCE = {
@@ -89,6 +94,12 @@ ROUTE_BBOXES_BY_PROVINCE = {
         (332, (12.67, 12.76, 100.96, 101.08)),
         (3, (12.72, 12.87, 100.88, 100.95)),
     ],
+    "ศรีสะเกษ": [
+        # Target-side urban and intercity corridor around Highway Cafe.
+        (226, (15.07, 15.16, 104.28, 104.43)),
+        (221, (15.05, 15.20, 104.25, 104.50)),
+        (294, (15.05, 15.18, 104.26, 104.38)),
+    ],
     "อำนาจเจริญ": [
         (212, (15.80, 15.94, 104.58, 104.70)),
         (202, (15.78, 15.93, 104.55, 104.75)),
@@ -111,6 +122,20 @@ ROUTE_BBOXES_BY_PROVINCE = {
         (2037, (16.27, 16.43, 102.05, 102.25)),
         (2159, (16.25, 16.43, 102.05, 102.25)),
     ],
+    "กำแพงเพชร": [
+        # Nakhon Chum sits on Route 1116 local service access, near Route 101
+        # and Highway 1. The local-access override below protects the target
+        # from inheriting the much larger Highway 1 through-traffic count.
+        (1116, (16.42, 16.52, 99.46, 99.55)),
+        (101, (16.40, 16.56, 99.45, 99.59)),
+        (1, (16.40, 16.58, 99.43, 99.58)),
+    ],
+    "นครราชสีมา": [
+        # Khok Sung candidate on the northern/eastern ring-road section. Keep
+        # the envelope local so the route count is not projected over Korat's
+        # wider urban grid.
+        (290, (15.08, 15.14, 102.08, 102.17)),
+    ],
 }
 
 # Local-road pockets that fall inside a deliberately broad route bounding box.
@@ -126,17 +151,21 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
         # Waterfront access near Fleet Command is a local destination road.
         ((12.63, 12.69, 100.88, 100.94), 6_500),
     ],
-    "นครราชสีมา": [
-        # Official Route 24 control 201 (17,539 AADT) is the measured
-        # target-side segment. Do not back-project control 202's 28,686 AADT
-        # from the Pak Thong Chai--Chok Chai section onto this junction.
-        ((14.735, 14.775, 102.025, 102.070), 17_539),
-    ],
     "พิษณุโลก": [
         # The requested Kaeng Sopha point sits on the measured Route 12
         # Wang Thong - Khek Noi segment. Use that official 2566 counter
         # instead of the province-wide maximum for Route 12.
         ((16.845, 16.900, 100.620, 100.700), 6_946),
+    ],
+    "นครราชสีมา": [
+        # Official Route 24 control 201 (17,539 AADT) is the measured
+        # target-side segment. Do not back-project control 202's 28,686 AADT
+        # from the Pak Thong Chai--Chok Chai section onto this junction.
+        ((14.735, 14.775, 102.025, 102.070), 17_539),
+        # The Khok Sung candidate is on the Route 290 ring road. The 2566
+        # official file has one Route 290 counter (6,123 AADT); use it as a
+        # cautious corridor proxy rather than importing Route 2 volumes.
+        ((15.085, 15.125, 102.100, 102.140), 6_123),
     ],
     "สุราษฎร์ธานี": [
         # 9.102657, 99.316291 is on Phokhun Thale local access road near the
@@ -148,6 +177,17 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
         # not a direct carriageway count. Keep the nearest route context from
         # being projected at full value onto the town-side grid cells.
         ((16.30, 16.40, 102.08, 102.17), 8_500),
+    ],
+    "กำแพงเพชร": [
+        # Requested Nakhon Chum point is on Route 1116 municipal access. Its
+        # closest official 2566 counter is 10,632 AADT, not Route 101's 19,668
+        # nor Highway 1's long-distance traffic.
+        ((16.445, 16.500, 99.475, 99.520), 10_632),
+    ],
+    "ศรีสะเกษ": [
+        # Highway Cafe is on the city-side Route 226 frontage. Use the closest
+        # official DOH 2566 count rather than the province-wide maximum.
+        ((15.075, 15.145, 104.325, 104.380), 19_006),
     ],
 }
 

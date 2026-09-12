@@ -1,0 +1,10 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+si_sa_ket_highway_cafe,Highway Cafe,target_site,15.111581,104.352063,Wongnai + user-provided coordinate,high,Restaurant/cafe roadside destination at 193 Moo 8 Pho Mueang Si Sa Ket.
+si_sa_ket_route226_corridor,ทางหลวงหมายเลข 226 ศรีสะเกษ - ห้วยขะยุง,transport_corridor,15.111581,104.352063,DOH AADT 2566 + user-provided coordinate,medium_high,Route 226 corridor context; do not treat the full AADT as charger demand.
+si_sa_ket_city_center,Mueang Si Sa Ket city center,city_center,15.118000,104.327000,Wikidata + OSM city context,medium_high,Provincial service and retail core.
+si_sa_ket_bus_terminal,Si Sa Ket Bus Terminal,transport,15.107200,104.327910,Mapcarta / OSM,medium_high,Intercity transport and dwell-time anchor.
+si_sa_ket_hospital,Sisaket Hospital,hospital,15.116054,104.319993,Wikidata / hospital listing,high,Provincial hospital anchor.
+si_sa_ket_big_c,Big C Supercenter Si Sa Ket,shopping_mall,15.121199,104.306960,OSM / public place listing,medium_high,Major retail anchor west of the city core.
+si_sa_ket_lotus,Tesco Lotus Si Sa Ket,supermarket,15.106500,104.347500,Public business listing,medium,Large-format retail and food destination near Pho.
+si_sa_ket_railway,Si Sa Ket Railway Station,transport,15.117600,104.326800,OSM railway context,medium_high,Central rail and local mobility anchor.
+si_sa_ket_rajabhat,Sisaket Rajabhat University,education,15.119700,104.341800,OSM / public education listing,medium,Education and staff/student activity anchor.

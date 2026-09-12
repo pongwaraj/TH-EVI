@@ -1,0 +1,4 @@
+business_area_id,name,area_type,center_lat,center_lon,radius_km,demand_pool_conservative,demand_pool_base,demand_pool_upside,location_type,confidence,notes,last_verified_date
+sisaket_city_service_core,Mueang Si Sa Ket service and retail core,urban_fringe,15.114000,104.331000,4.0,24,40,60,destination,medium_high,Provincial service core with hospital bus rail retail and city access.,2026-09-10
+sisaket_route226_east_frontage,Route 226 east urban frontage,periurban_connector,15.111581,104.352063,2.5,18,30,45,highway,medium_high,Highway Cafe and nearby PTT charging cluster; keep the estimate below a citywide demand proxy.,2026-09-10
+sisaket_pho_local_node,Pho local commercial edge,residential_school_edge,15.111581,104.352063,2.0,8,14,22,destination,medium,Local stop-and-dwell support around Pho; requires field verification of parking and access.,2026-09-10

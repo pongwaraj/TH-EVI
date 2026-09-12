@@ -1,0 +1,4 @@
+zone_id,name,center_lat,center_lon,radius_km,heat_rank,demand_pool_conservative,demand_pool_base,demand_pool_upside,competition_pressure,capture_notes,confidence,last_verified_date
+sisaket_city_retail_transport,Mueang Si Sa Ket city retail and transport core,15.114000,104.331000,4.0,1,25,42,62,high,Strongest city service cluster with bus terminal hospital rail retail and several charging competitors; keep heat compact.,medium_high,2026-09-10
+sisaket_route226_east_corridor,Route 226 east city frontage,15.111581,104.352063,2.5,2,20,34,50,high,Target-side corridor with proven road traffic and roadside dwell time; apply competitor deduction locally.,medium_high,2026-09-10
+sisaket_route226_huai_khayung,Route 226 toward Huai Khayung,15.105000,104.390000,5.0,3,16,28,42,medium_high,Intercity corridor and fuel-service pattern; avoid diffusing heat deep into rural access roads.,medium,2026-09-10

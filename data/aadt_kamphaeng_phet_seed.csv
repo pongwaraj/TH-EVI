@@ -1,0 +1,6 @@
+year_be,route,name,km,aadt,heavy_vehicle_pct,province,source,notes
+2566,1116,Nakhon Chum - Mo Charoen,1+500,10632,4.477,Kamphaeng Phet,DOH aadt_2566.csv,"Closest measured Route 1116 municipal-service corridor to the requested Nakhon Chum point; use as local AADT context."
+2566,101,Nakhon Chum - Nam Dip,3+163,19668,3.808,Kamphaeng Phet,DOH aadt_2566.csv,"Nearby regional route context; do not project this count onto the Route 1116 local frontage."
+2566,1,Pak Dong - Nakhon Chum,457+876,34741,40.454,Kamphaeng Phet,DOH aadt_2566.csv,"Highway 1 long-distance and freight corridor near Nakhon Chum; contextual only for the requested local point."
+2566,1,Nakhon Chum - Wang Chao,486+779,16724,22.806,Kamphaeng Phet,DOH aadt_2566.csv,"Northbound Highway 1 context outside the immediate municipal access road."
+2566,112,Kamphaeng Phet bypass,6+500,14902,3.832,Kamphaeng Phet,DOH aadt_2566.csv,"Bypass traffic is retained for city coverage and not treated as direct site frontage."

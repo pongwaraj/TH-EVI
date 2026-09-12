@@ -1,0 +1,6 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+sisaket_mueang,Mueang Si Sa Ket,Mueang Si Sa Ket provincial capital,district_center,15.118000,104.327000,4.5,1.0,Primary provincial service and transport node.
+sisaket_pho,Pho,Pho local commercial and residential node,coverage_anchor,15.111581,104.352063,2.5,0.72,Target-side local node; do not substitute for the full provincial capital demand.
+sisaket_wang_hin,Wang Hin,Wang Hin district center,district_center,15.171000,104.231000,3.5,0.74,West-side coverage anchor from DOPA district context.
+sisaket_uthumphon,Uthumphon Phisai,Uthumphon Phisai district center,district_center,15.180000,104.140000,3.5,0.82,Southwest intercity coverage anchor.
+sisaket_kanthararom,Kanthararom,Kanthararom district center,district_center,15.104000,104.566000,3.5,0.80,East-side Route 226/roads coverage anchor.

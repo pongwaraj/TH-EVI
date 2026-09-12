@@ -57,6 +57,8 @@ PROVINCE_SLUGS = {
     "Ubon Ratchathani": "ubon_ratchathani",
     "ชัยภูมิ": "chaiyaphum",
     "Chaiyaphum": "chaiyaphum",
+    "กำแพงเพชร": "kamphaeng_phet",
+    "Kamphaeng Phet": "kamphaeng_phet",
     "\u0e2d\u0e38\u0e1a\u0e25\u0e23\u0e32\u0e0a\u0e18\u0e32\u0e19\u0e35": "ubon_ratchathani",
     "สมุทรปราการ": "samut_prakan",
     "Samut Prakan": "samut_prakan",
@@ -88,6 +90,9 @@ PROVINCE_SLUGS = {
     "\u0e20\u0e39\u0e40\u0e01\u0e47\u0e15": "phuket",
     "Chon Buri": "chon_buri",
     "\u0e0a\u0e25\u0e1a\u0e38\u0e23\u0e35": "chon_buri",
+    "ศรีสะเกษ": "si_sa_ket",
+    "Si Sa Ket": "si_sa_ket",
+    "Sisaket": "si_sa_ket",
     "Mae Hong Son": "mae_hong_son",
     "\u0e41\u0e21\u0e48\u0e2e\u0e48\u0e2d\u0e07\u0e2a\u0e2d\u0e19": "mae_hong_son",
     "\u004d\u0061\u0065\u0020\u0048\u006f\u006e\u0067\u0020\u0053\u006f\u006e": "mae_hong_son",
@@ -106,6 +111,7 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "khon_kaen": "Khon Kaen",
     "ubon_ratchathani": "Ubon Ratchathani",
     "chaiyaphum": "Chaiyaphum",
+    "kamphaeng_phet": "Kamphaeng Phet",
     "mae_hong_son": "Mae Hong Son",
     "samut_prakan": "Samut Prakan",
     "rayong": "Rayong",
@@ -117,6 +123,7 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "surat_thani": "Surat Thani",
     "phuket": "Phuket",
     "chon_buri": "Chon Buri",
+    "si_sa_ket": "Si Sa Ket",
 }
 
 SCENARIO_FACTORS = {

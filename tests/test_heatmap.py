@@ -78,7 +78,6 @@ def test_phitsanulok_heatmap_supports_kaeng_sopha_pt_scope():
         for point in result["points"]
     )
 
-
 def test_surat_thani_heatmap_supports_makham_tia_scope_and_competitor_pressure():
     pois = load_pois_for_province("Surat Thani")
     competitors = load_competitors_for_province("Surat Thani")
@@ -139,6 +138,38 @@ def test_chaiyaphum_heatmap_supports_phu_khiao_scope_and_competitor_signal():
     assert target["nearest_competitor_km"] < 2.5
     assert target["net_sessions_per_day"] < target["gross_area_demand_sessions"]
     assert target["top_districts"][0]["population"] == 106493
+
+
+def test_kamphaeng_phet_heatmap_supports_nakhon_chum_scope_and_competitor_signal():
+    pois = load_pois_for_province("Kamphaeng Phet")
+    competitors = load_competitors_for_province("Kamphaeng Phet")
+
+    assert any(poi["poi_id"] == "kamphaeng_phet_nakhon_chum_target" for poi in pois)
+    assert any(station["station_id"] == "kamphaeng_phet_ptt_nakhon_chum_ev" for station in competitors)
+
+    result = generate_province_heatmap(
+        "Kamphaeng Phet",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+    target = analyze_click_location(
+        16.474813,
+        99.494895,
+        "Kamphaeng Phet",
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+
+    assert result["point_count"] > 0
+    assert result["metadata"]["poi_count"] >= 6
+    assert result["metadata"]["competitor_count"] >= 1
+    assert target["aadt_used"] == 10_632
+    assert target["nearest_competitor_km"] < 0.7
+    assert target["net_sessions_per_day"] < target["gross_area_demand_sessions"]
+    assert target["top_districts"][0]["population"] == 134550
 
 
 def test_samut_prakan_heatmap_supports_bang_pu_scope():
@@ -235,6 +266,75 @@ def test_nakhon_ratchasima_heatmap_supports_korat_and_pak_chong_scope():
         if 14.68 <= point["lat"] <= 15.02 and 101.38 <= point["lon"] <= 102.14
     ]
     assert core_points
+
+
+def test_nakhon_ratchasima_heatmap_supports_si_mum_target_scope():
+    click = analyze_click_location(
+        14.979759,
+        102.023393,
+        "Nakhon Ratchasima",
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+
+    assert click["eligibility_status"] == "eligible"
+    assert click["location_type"] == "suburban"
+    assert click["aadt_used"] == 8_000
+    assert click["net_sessions_per_day"] > 0
+    assert click["nearest_competitor_km"] <= 3.2
+    assert any(item["name"].startswith("X2HF+W92") for item in click["top_pois"])
+
+    heatmap = generate_province_heatmap(
+        "Nakhon Ratchasima",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+    target_points = [
+        point for point in heatmap["points"]
+        if abs(point["lat"] - 14.979759) <= 0.01
+        and abs(point["lon"] - 102.023393) <= 0.01
+    ]
+
+    assert target_points
+    assert any("X2HF+W92" in name for point in target_points for name in point["pois"])
+
+
+def test_nakhon_ratchasima_heatmap_supports_khok_sung_route290_scope():
+    click = analyze_click_location(
+        15.104719,
+        102.120536,
+        "Nakhon Ratchasima",
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+
+    assert click["eligibility_status"] == "eligible"
+    assert click["location_type"] == "highway"
+    assert click["aadt_used"] == 6_123
+    assert click["net_sessions_per_day"] > 0
+    assert click["nearest_competitor_km"] >= 10.0
+    assert any("443C+V6X" in item["name"] for item in click["top_pois"])
+    assert any("Khok Sung Route 290" in item["name"] for item in click["top_business_areas"])
+
+    heatmap = generate_province_heatmap(
+        "Nakhon Ratchasima",
+        year=2026,
+        scenario="base",
+        resolution_km=1.0,
+        mode="urban",
+    )
+    target_points = [
+        point for point in heatmap["points"]
+        if abs(point["lat"] - 15.104719) <= 0.01
+        and abs(point["lon"] - 102.120536) <= 0.01
+    ]
+
+    assert target_points
+    assert any("443C+V6X" in name for point in target_points for name in point["pois"])
 
 
 def test_chiang_mai_sankamphaeng_corridor_point_is_damped_without_built_support():
@@ -806,3 +906,26 @@ def test_mae_hong_son_heatmap_keeps_khun_yuam_and_mae_sariang_service_corridors_
 
     assert khun_yuam_points
     assert mae_sariang_points
+
+
+def test_si_sa_ket_heatmap_supports_highway_cafe_scope_and_competitor_pressure():
+    pois = load_pois_for_province("Si Sa Ket")
+    competitors = load_competitors_for_province("Si Sa Ket")
+
+    assert any(poi["poi_id"] == "si_sa_ket_highway_cafe" for poi in pois)
+    assert any(station["station_id"] == "sisaket_ptt_pairoj" for station in competitors)
+
+    target = analyze_click_location(
+        15.111581,
+        104.352063,
+        "Si Sa Ket",
+        year=2026,
+        scenario="base",
+        mode="urban",
+    )
+
+    assert target["aadt_used"] == 19006
+    assert target["location_type"] == "highway"
+    assert target["eligibility_status"] == "eligible"
+    assert target["nearest_competitor_km"] < 1.0
+    assert target["net_sessions_per_day"] < target["gross_area_demand_sessions"]

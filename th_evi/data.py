@@ -251,7 +251,11 @@ def load_evhub_dopa_population(province=None, area_type=None):
         return pd.DataFrame()
     df = pd.read_csv(path)
     if province:
-        df = df[df["province"] == province].copy()
+        province_aliases = {
+            "Si Sa Ket": "ศรีสะเกษ",
+            "Sisaket": "ศรีสะเกษ",
+        }
+        df = df[df["province"] == province_aliases.get(province, province)].copy()
     if area_type:
         df = df[df["area_type"] == area_type].copy()
     return df.reset_index(drop=True)
@@ -292,7 +296,11 @@ def load_evhub_dlt_fleet(province=None, vehicle_segment=None):
         .drop(columns="_source_period")
     )
     if province:
-        df = df[df["province"] == province].copy()
+        province_aliases = {
+            "Si Sa Ket": "ศรีสะเกษ",
+            "Sisaket": "ศรีสะเกษ",
+        }
+        df = df[df["province"] == province_aliases.get(province, province)].copy()
     if vehicle_segment:
         df = df[df["vehicle_segment"] == vehicle_segment].copy()
     return df.reset_index(drop=True)
@@ -430,6 +438,10 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
         "Khon Kaen": "ขอนแก่น",
         "Chaiyaphum": "ชัยภูมิ",
         "ชัยภูมิ": "ชัยภูมิ",
+        "Kamphaeng Phet": "กำแพงเพชร",
+        "กำแพงเพชร": "กำแพงเพชร",
+        "Si Sa Ket": "ศรีสะเกษ",
+        "ศรีสะเกษ": "ศรีสะเกษ",
     }
     dopa_province = dopa_province_names.get(province_en)
     if dopa_province:
@@ -463,6 +475,11 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
                 "Ban Haet": "อำเภอบ้านแฮด",
                 "Non Sila": "อำเภอโนนศิลา",
                 "Wiang Kao": "อำเภอเวียงเก่า",
+                "Mueang Kamphaeng Phet": "อำเภอเมืองกำแพงเพชร",
+                "Mueang Si Sa Ket": "อำเภอเมืองศรีสะเกษ",
+                "Wang Hin": "อำเภอวังหิน",
+                "Uthumphon Phisai": "อำเภออุทุมพรพิสัย",
+                "Kanthararom": "อำเภอกันทรารมย์",
             }
             reverse_aliases = {thai: english for english, thai in district_aliases.items()}
             records = []
