@@ -825,30 +825,83 @@ let currentWorkspaceMode = window.localStorage.getItem(WORKSPACE_MODE_KEY) || "p
 
 const $ = id => document.getElementById(id);
 const PROVINCE_API_VALUES = {
-  "เชียงใหม่": "Chiang Mai",
-  "สมุทรปราการ": "Samut Prakan",
-  "ระยอง": "Rayong",
+  "กรุงเทพมหานคร": "Bangkok",
+  "กระบี่": "Krabi",
+  "กาญจนบุรี": "Kanchanaburi",
+  "กาฬสินธุ์": "Kalasin",
+  "กำแพงเพชร": "Kamphaeng Phet",
+  "ขอนแก่น": "Khon Kaen",
+  "จันทบุรี": "Chanthaburi",
+  "ฉะเชิงเทรา": "Chachoengsao",
   "ชลบุรี": "Chon Buri",
-  "นครราชสีมา": "Nakhon Ratchasima",
+  "ชัยนาท": "Chai Nat",
+  "ชัยภูมิ": "Chaiyaphum",
+  "ชุมพร": "Chumphon",
+  "ตรัง": "Trang",
+  "ตราด": "Trat",
+  "ตาก": "Tak",
   "นครนายก": "Nakhon Nayok",
-  "เชียงราย": "Chiang Rai",
+  "นครปฐม": "Nakhon Pathom",
+  "นครพนม": "Nakhon Phanom",
+  "นครราชสีมา": "Nakhon Ratchasima",
+  "นครศรีธรรมราช": "Nakhon Si Thammarat",
+  "นครสวรรค์": "Nakhon Sawan",
+  "นนทบุรี": "Nonthaburi",
+  "นราธิวาส": "Narathiwat",
+  "น่าน": "Nan",
+  "บึงกาฬ": "Bueng Kan",
+  "บุรีรัมย์": "Buri Ram",
+  "ปทุมธานี": "Pathum Thani",
+  "พระนครศรีอยุธยา": "Phra Nakhon Si Ayutthaya",
+  "ประจวบคีรีขันธ์": "Prachuap Khiri Khan",
+  "ปราจีนบุรี": "Prachin Buri",
+  "ปัตตานี": "Pattani",
+  "พะเยา": "Phayao",
+  "พังงา": "Phang Nga",
+  "พัทลุง": "Phatthalung",
+  "พิจิตร": "Phichit",
+  "พิษณุโลก": "Phitsanulok",
+  "ภูเก็ต": "Phuket",
+  "มหาสารคาม": "Maha Sarakham",
+  "มุกดาหาร": "Mukdahan",
+  "ยะลา": "Yala",
+  "ยโสธร": "Yasothon",
+  "ร้อยเอ็ด": "Roi Et",
+  "ระนอง": "Ranong",
+  "ระยอง": "Rayong",
+  "ราชบุรี": "Ratchaburi",
+  "ลพบุรี": "Lop Buri",
   "ลำปาง": "Lampang",
   "ลำพูน": "Lamphun",
-  "พิษณุโลก": "Phitsanulok",
-  "ชัยนาท": "Chai Nat",
-  "อุทัยธานี": "Uthai Thani",
-  "แพร่": "Phrae",
-  "น่าน": "Nan",
-  "พะเยา": "Phayao",
-  "หนองคาย": "Nong Khai",
-  "อุดรธานี": "Udon Thani",
-  "ขอนแก่น": "Khon Kaen",
-  "อุบลราชธานี": "Ubon Ratchathani",
-  "ภูเก็ต": "Phuket",
+  "ศรีสะเกษ": "Si Sa Ket",
+  "สกลนคร": "Sakon Nakhon",
+  "สงขลา": "Songkhla",
+  "สตูล": "Satun",
+  "สมุทรปราการ": "Samut Prakan",
+  "สมุทรสงคราม": "Samut Songkhram",
+  "สมุทรสาคร": "Samut Sakhon",
+  "สระแก้ว": "Sa Kaeo",
+  "สระบุรี": "Saraburi",
+  "สิงห์บุรี": "Sing Buri",
+  "สุพรรณบุรี": "Suphan Buri",
   "สุราษฎร์ธานี": "Surat Thani",
-  "ชัยภูมิ": "Chaiyaphum",
-  "กำแพงเพชร": "Kamphaeng Phet",
-  "ศรีสะเกษ": "Si Sa Ket"
+  "สุรินทร์": "Surin",
+  "สุโขทัย": "Sukhothai",
+  "หนองคาย": "Nong Khai",
+  "หนองบัวลำภู": "Nong Bua Lamphu",
+  "อ่างทอง": "Ang Thong",
+  "อำนาจเจริญ": "Amnat Charoen",
+  "อุดรธานี": "Udon Thani",
+  "อุตรดิตถ์": "Uttaradit",
+  "อุทัยธานี": "Uthai Thani",
+  "อุบลราชธานี": "Ubon Ratchathani",
+  "เชียงราย": "Chiang Rai",
+  "เชียงใหม่": "Chiang Mai",
+  "เพชรบุรี": "Phetchaburi",
+  "เพชรบูรณ์": "Phetchabun",
+  "เลย": "Loei",
+  "แพร่": "Phrae",
+  "แม่ฮ่องสอน": "Mae Hong Son"
 };
 const REFERENCE_PROVINCES = Object.entries(PROVINCE_API_VALUES).map(([th, en]) => ({ th, en }));
 let referenceMeta = null;
@@ -1010,6 +1063,18 @@ function applyDefaultProvinceSelection() {
 function apiProvinceValue() {
   const thaiName = currentProvinceThaiValue();
   return PROVINCE_API_VALUES[thaiName] || thaiName;
+}
+
+function populateProvinceSelectors() {
+  PROVINCE_SELECT_IDS.forEach(selectId => {
+    const select = $(selectId);
+    if (!select) return;
+    const current = select.value || DEFAULT_PROVINCE_THAI;
+    select.innerHTML = Object.keys(PROVINCE_API_VALUES)
+      .map(thaiName => `<option value="${thaiName}">${thaiName}</option>`)
+      .join("");
+    select.value = PROVINCE_API_VALUES[current] ? current : DEFAULT_PROVINCE_THAI;
+  });
 }
 
 function cacheProvinceOptions(selectId) {
@@ -2100,6 +2165,7 @@ document.querySelectorAll(".section-toggle").forEach(function(h2) {
 
 ;(async function initializeApp() {
 try {
+  populateProvinceSelectors();
   applyLanguage(currentLang);
   applyWorkspaceMode(currentWorkspaceMode);
   PROVINCE_SELECT_IDS.forEach(initProvinceSearch);

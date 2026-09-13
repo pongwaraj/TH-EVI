@@ -688,7 +688,9 @@ def generate_province_heatmap(
     pois = load_pois_for_province(province)
     zones = load_hot_zones_for_province(province)
     business_areas = load_business_areas_for_province(province)
-    competitors = load_competitors_for_province(province)
+    # Unverified nationwide KML points remain visible in the charger layer but
+    # do not alter heat-map bounds or demand penalties until audited.
+    competitors = load_competitors_for_province(province, include_nationwide_kml=False)
     district_nodes = load_enriched_district_nodes(province)
     exclusions = load_heatmap_exclusions_for_province(province)
     bounds = _province_bounds(pois, zones, business_areas, competitors, district_nodes, resolution_km)

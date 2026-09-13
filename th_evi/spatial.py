@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import re
 from functools import lru_cache
 from math import cos, exp, radians, sqrt
 from pathlib import Path
@@ -28,6 +29,7 @@ from .validation import station_calibration_summary
 
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+NATIONWIDE_KML_COMPETITOR_PATH = DATA_DIR / "competitors_thailand_kml.csv"
 
 PROVINCE_SLUGS = {
     "เชียงใหม่": "chiang_mai",
@@ -126,6 +128,95 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "chon_buri": "Chon Buri",
     "si_sa_ket": "Si Sa Ket",
 }
+
+# The nationwide KML feed uses province names inconsistently. Keep a complete
+# Thai-to-canonical map so the reference loader can serve every province even
+# when a province has no dedicated seed file yet.
+THAILAND_PROVINCE_PAIRS = (
+    ("กรุงเทพมหานคร", "Bangkok"),
+    ("กระบี่", "Krabi"),
+    ("กาญจนบุรี", "Kanchanaburi"),
+    ("กาฬสินธุ์", "Kalasin"),
+    ("กำแพงเพชร", "Kamphaeng Phet"),
+    ("ขอนแก่น", "Khon Kaen"),
+    ("จันทบุรี", "Chanthaburi"),
+    ("ฉะเชิงเทรา", "Chachoengsao"),
+    ("ชลบุรี", "Chon Buri"),
+    ("ชัยนาท", "Chai Nat"),
+    ("ชัยภูมิ", "Chaiyaphum"),
+    ("ชุมพร", "Chumphon"),
+    ("ตรัง", "Trang"),
+    ("ตราด", "Trat"),
+    ("ตาก", "Tak"),
+    ("นครนายก", "Nakhon Nayok"),
+    ("นครปฐม", "Nakhon Pathom"),
+    ("นครพนม", "Nakhon Phanom"),
+    ("นครราชสีมา", "Nakhon Ratchasima"),
+    ("นครศรีธรรมราช", "Nakhon Si Thammarat"),
+    ("นครสวรรค์", "Nakhon Sawan"),
+    ("นนทบุรี", "Nonthaburi"),
+    ("นราธิวาส", "Narathiwat"),
+    ("น่าน", "Nan"),
+    ("บึงกาฬ", "Bueng Kan"),
+    ("บุรีรัมย์", "Buri Ram"),
+    ("ปทุมธานี", "Pathum Thani"),
+    ("พระนครศรีอยุธยา", "Phra Nakhon Si Ayutthaya"),
+    ("ประจวบคีรีขันธ์", "Prachuap Khiri Khan"),
+    ("ปราจีนบุรี", "Prachin Buri"),
+    ("ปัตตานี", "Pattani"),
+    ("พะเยา", "Phayao"),
+    ("พังงา", "Phang Nga"),
+    ("พัทลุง", "Phatthalung"),
+    ("พิจิตร", "Phichit"),
+    ("พิษณุโลก", "Phitsanulok"),
+    ("ภูเก็ต", "Phuket"),
+    ("มหาสารคาม", "Maha Sarakham"),
+    ("มุกดาหาร", "Mukdahan"),
+    ("ยะลา", "Yala"),
+    ("ยโสธร", "Yasothon"),
+    ("ร้อยเอ็ด", "Roi Et"),
+    ("ระนอง", "Ranong"),
+    ("ระยอง", "Rayong"),
+    ("ราชบุรี", "Ratchaburi"),
+    ("ลพบุรี", "Lop Buri"),
+    ("ลำปาง", "Lampang"),
+    ("ลำพูน", "Lamphun"),
+    ("ศรีสะเกษ", "Si Sa Ket"),
+    ("สกลนคร", "Sakon Nakhon"),
+    ("สงขลา", "Songkhla"),
+    ("สตูล", "Satun"),
+    ("สมุทรปราการ", "Samut Prakan"),
+    ("สมุทรสงคราม", "Samut Songkhram"),
+    ("สมุทรสาคร", "Samut Sakhon"),
+    ("สระแก้ว", "Sa Kaeo"),
+    ("สระบุรี", "Saraburi"),
+    ("สิงห์บุรี", "Sing Buri"),
+    ("สุพรรณบุรี", "Suphan Buri"),
+    ("สุราษฎร์ธานี", "Surat Thani"),
+    ("สุรินทร์", "Surin"),
+    ("สุโขทัย", "Sukhothai"),
+    ("หนองคาย", "Nong Khai"),
+    ("หนองบัวลำภู", "Nong Bua Lamphu"),
+    ("อ่างทอง", "Ang Thong"),
+    ("อำนาจเจริญ", "Amnat Charoen"),
+    ("อุดรธานี", "Udon Thani"),
+    ("อุตรดิตถ์", "Uttaradit"),
+    ("อุทัยธานี", "Uthai Thani"),
+    ("อุบลราชธานี", "Ubon Ratchathani"),
+    ("เชียงราย", "Chiang Rai"),
+    ("เชียงใหม่", "Chiang Mai"),
+    ("เพชรบุรี", "Phetchaburi"),
+    ("เพชรบูรณ์", "Phetchabun"),
+    ("เลย", "Loei"),
+    ("แพร่", "Phrae"),
+    ("แม่ฮ่องสอน", "Mae Hong Son"),
+)
+
+for thai_name, canonical_name in THAILAND_PROVINCE_PAIRS:
+    province_slug = re.sub(r"[^a-z0-9]+", "_", canonical_name.lower()).strip("_")
+    PROVINCE_SLUGS.setdefault(thai_name, province_slug)
+    PROVINCE_SLUGS.setdefault(canonical_name, province_slug)
+    SLUG_TO_CANONICAL_PROVINCE.setdefault(province_slug, canonical_name)
 
 SCENARIO_FACTORS = {
     "conservative": 0.75,
@@ -825,8 +916,16 @@ def load_pois_for_province(province: str) -> list[dict[str, Any]]:
     return _merge_reference_rows(province, csv_rows, db_rows, "poi_id")
 
 
-@lru_cache(maxsize=32)
-def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
+@lru_cache(maxsize=64)
+def load_competitors_for_province(
+    province: str,
+    include_nationwide_kml: bool = True,
+) -> list[dict[str, Any]]:
+    """Load displayed competitors, optionally excluding unverified KML imports.
+
+    Nationwide KML records are useful for map context, but remain excluded from
+    demand penalties and heat-map bounds until an operator verifies them.
+    """
     slug = _slug_for_province(province)
     if not slug:
         return []
@@ -838,6 +937,13 @@ def load_competitors_for_province(province: str) -> list[dict[str, Any]]:
     google_verified = DATA_DIR / f"competitors_{slug}_google_verified.csv"
     if google_verified.exists():
         rows.extend(_read_csv(google_verified))
+    if include_nationwide_kml and NATIONWIDE_KML_COMPETITOR_PATH.exists():
+        canonical_province = SLUG_TO_CANONICAL_PROVINCE.get(slug, province)
+        rows.extend(
+            row
+            for row in _read_csv(NATIONWIDE_KML_COMPETITOR_PATH)
+            if str(row.get("province") or "").strip() == canonical_province
+        )
     rows = _merge_reference_rows(province, rows, _load_db_competitors_for_province(province), "station_id")
     if slug == "chiang_mai":
         rows = _filter_and_dedupe_chiang_mai_competitors(rows)
@@ -1650,7 +1756,7 @@ def analyze_click_location(
     factor = SCENARIO_FACTORS.get(scenario, 1.0)
     mode = mode if mode in HEATMAP_MODES else "urban"
     pois = load_pois_for_province(province)
-    competitors = load_competitors_for_province(province)
+    competitors = load_competitors_for_province(province, include_nationwide_kml=False)
     zones = load_hot_zones_for_province(province)
     business_areas = load_business_areas_for_province(province)
     district_nodes = load_enriched_district_nodes(province)
