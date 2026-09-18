@@ -442,6 +442,8 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
         "กำแพงเพชร": "กำแพงเพชร",
         "Si Sa Ket": "ศรีสะเกษ",
         "ศรีสะเกษ": "ศรีสะเกษ",
+        "Saraburi": "สระบุรี",
+        "สระบุรี": "สระบุรี",
     }
     dopa_province = dopa_province_names.get(province_en)
     if dopa_province:
@@ -477,6 +479,8 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
                 "Wiang Kao": "อำเภอเวียงเก่า",
                 "Mueang Kamphaeng Phet": "อำเภอเมืองกำแพงเพชร",
                 "Mueang Si Sa Ket": "อำเภอเมืองศรีสะเกษ",
+                "Hin Kong": "อำเภอหนองแค",
+                "Nong Khae": "อำเภอหนองแค",
                 "Wang Hin": "อำเภอวังหิน",
                 "Uthumphon Phisai": "อำเภออุทุมพรพิสัย",
                 "Kanthararom": "อำเภอกันทรารมย์",

@@ -864,6 +864,50 @@ def test_pak_thong_chai_target_uses_target_side_aadt_and_nearby_competition(monk
     assert result["net_sessions_per_day"] < result["gross_area_demand_sessions"]
 
 
+def test_huai_khamin_target_uses_route33_aadt_and_local_competition(monkeypatch):
+    monkeypatch.setattr(
+        spatial,
+        "lookup_water_surface",
+        lambda lat, lon: {
+            "is_water": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+    monkeypatch.setattr(
+        spatial,
+        "lookup_building_surface",
+        lambda lat, lon: {
+            "is_building": False,
+            "surface_type": "land_or_unclassified",
+            "reason": None,
+            "warning": None,
+            "feature_name": None,
+        },
+    )
+
+    result = analyze_click_location(
+        lat=14.405481,
+        lon=100.883198,
+        province="Saraburi",
+        year=2026,
+        scenario="base",
+        mode="urban",
+        avg_kwh_per_session=35,
+        price_per_kwh=7.9,
+    )
+
+    assert result["location_type"] == "highway"
+    assert result["aadt_used"] == 19_972
+    assert result["fleet_ev_share_pct"] > 1.0
+    assert result["nearest_competitor_km"] < 1.6
+    assert result["competitor_penalty_sessions"] > 0
+    assert result["net_sessions_per_day"] < result["gross_area_demand_sessions"]
+    assert any(pin["category"] == "target_site" for pin in result["analysis_pins"])
+
+
 def test_marine_corps_commercial_target_uses_local_destination_aadt(monkeypatch):
     monkeypatch.setattr(
         spatial,

@@ -59,6 +59,7 @@ PROVINCE_CANONICAL_NAMES = {
     "ชลบุรี": "ชลบุรี", "Chon Buri": "ชลบุรี",
     "ศรีสะเกษ": "ศรีสะเกษ", "Si Sa Ket": "ศรีสะเกษ", "Sisaket": "ศรีสะเกษ",
     "พิษณุโลก": "พิษณุโลก", "Phitsanulok": "พิษณุโลก",
+    "สระบุรี": "สระบุรี", "Saraburi": "สระบุรี",
 }
 
 
@@ -252,6 +253,10 @@ PROVINCE_NEW_CAR_RATE = {
     # city or highway corridor's growth rate.
     "กำแพงเพชร": 575,
     "Kamphaeng Phet": 575,
+    # Calibrated to DLT Apr 2569: 1,302 registered รย.1 BEVs in 104,017
+    # passenger cars. The source extract does not include a June row.
+    "สระบุรี": 1_120,
+    "Saraburi": 1_120,
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
@@ -286,6 +291,9 @@ PROVINCE_FLEET_SIZE = {
     # DLT April 2569 รย.1 passenger-car fleet.
     "กำแพงเพชร": 65_182,
     "Kamphaeng Phet": 65_182,
+    # DLT April 2569 รย.1 passenger-car fleet.
+    "สระบุรี": 104_017,
+    "Saraburi": 104_017,
 }
 
 # --- National Average Daily Trips per Vehicle ---

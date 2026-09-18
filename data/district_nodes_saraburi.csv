@@ -1,0 +1,3 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,confidence,notes
+sar_hin_kong,Hin Kong,Hin Kong / Huai Khamin transport node,transport_junction,14.40472,100.89043,3.6,0.86,medium_high,"Town and Highway 33 service node in Nong Khae District; population enrichment uses DOPA Nong Khae district data where available."
+sar_nong_khae,Nong Khae,Nong Khae district industrial node,transport_junction,14.3847,100.8929,4.2,0.82,medium,"Industrial-service node near SCG Ceramics and the Nong Khae employment corridor; keep below the provincial capital / Highway 1 scale."

@@ -1035,10 +1035,17 @@ def enrich_district_nodes_with_population(province: str, rows: list[dict[str, An
 
     pop_lookup = dict(zip(pop_df["district"], pop_df["population"]))
     all_populations = list(pop_df["population"])
+    district_population_aliases = {
+        # Hin Kong is a town/subdistrict node inside Nong Khae District; DOPA
+        # publishes the population at district level for this extract.
+        "Hin Kong": "Nong Khae",
+    }
 
     for row in rows:
         district = str(row.get("district_name") or "").strip()
         population = pop_lookup.get(district)
+        if population is None:
+            population = pop_lookup.get(district_population_aliases.get(district, ""))
         if population is None:
             row["population"] = None
             row["population_weight"] = 1.0

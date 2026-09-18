@@ -114,6 +114,13 @@ ROUTE_BBOXES_BY_PROVINCE = {
         # wider urban grid.
         (290, (15.08, 15.14, 102.08, 102.17)),
     ],
+    "สระบุรี": [
+        # Huai Khamin / Hin Kong target sits directly on Suwannason Road,
+        # Highway 33. Keep this corridor separate from Highway 1 so the
+        # high-volume motorway counter is not projected onto the target.
+        (33, (14.36, 14.46, 100.83, 100.94)),
+        (1, (14.34, 14.48, 100.80, 100.94)),
+    ],
 }
 
 # Local-road pockets that fall inside a deliberately broad route bounding box.
@@ -166,6 +173,12 @@ LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
         # Highway Cafe is on the city-side Route 226 frontage. Use the closest
         # official DOH 2566 count rather than the province-wide maximum.
         ((15.075, 15.145, 104.325, 104.380), 19_006),
+    ],
+    "สระบุรี": [
+        # The target is on Highway 33 / Suwannason Road. Use the nearby
+        # official 2566 Route 33 control value (19,972 AADT) rather than the
+        # much larger Highway 1 value measured at Nong Khae - Hin Kong.
+        ((14.36, 14.46, 100.83, 100.94), 19_972),
     ],
 }
 

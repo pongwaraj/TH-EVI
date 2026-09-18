@@ -1,0 +1,5 @@
+poi_id,name,category,lat,lon,source,confidence,notes
+saraburi_huai_khamin_target,89 Huai Khamin analysis target,target_site,14.405481,100.883198,user supplied coordinate,high,"Analysis pin only. Excluded from POI demand so the selected site does not make itself hot. Reverse geocode identifies the point on Suwannason Road / Highway 33 in Hin Kong, Huai Khamin."
+saraburi_huai_khamin_locality,Huai Khamin locality,district_center,14.4061,100.8804,Mapcarta / GeoNames locality reference,medium_high,"Locality anchor for Huai Khamin, Nong Khae. Use as community context, not as a direct venue count."
+saraburi_hin_kong_town,Hin Kong town,city_center,14.40472,100.89043,OpenStreetMap / Mapcarta town reference,medium_high,"Hin Kong town and municipal service cluster adjacent to the target; supports local retail and roadside stop demand."
+saraburi_suwannason_route33,Suwannason Road / Highway 33,transport_corridor,14.4056655,100.8832229,OpenStreetMap way 116695062 / Nominatim reverse geocode,high,"Roadway anchor only. Establishes the direct Highway 33 context for AADT; it is not a venue and is not treated as a self-generated site demand."
