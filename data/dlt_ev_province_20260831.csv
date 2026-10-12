@@ -1,0 +1,2 @@
+province,as_of_be,registered_private_cars_vans_pickups_ror1_3,bev,phev,plugin_total,plugin_share_pct,source_url,source_scope,notes
+ขอนแก่น,2569-08-31,466120,7483,1010,8493,1.8220629880717412,https://gdcatalog.dlt.go.th/dataset/dataset_1_1_04,"DLT cumulative registrations by fuel, private passenger cars/vans/private pickups (Ry.1-3); excludes motorcycles and HEV/non-plug-in hybrids","Province-level reference only; not a Chum Phae district or site catchment vehicle count."
