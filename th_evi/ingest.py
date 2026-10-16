@@ -175,6 +175,8 @@ def _resolve_source_id(
         return source_map.get("seed_estimate")
     if "openstreetmap" in text or "data/osm" in text or text == "osm":
         return source_map.get("OpenStreetMap")
+    if "aadt_2568" in text:
+        return source_map.get("DOH aadt_2568")
     if "doh" in text or "aadt_2566" in text:
         return source_map.get("DOH aadt_2566")
     if "dopa" in text or "adm2" in text or "stat.bora" in text:
@@ -188,21 +190,21 @@ def _resolve_source_id(
 
 @lru_cache(maxsize=1)
 def _official_aadt_keys() -> set[tuple[str, str, str, int]]:
-    path = DATA_DIR / "aadt_2566.csv"
-    if not path.exists():
-        return set()
-    df = pd.read_csv(path)
-    route_col, km_col, total_col, prov_col = df.columns[0], df.columns[3], df.columns[14], df.columns[-1]
     keys = set()
-    for _, row in df.iterrows():
-        route = str(row[route_col]).strip()
-        km = str(row[km_col]).strip()
-        province = str(row[prov_col]).strip()
-        try:
-            aadt = int(row[total_col])
-        except (TypeError, ValueError):
+    for path in (DATA_DIR / "aadt_2566.csv", DATA_DIR / "aadt_2568.csv"):
+        if not path.exists():
             continue
-        keys.add((province, route, km, aadt))
+        df = pd.read_csv(path)
+        route_col, km_col, total_col, prov_col = df.columns[0], df.columns[3], df.columns[14], df.columns[-1]
+        for _, row in df.iterrows():
+            route = str(row[route_col]).strip()
+            km = str(row[km_col]).strip()
+            province = str(row[prov_col]).strip()
+            try:
+                aadt = int(row[total_col])
+            except (TypeError, ValueError):
+                continue
+            keys.add((province, route, km, aadt))
     return keys
 
 
@@ -215,6 +217,13 @@ def seed_reference_sources(session) -> dict[str, int]:
             "source_url": "https://bmm.doh.go.th",
             "confidence": "high",
             "notes": "Department of Highways annual AADT report BE 2566.",
+        },
+        {
+            "source_name": "DOH aadt_2568",
+            "source_type": "official",
+            "source_url": "https://datagov.mot.go.th/dataset/traf62",
+            "confidence": "high",
+            "notes": "Department of Highways annual AADT report BE 2568 (2025), published by MOT Data Catalog.",
         },
         {
             "source_name": "DOPA tha_pop_adm2_2023",
@@ -311,7 +320,11 @@ def ingest_aadt_segments(session, source_map: dict[str, int], slug: str) -> dict
         print(f"  SKIP aadt_segments - {csv_path.name} not found")
         return {"new_rows": 0, "processed_rows": 0, "crosscheck_failures": 0, "file_found": 0}
 
-    official_source_id = source_map.get("DOH aadt_2566")
+    official_source_ids = {
+        source_id
+        for source_id in (source_map.get("DOH aadt_2566"), source_map.get("DOH aadt_2568"))
+        if source_id is not None
+    }
     fallback_source_id = source_map.get("seed_estimate")
     official_keys = _official_aadt_keys()
     count = 0
@@ -333,7 +346,7 @@ def ingest_aadt_segments(session, source_map: dict[str, int], slug: str) -> dict
             notes = str(row.get("notes", "")).strip() or None
             processed += 1
 
-            if source_id == official_source_id:
+            if source_id in official_source_ids:
                 official_key = (_thai_province_name(province), route, km, aadt)
                 if official_key not in official_keys:
                     source_id = fallback_source_id

@@ -258,3 +258,34 @@ def test_aadt_official_crosscheck_downgrades_mismatch(monkeypatch, tmp_path):
         assert row.confidence == "low"
         assert source_by_id[row.source_id] == "seed_estimate"
         assert "cross-check failed" in (row.notes or "").lower()
+
+
+def test_aadt_2568_official_source_is_crosschecked(monkeypatch, tmp_path):
+    monkeypatch.setattr(ingest, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(ingest, "SLUG_TO_NAME", {"test_province": "Test Province"})
+    ingest._official_aadt_keys.cache_clear()
+
+    _write_csv(
+        tmp_path / "aadt_2568.csv",
+        ["route", "control", "name", "km", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "total", "heavy_pct", "moto", "bike", "office", "province"],
+        [{"route": "121", "control": "101", "name": "Official Segment", "km": "1+000", "total": 43358, "heavy_pct": 7.32, "office": "Test", "province": "Test Province"}],
+    )
+    _write_csv(
+        tmp_path / "aadt_test_province_seed.csv",
+        ["year_be", "route", "name", "km", "aadt", "heavy_vehicle_pct", "province", "source", "notes", "confidence"],
+        [{"year_be": "2568", "route": "121", "name": "Official Segment", "km": "1+000", "aadt": "43358", "heavy_vehicle_pct": "7.32", "province": "Test Province", "source": "DOH aadt_2568.csv", "notes": "official 2025 data", "confidence": "high"}],
+    )
+
+    Session = create_session_factory(f"sqlite:///{(tmp_path / 'aadt-2568.sqlite3').as_posix()}")
+    with Session() as session:
+        source_map = ingest.seed_reference_sources(session)
+        stats = ingest.ingest_aadt_segments(session, source_map, "test_province")
+        session.commit()
+        row = session.query(AADTSegment).one()
+        source_by_id = {ref.id: ref.source_name for ref in session.query(ReferenceSource).all()}
+        assert stats["processed_rows"] == 1
+        assert stats["crosscheck_failures"] == 0
+        assert row.year_be == 2568
+        assert row.aadt == 43358
+        assert row.confidence == "high"
+        assert source_by_id[row.source_id] == "DOH aadt_2568"

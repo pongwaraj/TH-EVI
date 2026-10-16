@@ -61,8 +61,16 @@ def estimate_fleet_ev_population(year: int, province: str = "default") -> int:
         logger.warning(f"Negative new car rate for {province}: {annual_new}")
         annual_new = 0
     
-    ev_pop = 0
-    for y in range(MIN_YEAR, year + 1):
+    anchor = C.PROVINCE_BEV_FLEET_ANCHOR.get(province)
+    if anchor and year >= anchor[0]:
+        anchor_year, observed_population = anchor
+        ev_pop = observed_population
+        forecast_start = anchor_year + 1
+    else:
+        ev_pop = 0
+        forecast_start = MIN_YEAR
+
+    for y in range(forecast_start, year + 1):
         share = model.get_ev_share(y)
         ev_pop += int(annual_new * share)
         scrap_year = y - 14

@@ -207,8 +207,8 @@ PROVINCE_SHEET_INDEX = {
 
 # --- Fleet Model Parameters ---
 # Annual new passenger car registrations by province (ร.1 per year)
-# Source: DLT fleet calibration. Chiang Mai is calibrated to 14,400 passenger
-# BEVs registered on 30 Jun 2026, rather than a mixed-vehicle estimate.
+# Annual new passenger-car registrations by province (used by the adoption
+# curve). Registered BEV stock anchors are kept separately below.
 PROVINCE_NEW_CAR_RATE = {
     "เชียงใหม่": 12_362,
     "Chiang Mai": 12_362,
@@ -260,8 +260,8 @@ PROVINCE_NEW_CAR_RATE = {
 }
 # Total passenger car fleet by province (approx)
 PROVINCE_FLEET_SIZE = {
-    "เชียงใหม่": 455_683,
-    "Chiang Mai": 455_683,
+    "เชียงใหม่": 460_081,
+    "Chiang Mai": 460_081,
     "ลำปาง": 115_000,
     "อุดรธานี": 180_000,
     # DLT April 2569 รย.1 passenger-car fleet (not all vehicle classes).
@@ -294,6 +294,14 @@ PROVINCE_FLEET_SIZE = {
     # DLT April 2569 รย.1 passenger-car fleet.
     "สระบุรี": 104_017,
     "Saraburi": 104_017,
+}
+
+# Observed cumulative BEV fleet anchors from DLT fuel-by-type extracts.
+# The forecast model uses the observed stock at the anchor year, then carries
+# its existing annual adoption and scrappage curve forward.
+PROVINCE_BEV_FLEET_ANCHOR = {
+    "เชียงใหม่": (2026, 17_002),  # DLT Ror.1, cumulative as of 30 Sep 2026
+    "Chiang Mai": (2026, 17_002),
 }
 
 # --- National Average Daily Trips per Vehicle ---

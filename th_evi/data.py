@@ -389,7 +389,7 @@ def load_doh_aadt(year_be=None, province="เชียงใหม่"):
     Files follow pattern: aadt_<BE_year>.csv from data/ directory.
     Returns DataFrame with highway segments and AADT values.
     """
-    available = {60: 2560, 63: 2563, 64: 2564, 66: 2566}
+    available = {60: 2560, 63: 2563, 64: 2564, 66: 2566, 68: 2568}
     if year_be is not None and year_be not in available.values():
         raise ValueError(f"Year must be one of {list(available.values())}")
 
@@ -507,7 +507,7 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
     return result
 
 
-def get_cm_highway_aadt(year_be=2566):
+def get_cm_highway_aadt(year_be=2568):
     """Get AADT lookup for Chiang Mai highways keyed by route number.
 
     Returns dict: {route_number: {"name": str, "aadt": int, "km": str}}

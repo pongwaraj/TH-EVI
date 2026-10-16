@@ -1,5 +1,5 @@
 poi_id,name,category,lat,lon,source,confidence,notes
-mahachok_park,มหาโชค ปาร์ค,target_site,18.7894504,99.0687348,Google Maps,high,"Google Maps: 122 2 San Pu Loei; phone 0931309000; rating 5.0 from 4 reviews at verification time"
+mahachok_park,มหาโชค ปาร์ค,target_site,18.789713,99.068629,Google Maps,high,"Google Maps: 122 2 San Pu Loei; phone 0931309000; rating 5.0 from 4 reviews at verification time. User analysis pin: 18.789713, 99.068629; verified 2026-10-16. For Eyes Optic announced its Mahachok Park branch on 2026-09-13; record as an on-site tenant, not a separate demand anchor."
 ss_shabu_mahachok,SS Shabu Shabu ChiangMai,restaurant,18.7894569,99.0682087,Google Maps,high,"Same commercial cluster; strong dwell-time POI"
 restaurant_suan_ha_ha,ร้านสรวลเสเฮฮา แซ่บซี๊ดซ้าด,restaurant,18.7894337,99.0681522,Google Maps,high,"Same commercial cluster; restaurant dwell-time POI"
 lab_pla_yai_la,ร้านลาบปลายายหล้า,restaurant,18.7917222,99.068716,Google Maps,high,"Nearby restaurant on outer ring area"
