@@ -10,6 +10,7 @@ from th_evi.db import (
     BusinessAreaReference,
     ChargerCompetitor,
     DistrictNodeReference,
+    DLTProvinceFleetSnapshot,
     HeatmapExclusionReference,
     HotZoneReference,
     POIReference,
@@ -229,6 +230,45 @@ def test_ingest_preserves_sources_and_rerun_status(monkeypatch, tmp_path):
         assert session.query(HotZoneReference).count() == 1
         assert session.query(DistrictNodeReference).count() == 1
         assert session.query(AADTSegment).count() == 1
+
+
+def test_dlt_fleet_snapshot_import_is_upsertable(monkeypatch, tmp_path):
+    monkeypatch.setattr(ingest, "DATA_DIR", tmp_path)
+    _write_csv(
+        tmp_path / "evhub_dlt_fleet_2569_09.csv",
+        [
+            "source_project", "source_file", "source_month", "source_year_be", "province",
+            "vehicle_segment", "total_vehicles", "gasoline", "diesel", "bev",
+            "hev_gasoline", "hev_diesel", "phev_gasoline", "phev_diesel", "bev_share",
+        ],
+        [{
+            "source_project": "TH-EVI", "source_file": "fuel30Sep26_W.xlsx", "source_month": "2569-09",
+            "source_year_be": 2569, "province": "เชียงใหม่", "vehicle_segment": "ror1_passenger_car",
+            "total_vehicles": 200000, "gasoline": 100000, "diesel": 50000, "bev": 5000,
+            "hev_gasoline": 2000, "hev_diesel": 10, "phev_gasoline": 800, "phev_diesel": 5,
+            "bev_share": 0.025,
+        }],
+    )
+    Session = create_session_factory(f"sqlite:///{(tmp_path / 'dlt.sqlite3').as_posix()}")
+    with Session() as session:
+        source_map = ingest.seed_reference_sources(session)
+        stats = ingest.ingest_dlt_province_fleet(session, source_map)
+        session.commit()
+        assert stats == {"source_month": "2569-09", "processed_rows": 1, "new_rows": 1}
+
+    with Session() as session:
+        saved = session.query(DLTProvinceFleetSnapshot).one()
+        assert saved.province == "เชียงใหม่"
+        assert saved.bev == 5000
+        assert saved.phev_gasoline == 800
+        assert saved.source_year_be == 2569
+        assert saved.source_url.startswith("https://web.dlt.go.th/")
+
+        stats = ingest.ingest_dlt_province_fleet(session, ingest.seed_reference_sources(session))
+        session.commit()
+        assert stats["processed_rows"] == 1
+        assert stats["new_rows"] == 0
+        assert session.query(DLTProvinceFleetSnapshot).count() == 1
 
 
 def test_aadt_official_crosscheck_downgrades_mismatch(monkeypatch, tmp_path):

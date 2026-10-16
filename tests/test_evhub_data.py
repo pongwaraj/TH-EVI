@@ -32,9 +32,10 @@ def test_evhub_dlt_has_phrae_passenger_car_fleet():
     fleet = get_evhub_dlt_fleet(PHRAE)
 
     assert fleet["vehicle_segment"] == "ror1_passenger_car"
-    assert fleet["total_vehicles"] == 51702
-    assert fleet["bev"] == 426
-    assert round(fleet["bev_share"], 6) == 0.00824
+    assert fleet["total_vehicles"] == 52150
+    assert fleet["bev"] == 545
+    assert fleet["phev_gasoline"] == 117
+    assert round(fleet["bev_share"], 6) == 0.010451
 
 
 def test_evhub_dopa_and_dlt_have_chiang_rai_base_data():
@@ -44,9 +45,9 @@ def test_evhub_dopa_and_dlt_have_chiang_rai_base_data():
     assert population["population"] == 1295922
     assert population["households"] == 603627
     assert fleet["vehicle_segment"] == "ror1_passenger_car"
-    assert fleet["total_vehicles"] == 178675
-    assert fleet["bev"] == 3545
-    assert fleet["phev_gasoline"] == 403
+    assert fleet["total_vehicles"] == 181992
+    assert fleet["bev"] == 4854
+    assert fleet["phev_gasoline"] == 511
     assert fleet["phev_diesel"] == 1
 
 

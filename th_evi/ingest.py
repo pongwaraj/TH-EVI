@@ -20,6 +20,7 @@ from .db import (
     AADTSegment,
     BusinessAreaReference,
     ChargerCompetitor,
+    DLTProvinceFleetSnapshot,
     DistrictNodeReference,
     DistrictPopulation,
     HeatmapExclusionReference,
@@ -233,6 +234,13 @@ def seed_reference_sources(session) -> dict[str, int]:
             "notes": "DOPA official ADM2 population statistics BE 2566.",
         },
         {
+            "source_name": "DLT fuel30Sep26_W.xlsx",
+            "source_type": "official",
+            "source_url": "https://web.dlt.go.th/statistics/load_file_select_new_car.php?t=3&data_file=1302",
+            "confidence": "high",
+            "notes": "Cumulative vehicle registration fleet by province as of 30 September 2026; normalized DLT extract.",
+        },
+        {
             "source_name": "OpenStreetMap",
             "source_type": "map",
             "confidence": "medium_high",
@@ -262,6 +270,48 @@ def seed_reference_sources(session) -> dict[str, int]:
         session.flush()
         name_to_id[src["source_name"]] = obj.id
     return name_to_id
+
+
+def ingest_dlt_province_fleet(session, source_map: dict[str, int]) -> dict[str, int | str]:
+    """Upsert the latest normalized DLT province fleet snapshot into the DB."""
+    csv_path = DATA_DIR / "evhub_dlt_fleet_2569_09.csv"
+    if not csv_path.exists():
+        raise FileNotFoundError(f"DLT fleet snapshot not found: {csv_path}")
+
+    source_id = source_map.get("DLT fuel30Sep26_W.xlsx")
+    processed = 0
+    created = 0
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            key = {
+                "province": row["province"].strip(),
+                "source_month": row["source_month"].strip(),
+                "vehicle_segment": row["vehicle_segment"].strip(),
+            }
+            record = session.query(DLTProvinceFleetSnapshot).filter_by(**key).one_or_none()
+            if record is None:
+                record = DLTProvinceFleetSnapshot(**key)
+                session.add(record)
+                created += 1
+            record.source_year_be = int(row["source_year_be"])
+            record.total_vehicles = int(row["total_vehicles"])
+            for field in (
+                "gasoline", "diesel", "bev", "hev_gasoline", "hev_diesel", "phev_gasoline", "phev_diesel",
+            ):
+                setattr(record, field, int(row.get(field) or 0))
+            record.bev_share = _float_or_none(row.get("bev_share"))
+            record.source_project = row.get("source_project")
+            record.source_file = row.get("source_file")
+            record.source_id = source_id
+            record.source_url = "https://web.dlt.go.th/statistics/load_file_select_new_car.php?t=3&data_file=1302"
+            record.source_scope = (
+                "Official cumulative vehicle registration by province; all_vehicle_law and "
+                "ror1_passenger_car are separate segments and must not be added together."
+            )
+            record.notes = "Snapshot date: 30 September 2026. BEV/PHEV totals are registration stock, not charging demand."
+            processed += 1
+
+    return {"source_month": "2569-09", "processed_rows": processed, "new_rows": created}
 
 
 def ingest_district_population(session, source_map: dict[str, int]) -> int:
@@ -923,6 +973,7 @@ def main() -> None:
         help="Publish a verified reference release so the app may use DB-first data.",
     )
     parser.add_argument("--actor", default="reference_sync", help="Audit name recorded when publishing a reference release.")
+    parser.add_argument("--sync-dlt", action="store_true", help="Upsert the latest normalized DLT provincial fleet snapshot into the database.")
     args = parser.parse_args()
 
     if args.publish and not args.sync_reference:
@@ -931,6 +982,15 @@ def main() -> None:
     factory = get_session_factory()
     with factory() as session:
         slugs_to_run = [args.province] if args.province else PROVINCE_SLUGS
+        if args.sync_dlt:
+            source_map = seed_reference_sources(session)
+            stats = ingest_dlt_province_fleet(session, source_map)
+            session.commit()
+            print(
+                f"DLT fleet snapshot {stats['source_month']}: "
+                f"{stats['new_rows']} new, {stats['processed_rows']} processed rows."
+            )
+            return
         if args.sync_reference:
             from .reference_sync import sync_province_reference
 

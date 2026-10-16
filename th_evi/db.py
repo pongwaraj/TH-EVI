@@ -238,6 +238,37 @@ class EVFleetMix(Base):
     ev_model: Mapped[EVModel | None] = relationship(back_populates="fleet_mix_rows")
 
 
+class DLTProvinceFleetSnapshot(Base):
+    """Official DLT cumulative vehicle-fleet totals by province and segment."""
+
+    __tablename__ = "dlt_province_fleet_snapshots"
+    __table_args__ = (
+        UniqueConstraint("province", "source_month", "vehicle_segment", name="uq_dlt_province_fleet_snapshot"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    source_month: Mapped[str] = mapped_column(String(12), nullable=False)
+    source_year_be: Mapped[int] = mapped_column(Integer, nullable=False)
+    vehicle_segment: Mapped[str] = mapped_column(String(80), nullable=False)
+    total_vehicles: Mapped[int] = mapped_column(Integer, nullable=False)
+    gasoline: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    diesel: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    bev: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    hev_gasoline: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    hev_diesel: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    phev_gasoline: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    phev_diesel: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    bev_share: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source_project: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    source_file: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("reference_sources.id"), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    source_scope: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    imported_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class ReferenceSource(Base):
     __tablename__ = "reference_sources"
 
