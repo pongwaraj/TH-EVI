@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {
+      "province": "เชียงใหม่",
+      "spatial_pilot_enabled": true,
+      "spatial_energy_enabled": false,
+      "spatial_coverage_fraction": null,
+      "scope": "registered_bev_fleet_reference_day",
+      "reviewed_on": "2026-10-17",
+      "cohorts": [],
+      "average_dc_session_kwh": null,
+      "dc_vehicle_efficiency": null,
+      "dc_station_efficiency": null,
+      "evidence": {
+        "travel_distance": null,
+        "charging_access_and_dwell": null,
+        "energy_per_session": null,
+        "charging_efficiencies": null
+      },
+      "fleet_source_url": "https://web.dlt.go.th/statistics/m1_collect_new_car.php",
+      "notes": "DLT stock is available. Behaviour and efficiency inputs require Chiang Mai evidence; do not copy US assumptions or legacy proposal session values into this profile."
+    }
+  ]
+}

@@ -560,6 +560,10 @@ def _load_db_competitors_for_province(province: str) -> list[dict[str, Any]]:
             "gun_count": row.gun_count,
             "guns": row.gun_count,
             "max_kw": row.max_kw,
+            "connector_summary": row.connector_summary,
+            "power_summary": row.power_summary,
+            "source_url": row.source_url,
+            "dc_fast": row.dc_fast,
             "opening_hours": row.open_hours,
             "verification_status": row.verification_status,
             "confidence": row.confidence,
@@ -1758,8 +1762,13 @@ def analyze_click_location(
     mode: str = "urban",
     avg_kwh_per_session: float = 32.0,
     price_per_kwh: float = 6.8,
+    method: str = "legacy",
+    resolution_km: float = 1.0,
 ) -> dict[str, Any]:
     """Estimate click-point demand from base area demand plus POI and competitor fields."""
+    from .area_engine import analyze_area_cell, use_pilot
+    if use_pilot(province, method):
+        return analyze_area_cell(lat, lon, province, year, scenario, mode, resolution_km)
     factor = SCENARIO_FACTORS.get(scenario, 1.0)
     mode = mode if mode in HEATMAP_MODES else "urban"
     pois = load_pois_for_province(province)

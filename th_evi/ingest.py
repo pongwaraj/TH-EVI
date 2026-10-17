@@ -557,6 +557,8 @@ def ingest_competitors(session, source_map: dict[str, int], slug: str) -> dict[s
                 plug_count = _int_or_none(row.get("plug_count"))
                 gun_count = _int_or_none(row.get("guns")) or _int_or_none(row.get("gun_count"))
                 max_kw = _float_or_none(row.get("max_kw"))
+                connector_summary = str(row.get("connector_summary") or "").strip() or None
+                power_summary = str(row.get("power_summary") or "").strip() or None
                 existing = session.query(ChargerCompetitor).filter_by(province=province, station_id=station_id).first()
                 if existing:
                     existing.name = name
@@ -569,6 +571,8 @@ def ingest_competitors(session, source_map: dict[str, int], slug: str) -> dict[s
                     existing.plug_count = plug_count
                     existing.gun_count = gun_count
                     existing.max_kw = max_kw
+                    existing.connector_summary = connector_summary or existing.connector_summary
+                    existing.power_summary = power_summary or existing.power_summary
                     existing.verification_status = verification
                     existing.confidence = confidence
                     existing.source_id = source_id
@@ -595,6 +599,8 @@ def ingest_competitors(session, source_map: dict[str, int], slug: str) -> dict[s
                             plug_count=plug_count,
                             gun_count=gun_count,
                             max_kw=max_kw,
+                            connector_summary=connector_summary,
+                            power_summary=power_summary,
                             open_hours=open_hours,
                             verification_status=verification,
                             confidence=confidence,

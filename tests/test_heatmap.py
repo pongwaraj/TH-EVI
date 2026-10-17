@@ -36,6 +36,8 @@ def test_heatmap_metadata_includes_station_calibration_summary():
     assert calibration["ground_truth_points"] >= 1
     assert calibration["calibration_factor"] > 0
     assert "status" in calibration
+    assert result["metadata"]["production_method"] == "legacy_spatial_screening"
+    assert result["metadata"]["energy_budget_enforced"] is False
 
 
 def test_province_heatmap_supports_non_chiang_mai():

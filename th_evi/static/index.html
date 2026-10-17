@@ -1340,10 +1340,12 @@ function drawGridHeat(data) {
     const color = heatColor(displayIntensity);
     const cellOpacity = Math.max(0.32, Math.min(0.78, 0.24 + 0.58 * displayIntensity));
 
-    const heatCell = L.rectangle([
+    const fragments = point.coverage_fragments || [[
       [point.lat - halfLat, point.lon - halfLon],
       [point.lat + halfLat, point.lon + halfLon]
-    ], {
+    ]];
+    fragments.forEach(bounds => {
+    const heatCell = L.rectangle(bounds, {
       stroke: false,
       fillColor: color,
       fillOpacity: cellOpacity
@@ -1352,6 +1354,7 @@ function drawGridHeat(data) {
     heatCell.on("click", e => {
       dismissMapHint();
       quickEstimate(e.latlng.lat, e.latlng.lng, point);
+    });
     });
   });
 }
@@ -1445,6 +1448,8 @@ function showAreaDemandPopup(lat, lon, summary) {
   const areaScore = Number(summary.area_score ?? summary.heat_score ?? summary.gross_area_demand_sessions ?? 0);
   const cellLabel = summary.cell_label || `${fmt(summary.resolution_km || latestHeatmapData?.resolution_km || 1.0)} km`;
   const scoreLabel = heatmapMetricLabel(metric);
+  const scoreFmt = value => summary.score_semantics === "normalized_screening_share_percent"
+    ? Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 3 }) : fmt(value);
   const demandScore = Number(summary.demand_score ?? 0);
   const competitionScore = Number(summary.competition_score ?? 0);
   const netScore = Number(summary.net_opportunity_score ?? areaScore);
@@ -1453,13 +1458,14 @@ function showAreaDemandPopup(lat, lon, summary) {
     '<h3 style="margin:0 0 8px;color:#12395b;font-size:14px">' + t("areaDemandHeat") + '</h3>' +
     '<table style="width:100%;margin-bottom:8px">' +
     '<tr><td style="padding:4px 0"><b>' + t("locationLabel") + ':</b></td><td style="text-align:right"><b>' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</b></td></tr>' +
-    '<tr style="background:#f0f0f0"><td style="padding:4px">' + scoreLabel + ':</td><td style="text-align:right"><b style="color:#7b2cbf">' + fmt(areaScore) + '</b></td></tr>' +
-    '<tr><td style="padding:4px">' + t("demandScoreLabel") + ':</td><td style="text-align:right">' + fmt(demandScore) + '</td></tr>' +
-    '<tr style="background:#f0f0f0"><td style="padding:4px">' + t("competitionScoreLabel") + ':</td><td style="text-align:right">' + fmt(competitionScore) + '</td></tr>' +
-    '<tr><td style="padding:4px">' + t("netOpportunityLabel") + ':</td><td style="text-align:right">' + fmt(netScore) + '</td></tr>' +
+    '<tr style="background:#f0f0f0"><td style="padding:4px">' + scoreLabel + ':</td><td style="text-align:right"><b style="color:#7b2cbf">' + scoreFmt(areaScore) + '</b></td></tr>' +
+    '<tr><td style="padding:4px">' + t("demandScoreLabel") + ':</td><td style="text-align:right">' + scoreFmt(demandScore) + '</td></tr>' +
+    '<tr style="background:#f0f0f0"><td style="padding:4px">' + t("competitionScoreLabel") + ':</td><td style="text-align:right">' + scoreFmt(competitionScore) + '</td></tr>' +
+    '<tr><td style="padding:4px">' + t("netOpportunityLabel") + ':</td><td style="text-align:right">' + scoreFmt(netScore) + '</td></tr>' +
     '<tr><td style="padding:4px">' + t("cellLabel") + ':</td><td style="text-align:right">' + cellLabel + '</td></tr>' +
     '</table>' +
-    '<div class="muted" style="margin-bottom:8px">' + t("scoreNotForecast") + '</div>' +
+    '<div class="muted" style="margin-bottom:8px">' + (summary.score_semantics === "normalized_screening_share_percent" ? 'หน่วย: สัดส่วนคะแนนในพื้นที่คัดกรอง (%) ฐานคำนวณ 1 กม. ไม่ใช่คัน/วันหรือยอดขายของสถานี' : t("scoreNotForecast")) + '</div>' +
+    (summary.competition_unknown_count ? '<div class="muted">คู่แข่งบางแห่งยังไม่ยืนยันประเภท กำลัง หรือจำนวนหัวชาร์จ แรงแข่งขันอาจสูงกว่าที่แสดง</div>' : '') +
     heatmapPopupActionButtons(lat, lon, true) +
     '</div>';
   estimateMarker.bindPopup(popupContent).openPopup();
@@ -1539,13 +1545,15 @@ async function quickEstimate(lat, lon, heatPoint = null) {
   const showPointForecast = bool("show_point_forecast");
   const nearbyHeatPoint = heatPoint || nearestHeatPoint(lat, lon);
 
-  if (!showPointForecast && nearbyHeatPoint) {
+  if ((!showPointForecast || nearbyHeatPoint?.forecast_available === false) && nearbyHeatPoint) {
     showAreaDemandPopup(lat, lon, {
       metric,
       area_score: pointMetricScore(nearbyHeatPoint, metric),
       demand_score: nearbyHeatPoint.demand_score,
       competition_score: nearbyHeatPoint.competition_score,
       net_opportunity_score: nearbyHeatPoint.net_opportunity_score,
+      score_semantics: nearbyHeatPoint.score_semantics,
+      competition_unknown_count: nearbyHeatPoint.competition_unknown_count,
       resolution_km: latestHeatmapData?.resolution_km || 1.0
     });
     return;
@@ -1572,12 +1580,25 @@ async function quickEstimate(lat, lon, heatPoint = null) {
         province,
         scenario,
         mode,
+        resolution_km: Number($("heatmap_resolution").value || 1.0),
+        method: new URLSearchParams(location.search).get("method") || "auto",
         avg_kwh_per_session: avgKwh,
         price_per_kwh: price
       })
     });
     if (!resp.ok) throw new Error("Click analysis failed");
     const data = await resp.json();
+
+    if (data.forecast_available === false) {
+      showAreaDemandPopup(lat, lon, {
+        metric, area_score: metric === "demand" ? data.demand_score : data.net_opportunity_score,
+        demand_score: data.demand_score, competition_score: data.competition_score,
+        net_opportunity_score: data.net_opportunity_score, score_semantics: data.score_semantics,
+        competition_unknown_count: data.competition_unknown_count,
+        resolution_km: data.resolution_km
+      });
+      return;
+    }
 
     if (!showPointForecast) {
       showAreaDemandPopup(lat, lon, {
@@ -2016,11 +2037,25 @@ async function loadHeatMap() {
     const year = num("year") || new Date().getFullYear();
     const scenario = $("scenario").value || "base";
     const resp = await fetch(
-      `/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=${scenario}&mode=${mode}&resolution_km=${encodeURIComponent(resolution)}`,
+      `/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=${scenario}&mode=${mode}&resolution_km=${encodeURIComponent(resolution)}&method=${encodeURIComponent(new URLSearchParams(location.search).get("method") || "auto")}`,
       { signal: activeHeatmapController.signal }
     );
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
+    if (data.metadata?.production_method === "fixed_support_area_v1") {
+      (data.points || []).forEach(point => {
+        point.forecast_available = false;
+        point.score_semantics = data.metadata.score_semantics;
+        point.support_area_km2 ??= data.resolution_km ** 2;
+        point.intensity_layers = {};
+        for (const [layer, field] of Object.entries({demand: "demand_score", competition: "competition_score", net: "net_opportunity_score"})) {
+          point.intensity_layers[layer] = Math.min(1, point[field] / point.support_area_km2 / Math.max(data.metadata.density_max_scores[layer], 1e-12));
+        }
+        point.heat_score = point.net_opportunity_score;
+        point.display_intensity = point.intensity = point.intensity_layers.net;
+        Object.assign(point, data.support_evidence?.[point.support_ids?.[0]] || {});
+      });
+    }
     latestHeatmapData = data;
     if (requestId !== activeHeatmapRequestId) return;
     heatmapLayer.clearLayers();

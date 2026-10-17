@@ -13,7 +13,7 @@ from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import or_, text
 import uvicorn
 
@@ -22,6 +22,8 @@ from .data import (
     get_cm_highway_aadt,
     load_doh_aadt,
 )
+from .charging_energy import ChargingWindow, TravelCohort, calculate_daily_energy_budget
+from .charging_profiles import charging_basis_status, observed_bev_fleet
 from .db import (
     AnalysisResult,
     AnalysisRun,
@@ -79,6 +81,38 @@ class EstimateRequest(BaseModel):
     aadt: int | None = None
 
 
+class ChargingWindowInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    effective_kw: float = Field(..., ge=0, allow_inf_nan=False)
+    available_hours: float = Field(..., ge=0, le=24, allow_inf_nan=False)
+    efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+    use_fraction: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+
+
+class TravelCohortInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cohort_id: str = Field(..., min_length=1, max_length=100)
+    fleet_share: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    active_day_share: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    daily_km: float = Field(..., ge=0, allow_inf_nan=False)
+    battery_kwh_per_km: float = Field(..., gt=0, allow_inf_nan=False)
+    home: ChargingWindowInput
+    work: ChargingWindowInput
+    public_ac: ChargingWindowInput
+
+
+class ChargingEnergyPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    province: str = Field(..., min_length=1, max_length=120)
+    cohorts: list[TravelCohortInput] = Field(..., min_length=1, max_length=100)
+    average_dc_session_kwh: float = Field(..., gt=0, allow_inf_nan=False)
+    dc_vehicle_efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+    dc_station_efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+
+
 class CandidateSiteInput(BaseModel):
     name: str = Field(..., min_length=1, max_length=160)
     lat: float
@@ -131,14 +165,16 @@ class SiteAnalysisRequest(BaseModel):
 
 
 class ClickAnalysisRequest(BaseModel):
-    lat: float
-    lon: float
+    lat: float = Field(..., ge=-90, le=90, allow_inf_nan=False)
+    lon: float = Field(..., ge=-180, le=180, allow_inf_nan=False)
     province: str = "Chiang Mai"
     year: int = Field(2030, ge=2025, le=2050)
     scenario: str = Field("base", pattern="^(conservative|base|upside)$")
     mode: str = Field("urban", pattern="^(urban|community|district)$")
     avg_kwh_per_session: float = Field(32.0, gt=0)
     price_per_kwh: float = Field(6.8, gt=0)
+    method: str = Field("auto", pattern="^(auto|pilot|legacy)$")
+    resolution_km: float = Field(1.0, ge=0.25, le=5, allow_inf_nan=False)
 
 
 class PlanningShortlistRequest(BaseModel):
@@ -463,6 +499,8 @@ def _duplicate_reference_values(config: dict[str, Any], row: Any) -> dict[str, A
 
 
 def _clear_reference_caches() -> None:
+    from .area_engine import clear_caches
+    clear_caches()
     spatial_module._has_published_database_release.cache_clear()
     spatial_module.load_pois_for_province.cache_clear()
     spatial_module.load_competitors_for_province.cache_clear()
@@ -692,6 +730,47 @@ def estimate_location(req: EstimateRequest):
     return model.estimate(req.lat, req.lon, req.year, req.location_type, req.aadt)
 
 
+@app.get("/api/charging-demand/basis")
+def charging_demand_basis(province: str = Query(..., min_length=1, max_length=120)):
+    """Expose observed fleet provenance and missing pilot inputs, not a forecast."""
+    return charging_basis_status(province)
+
+
+@app.post("/api/charging-demand/preview")
+def charging_demand_preview(req: ChargingEnergyPreviewRequest):
+    """Evaluate explicit assumptions without publishing or changing the heatmap."""
+    fleet = observed_bev_fleet(req.province)
+    if fleet is None:
+        raise HTTPException(status_code=422, detail="No observed DLT passenger-car BEV fleet for this province")
+    try:
+        cohorts = []
+        for item in req.cohorts:
+            values = _dump_model(item)
+            for window in ("home", "work", "public_ac"):
+                values[window] = ChargingWindow(**values[window])
+            cohorts.append(TravelCohort(**values))
+        budget = calculate_daily_energy_budget(
+            bev_fleet=fleet["bev"], cohorts=cohorts,
+            average_dc_session_kwh=req.average_dc_session_kwh,
+            dc_vehicle_efficiency=req.dc_vehicle_efficiency,
+            dc_station_efficiency=req.dc_station_efficiency,
+        )
+    except (ValueError, OverflowError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        "status": "assumption_preview_not_calibrated",
+        "observed_fleet": fleet,
+        "energy_budget": budget,
+        "heatmap_changed": False,
+        "limitations": [
+            "Passenger-car BEVs only; not all EV classes or PHEVs.",
+            "DLT snapshot is registration stock, not a forecast or a count of vehicles present.",
+            "Behaviour inputs are caller assumptions, not verified local observations.",
+            "No site capture, trip/SOC feasibility or external travel has been inferred.",
+        ],
+    }
+
+
 @app.post("/api/click-analysis")
 def click_analysis(req: ClickAnalysisRequest):
     """Estimate a clicked map point using POI attraction and competitor penalty fields."""
@@ -704,6 +783,8 @@ def click_analysis(req: ClickAnalysisRequest):
         mode=req.mode,
         avg_kwh_per_session=req.avg_kwh_per_session,
         price_per_kwh=req.price_per_kwh,
+        method=req.method,
+        resolution_km=req.resolution_km,
     )
 
 
@@ -821,6 +902,9 @@ def list_highways():
 def list_chargers(province: str = Query("Chiang Mai", min_length=1)):
     """Return existing charger competitors for the selected province."""
     rows = spatial_module.load_competitors_for_province(province)
+    from .area_engine import use_pilot
+    from .competition import competitor_evidence
+    pilot = use_pilot(province)
     stations = []
     for row in rows:
         lat = row.get("lat")
@@ -839,6 +923,12 @@ def list_chargers(province: str = Query("Chiang Mai", min_length=1)):
             "verification_status": row.get("verification_status"),
             "confidence": row.get("confidence"),
         })
+        if pilot:
+            evidence = competitor_evidence(row)
+            stations[-1].update({key: evidence[key] for key in (
+                "max_kw", "guns", "charging_type", "power_evidence", "direct_dc_eligible", "source_url",
+            )})
+            stations[-1]["capacity"] = evidence["guns"]
     return {"province": province, "stations": _json_safe(stations), "station_count": len(stations)}
 
 
@@ -1175,14 +1265,20 @@ def chiang_mai_heatmap(
     scenario: str = Query("base", pattern="^(conservative|base|upside)$"),
     mode: str = Query("urban", pattern="^(urban|community|district)$"),
     resolution_km: float = Query(1.0, gt=0, le=5),
+    method: str = Query("auto", pattern="^(auto|pilot|legacy)$"),
 ):
     """Return Chiang Mai area-demand heat-map points."""
-    return generate_chiang_mai_heatmap(
-        year=year,
-        scenario=scenario,
-        mode=mode,
-        resolution_km=resolution_km,
-    )
+    from .area_engine import heatmap_transport
+    try:
+        return heatmap_transport(generate_chiang_mai_heatmap(
+            year=year,
+            scenario=scenario,
+            mode=mode,
+            resolution_km=resolution_km,
+            method=method,
+        ))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/heatmap")
@@ -1192,16 +1288,19 @@ def province_heatmap(
     scenario: str = Query("base", pattern="^(conservative|base|upside)$"),
     mode: str = Query("urban", pattern="^(urban|community|district)$"),
     resolution_km: float = Query(1.0, gt=0, le=5),
+    method: str = Query("auto", pattern="^(auto|pilot|legacy)$"),
 ):
     """Return province heat-map points clipped to urban activity fields."""
     try:
-        return generate_province_heatmap(
+        from .area_engine import heatmap_transport
+        return heatmap_transport(generate_province_heatmap(
             province=province,
             year=year,
             scenario=scenario,
             mode=mode,
             resolution_km=resolution_km,
-        )
+            method=method,
+        ))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

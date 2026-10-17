@@ -415,6 +415,8 @@ class ChargerCompetitor(Base):
     plug_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gun_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_kw: Mapped[float | None] = mapped_column(Float, nullable=True)
+    connector_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    power_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     total_site_kw: Mapped[float | None] = mapped_column(Float, nullable=True)
     dc_fast: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     price_per_kwh: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -431,6 +433,21 @@ class ChargerCompetitor(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ChargingBehaviorProfileSnapshot(Base):
+    __tablename__ = "charging_behavior_profile_snapshots"
+    __table_args__ = (
+        UniqueConstraint("province", "profile_sha256", name="uq_charging_behavior_snapshot"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    province: Mapped[str] = mapped_column(String(120), nullable=False)
+    profile_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    profile_json: Mapped[str] = mapped_column(Text, nullable=False)
+    engine_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    updated_by: Mapped[str] = mapped_column(String(120), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
@@ -571,6 +588,8 @@ SQLITE_REFERENCE_COLUMN_PATCHES: dict[str, list[tuple[str, str]]] = {
         ("active", "BOOLEAN NOT NULL DEFAULT 1"),
     ],
     "charger_competitors": [
+        ("connector_summary", "TEXT"),
+        ("power_summary", "TEXT"),
         ("source_url", "VARCHAR(500)"),
         ("verification_note", "TEXT"),
         ("updated_by", "VARCHAR(120)"),

@@ -35,7 +35,7 @@ REFERENCE_LAYERS = (
         "competitors",
         ChargerCompetitor,
         "station_id",
-        ("station_id", "province", "district", "name", "network", "operator", "lat", "lon", "plug_count", "gun_count", "max_kw", "status", "verification_status", "confidence", "active"),
+        ("station_id", "province", "district", "name", "network", "operator", "lat", "lon", "plug_count", "gun_count", "max_kw", "connector_summary", "power_summary", "status", "verification_status", "confidence", "active"),
     ),
     (
         "business_areas",

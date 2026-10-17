@@ -676,6 +676,7 @@ def generate_province_heatmap(
     scenario: Literal["conservative", "base", "upside"] = "base",
     resolution_km: float = 1.0,
     mode: Literal["urban", "community", "district"] = "urban",
+    method: str = "legacy",
 ) -> dict[str, Any]:
     """Generate a province heat map for urban hotspots or community coverage."""
     if scenario not in VALID_HEATMAP_SCENARIOS:
@@ -684,6 +685,10 @@ def generate_province_heatmap(
         raise ValueError(f"mode must be one of {sorted(VALID_HEATMAP_MODES)}")
     if resolution_km <= 0 or resolution_km > HEATMAP_MAX_RESOLUTION_KM:
         raise ValueError(f"resolution_km must be in (0, {HEATMAP_MAX_RESOLUTION_KM}]")
+
+    from .area_engine import generate_area_surface, use_pilot
+    if use_pilot(province, method):
+        return generate_area_surface(province, year, scenario, resolution_km, mode)
 
     pois = load_pois_for_province(province)
     zones = load_hot_zones_for_province(province)
@@ -962,6 +967,8 @@ def generate_province_heatmap(
             "district_node_count": len(district_nodes),
             "heatmap_mode": mode,
             "score_semantics": "screening_score_not_direct_forecast",
+            "production_method": "legacy_spatial_screening",
+            "energy_budget_enforced": False,
             "station_calibration": station_calibration_summary(),
             "urban_mask": "district_poi_zone_competitor" if mode in {"community", "district"} else "poi_zone_competitor",
             "normalization": "within_district_weighted_by_province_potential" if mode == "district" else "province_max",
@@ -975,6 +982,7 @@ def generate_chiang_mai_heatmap(
     scenario: Literal["conservative", "base", "upside"] = "base",
     resolution_km: float = 1.0,
     mode: Literal["urban", "community", "district"] = "urban",
+    method: str = "legacy",
 ) -> dict[str, Any]:
     """Backward-compatible wrapper for the Chiang Mai heat map."""
     return generate_province_heatmap(
@@ -983,4 +991,5 @@ def generate_chiang_mai_heatmap(
         scenario=scenario,
         resolution_km=resolution_km,
         mode=mode,
+        method=method,
     )

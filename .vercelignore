@@ -19,6 +19,8 @@ TCE_logo.png
 artifacts/**
 outputs/**
 node_modules/**
+tmp/**
+output/**
 survey_preview.png
 analysis.json
 executive_analysis.json
