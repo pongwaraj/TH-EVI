@@ -18,6 +18,7 @@ from .charging_profiles import (load_pilot_evidence, profile_for_province,
                                 resolve_dc_session_energy, dc_session_energy_status)
 from .competition import dc_competition_pressure
 from .constants import canonical_province_name
+from .poi_policy import POI_POLICY_VERSION, screening_weight
 
 
 def _positive(name, value, maximum=None):
@@ -248,6 +249,9 @@ def transfer_site_demand(*, lat, lon, year, points, competitors, reference_stati
                         "site_choice_connector_kwh_per_day": demand,
                         "site_served_connector_kwh_per_day": served,
                         "charging_event_equivalents_per_day": served / average_session_kwh,
+                        "estimated_charging_visits_per_day": served / average_session_kwh,
+                        "potential_charging_visits_per_day": demand / average_session_kwh,
+                        "unserved_charging_visits_per_day": unserved / average_session_kwh,
                         "capacity_limited": demand > capacity,
                         "accounting": {"inferred_choice_pool_connector_kwh_per_day": pool,
                                        "existing_stations_before": existing_before,
@@ -263,6 +267,7 @@ def transfer_site_demand(*, lat, lon, year, points, competitors, reference_stati
             "estimate_available": True, "forecast_available": False,
             "new_site_validation_available": False, "unique_vehicles_per_day": None,
             "unit": "charging_event_equivalents_not_unique_vehicles",
+            "visit_counting_basis": "one_charging_event_per_vehicle_visit_not_unique_daily_vehicles",
             "uncertainty_semantics": "input_sensitivity_not_prediction_interval",
             "reference_station_id": reference_station_id, "observations": observation,
             "reference_model_share_before_entry": reference_share,
@@ -307,11 +312,14 @@ def preview_site_demand(*, province, lat, lon, year, station, average_session_kw
     # transfer weights. Activity proxies describe relative location only.
     points = []
     for point in surface["points"]:
-        context = [max(0, point.get(key, 0)) for key in
-                   ("zone_score", "business_area_score", "poi_score")]
-        primary = max(context)
+        activity = screening_weight(
+            model_prior=0, poi_score=point.get("poi_score", 0),
+            zone_score=point.get("zone_score", 0),
+            business_area_score=point.get("business_area_score", 0),
+            district_score=point.get("district_score", 0),
+        )
         points.append({"lat": point["lat"], "lon": point["lon"],
-                       "demand_score": primary + 0.35 * (fsum(context) - primary)})
+                       "demand_score": activity["weight"]})
     result = transfer_site_demand(
         lat=lat, lon=lon, year=year, points=points,
         competitors=load_competitors_for_province(canonical, include_nationwide_kml=False),
@@ -323,6 +331,6 @@ def preview_site_demand(*, province, lat, lon, year, station, average_session_kw
     result.update(province=canonical, lat=lat, lon=lon, year=year, heatmap_changed=False,
                   session_energy_basis=session_energy,
                   public_access_assumed=True, daily_demand_holdout=validation,
-                  spatial_weight_method="relative_activity_proxies_without_traffic_session_defaults",
+                  spatial_weight_method=POI_POLICY_VERSION + "_activity_only",
                   evidence_sha256=sha256(json.dumps(evidence, sort_keys=True).encode()).hexdigest())
     return result

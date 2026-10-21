@@ -1,0 +1,15 @@
+.site-forecast-settings { margin: 12px 0; font-size: 13px; }
+.site-forecast-settings h2 { margin: 0 0 10px; font-size: 14px; }
+.site-forecast-settings .sf-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 10px; }
+.site-forecast-settings label { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 12px; }
+.site-forecast-settings input,.site-forecast-settings select { width: 100%; min-width: 0; font: inherit; padding: 8px; border: 1px solid #c9d4de; border-radius: 6px; background: white; color: #142433; }
+.site-forecast-settings .sf-toggle { flex-direction: row; align-items: center; gap: 8px; }
+.site-forecast-settings .sf-toggle input { width: auto; }
+.site-forecast-settings details { margin-top: 12px; }
+.site-forecast-settings summary { cursor: pointer; font-size: 12px; }
+.site-forecast-result { border-bottom: 1px solid #d7e0e7; padding: 8px 0 12px; margin-bottom: 10px; font-size: 12px; }
+.site-forecast-result .sf-number { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+.site-forecast-result .sf-number strong { font-size: 28px; color: #153c77; }
+.site-forecast-result .sf-detail { margin-top: 6px; color: #526577; line-height: 1.5; overflow-wrap: anywhere; }
+.site-forecast-result .sf-warning { color: #8b421b; }
+.site-forecast-settings [hidden],.site-forecast-result[hidden] { display: none; }

@@ -9,6 +9,8 @@
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <link rel="stylesheet" href="/static/map-coordinates.css">
 <script src="/static/map-coordinates.js"></script>
+<link rel="stylesheet" href="/static/site-forecast.css">
+<script src="/static/site-forecast.js"></script>
 <style>
 * { box-sizing: border-box; }
 :root { --panel-width: 460px; }
@@ -232,6 +234,8 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
     </div>
     <div class="hint" data-i18n="quickSettingsHint">&#128073; คลิกบนแผนที่เพื่อดู demand ทันที หรือกรอกข้อมูลด้านล่างแล้วกด "วิเคราะห์และบันทึก"</div>
   </div>
+
+  <div class="section"><div id="site-forecast-settings"></div></div>
 
   <form id="analysis-form">
     <div class="section" data-workspace-mode="analysis">
@@ -1480,6 +1484,7 @@ function showAreaDemandPopup(lat, lon, summary) {
   const netScore = Number(summary.net_opportunity_score ?? areaScore);
   const popupContent =
     '<div style="font-size:13px;min-width:190px">' +
+    '<div data-site-forecast></div>' +
     '<h3 style="margin:0 0 8px;color:#12395b;font-size:14px">' + t("areaDemandHeat") + '</h3>' +
     '<table style="width:100%;margin-bottom:8px">' +
     '<tr><td style="padding:4px 0"><b>' + t("locationLabel") + ':</b></td><td style="text-align:right"><b>' + lat.toFixed(4) + ', ' + lon.toFixed(4) + '</b></td></tr>' +
@@ -1493,7 +1498,14 @@ function showAreaDemandPopup(lat, lon, summary) {
     (summary.competition_unknown_count ? '<div class="muted">คู่แข่งบางแห่งยังไม่ยืนยันประเภท กำลัง หรือจำนวนหัวชาร์จ แรงแข่งขันอาจสูงกว่าที่แสดง</div>' : '') +
     heatmapPopupActionButtons(lat, lon, true) +
     '</div>';
-  estimateMarker.bindPopup(popupContent).openPopup();
+  const content = document.createElement('div');
+  content.innerHTML = popupContent;
+  estimateMarker.bindPopup(content, { maxWidth: Math.min(360, Math.max(180, map.getSize().x - 90)),
+    maxHeight: Math.min(440, Math.max(160, map.getSize().y - 110)) }).openPopup();
+  const popup = estimateMarker.getPopup();
+  THEVISiteForecast.renderInto(popup.getElement().querySelector('[data-site-forecast]'), {
+    lat, lon, province: apiProvinceValue() || 'Chiang Mai', year: num('year')
+  }, () => popup.update());
 }
 
 function payload() {
@@ -1577,7 +1589,7 @@ async function quickEstimate(lat, lon, heatPoint = null) {
     ? ((heatPoint && (!isPilot || heatPointContains(lat, lon, heatPoint))) ? heatPoint : nearestHeatPoint(lat, lon))
     : null;
 
-  if ((!showPointForecast || nearbyHeatPoint?.forecast_available === false) && nearbyHeatPoint) {
+  if ((THEVISiteForecast.enabled() || !showPointForecast || nearbyHeatPoint?.forecast_available === false) && nearbyHeatPoint) {
     showAreaDemandPopup(lat, lon, {
       metric,
       area_score: pointMetricScore(nearbyHeatPoint, metric),
@@ -2057,6 +2069,7 @@ async function loadReferenceLayers() {
 }
 
 async function loadHeatMap() {
+  map.closePopup();
   closeEstimate();
   const province = apiProvinceValue();
   const mode = $("heatmap_mode").value || "urban";
@@ -2155,6 +2168,7 @@ function refreshLayerControlLabels() {
   }).addTo(map);
 }
 
+THEVISiteForecast.mountSettings(document.getElementById('site-forecast-settings'));
 const coordinateSearch = MapCoordinates.mount({
   container: $("coordinate-search"), map, bounds: THAILAND_BOUNDS,
   getHeatmap: () => heatmapMatchesSelection(latestHeatmapData, apiProvinceValue(), num("year"),

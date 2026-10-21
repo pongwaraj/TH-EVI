@@ -84,6 +84,11 @@ def test_reference_station_reconstruction_and_after_entry_accounting():
     assert result["unique_vehicles_per_day"] is None
     assert result["estimate_available"] is True
     assert result["forecast_available"] is False
+    assert row["estimated_charging_visits_per_day"] == pytest.approx(
+        row["site_served_connector_kwh_per_day"] / 20)
+    assert row["potential_charging_visits_per_day"] == pytest.approx(
+        row["estimated_charging_visits_per_day"] + row["unserved_charging_visits_per_day"])
+    assert result["visit_counting_basis"] == "one_charging_event_per_vehicle_visit_not_unique_daily_vehicles"
 
 
 def test_support_weight_units_and_display_splitting_cannot_create_demand():
@@ -117,6 +122,8 @@ def test_closed_access_gives_zero_and_capacity_overflow_stays_unserved():
     assert row["capacity_limited"]
     assert row["site_served_connector_kwh_per_day"] <= 30
     assert row["accounting"]["capacity_unserved"] > 0
+    assert row["unserved_charging_visits_per_day"] > 0
+    assert row["estimated_charging_visits_per_day"] < row["potential_charging_visits_per_day"]
     assert row["accounting"]["balance_error"] == pytest.approx(0)
 
 
@@ -216,6 +223,7 @@ def test_shared_preview_excludes_legacy_traffic_session_scale_and_checks_support
     after = preview_site_demand(**args)
     assert before["scenarios"] == after["scenarios"]
     assert after["heatmap_changed"] is False
+    assert after["spatial_weight_method"] == "public_dc_poi_hierarchy_v2_activity_only"
     with pytest.raises(ValueError, match="outside"):
         preview_site_demand(**{**args, "lat": 20})
     with pytest.raises(ValueError, match="publicly accessible"):

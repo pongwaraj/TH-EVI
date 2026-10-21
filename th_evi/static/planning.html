@@ -8,6 +8,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="/static/map-coordinates.css">
 <script src="/static/map-coordinates.js"></script>
+<link rel="stylesheet" href="/static/site-forecast.css">
+<script src="/static/site-forecast.js"></script>
 <style>
 * { box-sizing: border-box; }
 :root {
@@ -270,6 +272,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
     </div>
     <div id="status" class="status">พร้อมใช้งาน</div>
   </section>
+
+  <section class="section"><div id="site-forecast-settings"></div></section>
 
   <section class="section">
     <div class="summary-card">
@@ -547,6 +551,8 @@ const heatmapLayer = L.layerGroup().addTo(map);
 const districtLayer = L.layerGroup().addTo(map);
 const competitorLayer = L.layerGroup().addTo(map);
 let latestHeatmapData = null;
+let selectedPlanningPoint = null;
+THEVISiteForecast.mountSettings(document.getElementById('site-forecast-settings'));
 let shortlist = readShortlist();
 let teamShortlist = [];
 let reportSelectionPoint = null;
@@ -975,8 +981,9 @@ function popupHtml(point) {
   const metric = currentMetric();
   return `
     <div>
+      <div data-site-forecast></div>
       <h3>${recommendation.label}</h3>
-      <div><b>แนะนำ:</b> ${recommendation.spec}</div>
+      ${point.forecast_available === false ? '' : `<div><b>แนะนำ:</b> ${recommendation.spec}</div>`}
       <table>
         <tr><td>พิกัด</td><td style="text-align:right">${Number(point.lat).toFixed(4)}, ${Number(point.lon).toFixed(4)}</td></tr>
         <tr><td>${metricLabel(metric)}</td><td style="text-align:right"><b>${fmt(pointMetricValue(point, metric))}</b></td></tr>
@@ -1087,15 +1094,25 @@ function attachCell(point, data) {
     fillOpacity
   }).addTo(heatmapLayer);
   rectangle.on("click", (event) => {
-    L.popup({ maxWidth: 320 })
+    const selected = { ...point, lat: event.latlng.lat, lon: event.latlng.lng };
+    selectedPlanningPoint = selected;
+    const content = document.createElement('div');
+    content.innerHTML = popupHtml(selected);
+    const popup = L.popup({ maxWidth: Math.min(360, Math.max(180, map.getSize().x - 90)),
+      maxHeight: Math.min(440, Math.max(160, map.getSize().y - 110)) })
       .setLatLng(event.latlng)
-      .setContent(popupHtml(point))
+      .setContent(content)
       .openOn(map);
+    THEVISiteForecast.renderInto(popup.getElement().querySelector('[data-site-forecast]'), {
+      lat: selected.lat, lon: selected.lon, province: data.province, year: Number(data.year)
+    }, () => popup.update());
   });
   });
 }
 
 async function loadHeatmap() {
+  map.closePopup();
+  selectedPlanningPoint = null;
   syncProvinceSearch();
   const province = apiProvinceValue();
   const mode = $("scope").value;
@@ -1167,24 +1184,28 @@ function resetView() {
 
 window.phase1OpenGoogleMaps = openGoogleMaps;
 window.phase1OpenStreetView = openStreetView;
+function selectedPlanningPointAt(lat, lon) {
+  if (selectedPlanningPoint && Number(selectedPlanningPoint.lat) === Number(lat) && Number(selectedPlanningPoint.lon) === Number(lon)) return selectedPlanningPoint;
+  return (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+}
 window.phase1AddToShortlist = (lat, lon) => {
-  const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+  const point = selectedPlanningPointAt(lat, lon);
   if (point) addToShortlist(point);
 };
 window.phase1DownloadOwnerReport = (lat, lon) => {
-  const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+  const point = selectedPlanningPointAt(lat, lon);
   if (point) downloadOwnerAreaAnalysis(point);
 };
 window.phase1DownloadOwnerReportPdf = (lat, lon) => {
-  const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+  const point = selectedPlanningPointAt(lat, lon);
   if (point) downloadOwnerAreaAnalysis(point, "pdf");
 };
 window.phase1OpenReportChooser = (lat, lon) => {
-  const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+  const point = selectedPlanningPointAt(lat, lon);
   if (point) openReportChooser(point);
 };
 window.phase1SaveTeamPoint = (lat, lon) => {
-  const point = (latestHeatmapData?.points || []).find(item => Number(item.lat) === Number(lat) && Number(item.lon) === Number(lon));
+  const point = selectedPlanningPointAt(lat, lon);
   if (point) saveTeamShortlistPoint(point);
 };
 
