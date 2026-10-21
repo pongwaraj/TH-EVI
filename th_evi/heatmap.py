@@ -26,13 +26,17 @@ from .spatial import (
     is_analysis_only_target_poi,
     poi_attraction_field,
     zone_influence_field,
+    _spatial_location_type,
 )
+from .poi_policy import POI_POLICY_VERSION, screening_weight
 
 
 VALID_HEATMAP_SCENARIOS = {"conservative", "base", "upside"}
 VALID_HEATMAP_MODES = {"urban", "community", "district"}
 VALID_HEATMAP_LAYERS = {"demand", "competition", "net"}
 HEATMAP_MAX_RESOLUTION_KM = 5.0
+MIN_SCREENING_WEIGHT = 1.0
+MIN_POI_ACTIVITY_WEIGHT = 5.0
 HEATMAP_PADDING_KM = 2.0
 HEATMAP_MAX_COMPETITOR_SIGNAL_SHARE = 0.55
 HEATMAP_CORRIDOR_CAPTURE_FACTOR = 0.20
@@ -60,6 +64,13 @@ SEASONAL_TOURISM_CATEGORIES = {
     "recreation",
 }
 COMMUNITY_SUPPORT_POI_CATEGORIES = {
+    "community_mall",
+    "neighborhood_center",
+    "local_market",
+    "school",
+    "university",
+    "railway_station",
+    "train_station",
     "airport",
     "bus_station",
     "city_center",
@@ -79,6 +90,9 @@ COMMUNITY_SUPPORT_POI_CATEGORIES = {
     "transport_corridor",
 }
 HIGHWAY_SUPPORT_POI_CATEGORIES = {
+    "community_mall",
+    "railway_station",
+    "train_station",
     "airport",
     "bus_station",
     "district_center",
@@ -94,24 +108,6 @@ HIGHWAY_SUPPORT_POI_CATEGORIES = {
 }
 SUPPORTIVE_POI_MAX_DISTANCE_KM = 4.5
 HIGHWAY_SUPPORTIVE_POI_MAX_DISTANCE_KM = 3.5
-URBAN_DESTINATION_POI_CATEGORIES = {
-    "airport",
-    "bus_station",
-    "district_center",
-    "education",
-    "event_space",
-    "hospital",
-    "hotel",
-    "hotel_condo",
-    "lifestyle",
-    "market_tourism",
-    "office",
-    "shopping_mall",
-    "supermarket",
-    "target_site",
-    "transport",
-}
-
 DISTRICT_NODE_RULES: dict[str, tuple[float, float, str]] = {
     "district_center": (18.0, 3.6, "destination"),
     "transport_junction": (18.0, 4.0, "highway"),
@@ -143,47 +139,7 @@ def _location_type_for_heat(
     top_business_areas: list[dict[str, Any]],
     top_districts: list[dict[str, Any]],
 ) -> str:
-    # Only nearby POIs determine whether a grid cell is an urban destination.
-    # This prevents distant city-center or airport anchors from inflating a
-    # residential fringe cell that happens to receive a weak spillover score.
-    local_pois = [
-        item for item in top_pois[:3]
-        if (
-            _float_or_none(item.get("distance_km"))
-            if _float_or_none(item.get("distance_km")) is not None
-            else 999.0
-        ) <= 2.5
-    ]
-    categories = {item.get("category") for item in local_pois}
-    if {"transport_corridor", "border_crossing"} & categories:
-        return "highway"
-    if any(
-        item.get("category") == "city_center"
-        and (_float_or_none(item.get("distance_km")) or 999.0) <= 3.5
-        for item in local_pois
-    ):
-        return "city_center"
-    urban_destination_hits = sum(1 for category in categories if category in URBAN_DESTINATION_POI_CATEGORIES)
-    if urban_destination_hits >= 2:
-        return "destination"
-    for item in sorted(
-        top_business_areas[:3],
-        key=lambda entry: (
-            _float_or_none(entry.get("distance_km"))
-            if _float_or_none(entry.get("distance_km")) is not None
-            else 999.0
-        ),
-    ):
-        suggested = item.get("suggested_location_type")
-        if suggested in {"highway", "city_center", "destination", "suburban"}:
-            return str(suggested)
-    for item in top_districts[:2]:
-        suggested = item.get("suggested_location_type")
-        if suggested in {"highway", "city_center", "destination", "suburban"}:
-            return str(suggested)
-    if categories:
-        return "destination"
-    return "suburban"
+    return _spatial_location_type(top_pois, top_business_areas, top_districts)
 
 
 def _iter_anchor_points(
@@ -757,7 +713,7 @@ def generate_province_heatmap(
             supportive_context_sessions = area_demand["supportive_context_sessions"]
             evidence_context_sessions = supportive_context_sessions + competitor_signal_sessions
 
-            if evidence_context_sessions < min_context:
+            if evidence_context_sessions < min_context and poi_score < MIN_POI_ACTIVITY_WEIGHT:
                 lon += lon_step
                 continue
 
@@ -795,7 +751,12 @@ def generate_province_heatmap(
                 # potential. A heat-map pixel is a screening surface, so use a
                 # conservative capture share for city and destination cells.
                 model_sessions *= HEATMAP_URBAN_CAPTURE_FACTORS.get(location_type, 0.75)
-            demand_score = model_sessions + supportive_context_sessions
+            screening = screening_weight(
+                model_prior=round(model_sessions, 1), poi_score=poi_sessions,
+                zone_score=zone_sessions, business_area_score=business_area_sessions,
+                district_score=district_sessions,
+            )
+            demand_score = screening["weight"]
             competition_score = competitor_signal_sessions
             net_opportunity_score = max(demand_score - competition_score, 0.0)
             heat_score = net_opportunity_score
@@ -805,8 +766,8 @@ def generate_province_heatmap(
             # or it may be useful for the competition layer even when its net
             # score does not pass the demand threshold.
             layer_is_material = (
-                demand_score >= min_heat
-                or net_opportunity_score >= min_heat
+                demand_score >= MIN_SCREENING_WEIGHT
+                or net_opportunity_score >= MIN_SCREENING_WEIGHT
                 or competition_score >= min_context
             )
             if not layer_is_material:
@@ -835,6 +796,8 @@ def generate_province_heatmap(
                 "location_type": location_type,
                 "aadt_used": estimate["aadt_used"],
                 "model_sessions": round(model_sessions, 1),
+                "screening_weight": screening["weight"],
+                "screening_evidence": screening,
                 "poi_score": round(poi_sessions, 1),
                 "zone_score": round(zone_sessions, 1),
                 "business_area_score": round(business_area_sessions, 1),
@@ -914,7 +877,7 @@ def generate_province_heatmap(
         for point in points:
             district_name = point.get("district_name")
             local_max = district_max_heat.get(district_name, point["heat_score"])
-            district_potential = local_max / province_district_max
+            district_potential = local_max / max(province_district_max, 0.1)
             local_intensity = point["heat_score"] / max(local_max, 0.1)
             point["district_potential"] = round(district_potential, 4)
             point["local_intensity"] = round(local_intensity, 4)
@@ -924,7 +887,7 @@ def generate_province_heatmap(
             )
 
         for district_name, district_heat in sorted(
-            district_max_heat.items(),
+            ((name, district_max_heat.get(name, 0.0)) for name in district_node_lookup),
             key=lambda item: item[1],
             reverse=True,
         ):
@@ -937,7 +900,8 @@ def generate_province_heatmap(
                 "node_type": node.get("node_type"),
                 "population": node.get("population"),
                 "max_heat_score": round(district_heat, 1),
-                "potential_score": round(district_heat / province_district_max, 4),
+                "potential_score": round(district_heat / max(province_district_max, 0.1), 4),
+                "coverage_status": "supported" if district_name in district_max_heat else "insufficient_evidence",
             })
     else:
         for point in points:
@@ -968,6 +932,9 @@ def generate_province_heatmap(
             "heatmap_mode": mode,
             "score_semantics": "screening_score_not_direct_forecast",
             "production_method": "legacy_spatial_screening",
+            "poi_policy_version": POI_POLICY_VERSION,
+            "minimum_screening_weight": MIN_SCREENING_WEIGHT,
+            "minimum_poi_activity_weight": MIN_POI_ACTIVITY_WEIGHT,
             "energy_budget_enforced": False,
             "station_calibration": station_calibration_summary(),
             "urban_mask": "district_poi_zone_competitor" if mode in {"community", "district"} else "poi_zone_competitor",

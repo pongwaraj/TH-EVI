@@ -7,7 +7,7 @@ import json
 import os
 import re
 from functools import lru_cache
-from math import cos, exp, radians, sqrt
+from math import cos, exp, isfinite, radians, sqrt
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -26,6 +26,7 @@ from .db import (
 from .location import LocationDemandModel
 from .data import load_district_population_for_province
 from .validation import station_calibration_summary
+from .poi_policy import POI_CAPTURE_FACTOR, POI_CATEGORY_RULES, POI_POLICY_VERSION, poi_rule
 
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -225,11 +226,6 @@ SCENARIO_FACTORS = {
 }
 HEATMAP_MODES = {"urban", "community", "district"}
 
-# A clicked charger site never captures the full demand field of every POI in
-# the radius. This factor converts surrounding POI demand pools into first-pass
-# capturable sessions before competitor penalties are applied.
-POI_CAPTURE_FACTOR = 0.22
-
 # Hot-zone demand pools are broader than individual POIs. A candidate site can
 # capture only a slice of the zone field, so this sits below the POI capture
 # factor but still makes click sessions respond to visible heat/zone scores.
@@ -256,6 +252,12 @@ WATER_QUERY_ROUNDING = 4
 OVERPASS_URL = os.getenv("TH_EVI_OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 
 ACCESS_SUPPORT_CATEGORIES = {
+    "community_mall",
+    "neighborhood_center",
+    "local_market",
+    "railway_station",
+    "train_station",
+    "taxi_rank",
     "airport",
     "border_crossing",
     "bus_station",
@@ -292,6 +294,10 @@ BUSINESS_AREA_TYPE_RULES = {
 }
 
 URBAN_SIGNAL_CATEGORIES = {
+    "community_mall",
+    "railway_station",
+    "train_station",
+    "taxi_rank",
     "airport",
     "bus_station",
     "city_center",
@@ -307,35 +313,6 @@ URBAN_SIGNAL_CATEGORIES = {
     "target_site",
     "tourism",
     "transport",
-}
-
-POI_CATEGORY_RULES = {
-    "airport": (46.0, 5.0),
-    "border_crossing": (44.0, 5.0),
-    "shopping_mall": (38.0, 3.5),
-    "lifestyle": (32.0, 3.0),
-    "supermarket": (26.0, 2.6),
-    "hotel": (24.0, 2.6),
-    "hotel_condo": (24.0, 2.6),
-    "transport": (28.0, 3.0),
-    "bus_station": (28.0, 3.0),
-    "transport_corridor": (32.0, 4.5),
-    "city_center": (28.0, 3.0),
-    "hospital": (22.0, 2.3),
-    "education": (22.0, 2.8),
-    "recreation": (18.0, 2.3),
-    "neighborhood_recreation": (3.0, 1.0),
-    "tourism": (18.0, 2.6),
-    "tourism_museum": (18.0, 2.6),
-    "market_tourism": (18.0, 2.3),
-    "district_center": (16.0, 2.5),
-    "gas_station": (20.0, 3.2),
-    "office": (18.0, 2.0),
-    # Restaurant/cafe improves charging capture through dwell time but does not
-    # create vehicle demand in the way a mall, hospital, or transport hub does.
-    "restaurant_cafe": (6.0, 1.8),
-    "target_site": (24.0, 2.2),
-    "event_space": (14.0, 1.8),
 }
 
 _ANALYSIS_ONLY_TARGET_MARKERS = (
@@ -1095,7 +1072,8 @@ def _confidence_multiplier(value: str | None) -> float:
 
 
 def _poi_rule(category: str | None) -> tuple[float, float]:
-    return POI_CATEGORY_RULES.get(str(category or "").strip(), (14.0, 2.0))
+    rule = poi_rule(category)
+    return rule.weight, rule.radius_km
 
 
 def _nearest_distance_km(
@@ -1245,7 +1223,6 @@ def poi_attraction_field(
     pois: list[dict[str, Any]],
     max_distance_km: float = 10.0,
 ) -> tuple[float, list[dict[str, Any]]]:
-    total = 0.0
     contributions = []
     for poi in pois:
         # The analysis pin describes where the user wants to test a site. It is
@@ -1254,40 +1231,90 @@ def poi_attraction_field(
         # an independently observed destination.
         if is_analysis_only_target_poi(poi):
             continue
+        if str(poi.get("verification_status") or "").lower() in {"closed", "removed", "inactive", "planned"}:
+            continue
+        if str(poi.get("public_access", "")).lower() in {"false", "no", "private", "0"}:
+            continue
         poi_lat = _float_or_none(poi.get("lat"))
         poi_lon = _float_or_none(poi.get("lon"))
         if poi_lat is None or poi_lon is None:
+            continue
+        if not (isfinite(poi_lat) and isfinite(poi_lon) and -90 <= poi_lat <= 90 and -180 <= poi_lon <= 180):
             continue
 
         distance = km_between(lat, lon, poi_lat, poi_lon)
         if distance > max_distance_km:
             continue
 
-        base_sessions, radius = _poi_rule(poi.get("category"))
+        rule = poi_rule(poi.get("category"))
+        base_sessions, radius = rule.weight, rule.radius_km
+        if distance > radius * 2:
+            continue
         confidence = _confidence_multiplier(poi.get("confidence"))
+        source = str(poi.get("source") or "").lower()
+        if any(marker in source for marker in ("seed_estimate", "seed coordinate")):
+            confidence = min(confidence, CONFIDENCE_MULTIPLIERS["low_medium"])
         weight = exp(-((distance / max(radius, 0.1)) ** 2))
         sessions = base_sessions * confidence * weight
         if sessions <= 0.2:
             continue
 
-        total += sessions
         contributions.append({
+            "poi_id": poi.get("poi_id") or poi.get("name") or "POI",
             "name": poi.get("name") or poi.get("poi_id") or "POI",
             "category": poi.get("category") or "unknown",
             "distance_km": round(distance, 2),
             "radius_km": radius,
             "sessions": round(sessions, 1),
             "confidence": poi.get("confidence") or "medium",
+            "evidence_multiplier": confidence,
+            "tier": rule.tier,
+            "demand_role": rule.role,
+            "score_semantics": "relative_poi_evidence_not_sessions",
+            "policy_version": POI_POLICY_VERSION,
+            "source": poi.get("source"),
+            "_lat": poi_lat,
+            "_lon": poi_lon,
+            "_score": sessions,
         })
 
-    contributions.sort(key=lambda item: item["sessions"], reverse=True)
-    # Nearby pins can describe one physical destination, particularly around
-    # airports, malls, hospitals, and pickup zones. Keep the strongest anchor
-    # whole and discount the rest so the same trip is not counted repeatedly.
-    if contributions:
-        primary = contributions[0]["sessions"]
-        secondary = max(0.0, total - primary) * SECONDARY_ZONE_SHARE
-        total = primary + secondary
+    contributions.sort(key=lambda item: (-item["_score"], str(item["poi_id"]), item["_lat"], item["_lon"]))
+    unique = {}
+    for item in contributions:
+        unique.setdefault((item["poi_id"], item["_lat"], item["_lon"]), item)
+    contributions = list(unique.values())
+    # A mall and its tenants or a terminal and its pickup pins share trips.
+    # Cluster around the strongest anchor, not a transitive chain of shops.
+    clusters = []
+    for item in contributions:
+        cluster = next((group for group in clusters if km_between(
+            item["_lat"], item["_lon"], group[0]["_lat"], group[0]["_lon"]
+        ) <= 0.35), None)
+        if cluster is None:
+            clusters.append([item])
+        else:
+            cluster.append(item)
+    cluster_scores = [group[0]["_score"] + min(
+        sum(item["_score"] for item in group[1:]) * 0.10,
+        group[0]["_score"] * 0.25,
+    ) for group in clusters]
+    order = sorted(range(len(clusters)), key=lambda i: (-cluster_scores[i], str(clusters[i][0]["poi_id"])))
+    total = 0.0
+    if order:
+        primary = cluster_scores[order[0]]
+        unbounded = primary + sum(cluster_scores[i] for i in order[1:]) * SECONDARY_ZONE_SHARE
+        total = min(unbounded, primary * 1.75)
+        scale = total / unbounded
+        for rank, i in enumerate(order):
+            group = clusters[i]
+            secondary = sum(item["_score"] for item in group[1:])
+            secondary_factor = min(0.10, group[0]["_score"] * 0.25 / secondary) if secondary else 0
+            for j, item in enumerate(group):
+                item["cluster_id"] = str(group[0]["poi_id"])
+                item["effective_score"] = item["_score"] * (1 if j == 0 else secondary_factor) * (1 if rank == 0 else SECONDARY_ZONE_SHARE) * scale
+    for item in contributions:
+        for key in ("_lat", "_lon", "_score"):
+            item.pop(key)
     return round(total, 1), contributions
 
 
@@ -1311,10 +1338,10 @@ def zone_influence_field(
 
         radius = max(radius, 0.1)
         distance = km_between(lat, lon, zone_lat, zone_lon)
-        if distance > radius * 1.8:
+        if distance > radius:
             continue
 
-        weight = max(0.0, 1.0 - distance / (radius * 1.8)) ** 2
+        weight = max(0.0, 1.0 - distance / radius) ** 2
         confidence_multiplier = _confidence_multiplier(zone.get("confidence"))
         score = demand_pool * weight * confidence_multiplier
         if score <= 0.2:
@@ -1528,42 +1555,46 @@ def _spatial_location_type(
     top_business_areas: list[dict[str, Any]] | None = None,
     top_districts: list[dict[str, Any]] | None = None,
 ) -> str:
-    # A distant city-center anchor should not classify a residential-edge click
-    # as the city center. Keep the type signal tied to genuinely local POIs.
+    # A district label, school or long-dwell venue is not an urban DC magnet.
+    # Scan all evidence so adding small tenants cannot hide a real anchor.
     local_pois = [
-        item for item in top_pois[:3]
-        if (
-            _float_or_none(item.get("distance_km"))
-            if _float_or_none(item.get("distance_km")) is not None
-            else 999.0
-        ) <= 2.5
+        item for item in top_pois
+        if _local_classification_evidence(item)
     ]
-    categories = {
-        item["category"] for item in local_pois
-        if not is_analysis_only_target_poi(item)
-    }
-    if {"transport_corridor", "border_crossing"} & categories:
+    if any(poi_rule(item.get("category")).role == "corridor" for item in local_pois):
         return "highway"
-    if "city_center" in categories:
+    destinations = [item for item in local_pois if poi_rule(item.get("category")).role == "destination"]
+    if any(item.get("category") == "city_center" for item in local_pois) and any(
+        poi_rule(item.get("category")).tier == "commercial" for item in destinations
+    ):
         return "city_center"
+    if destinations:
+        return "destination"
     for item in sorted(
-        (top_business_areas or [])[:3],
+        top_business_areas or [],
         key=lambda entry: (
             _float_or_none(entry.get("distance_km"))
             if _float_or_none(entry.get("distance_km")) is not None
             else 999.0
         ),
     ):
-        suggested = item.get("suggested_location_type")
-        if suggested in {"highway", "city_center", "destination", "suburban"}:
-            return str(suggested)
-    for item in (top_districts or [])[:2]:
-        suggested = item.get("suggested_location_type")
-        if suggested in {"highway", "city_center", "destination", "suburban"}:
-            return str(suggested)
-    if categories:
-        return "destination"
+        distance = _float_or_none(item.get("distance_km"))
+        if distance is not None and distance <= 1.2 and item.get("area_type") == "periurban_connector":
+            return "highway"
+    for item in top_districts or []:
+        distance = _float_or_none(item.get("distance_km"))
+        if distance is not None and distance <= 1.0 and item.get("node_type") in {"transport_junction", "border_town"}:
+            return "highway"
     return "suburban"
+
+
+def _local_classification_evidence(item: dict[str, Any]) -> bool:
+    distance = _float_or_none(item.get("distance_km"))
+    radius = poi_rule(item.get("category")).radius_km
+    return (not is_analysis_only_target_poi(item) and distance is not None
+            and 0 <= distance <= min(1.5, radius)
+            and str(item.get("public_access", "")).lower() not in {"false", "no", "private", "0"}
+            and str(item.get("verification_status") or "").lower() not in {"planned", "closed", "inactive", "removed"})
 
 
 def compose_area_demand(

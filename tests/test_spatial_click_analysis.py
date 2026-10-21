@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+import pytest
 
 from th_evi.api import app
 import th_evi.spatial as spatial
@@ -20,6 +21,8 @@ PHITSANULOK = "Phitsanulok"
 NAKHON_NAYOK = "Nakhon Nayok"
 NAKHON_RATCHASIMA = "Nakhon Ratchasima"
 CHON_BURI = "Chon Buri"
+
+pytestmark = pytest.mark.usefixtures("offline_surface_lookup")
 
 
 def test_poi_attraction_decays_with_distance():
@@ -638,7 +641,8 @@ def test_chiang_mai_poi_loader_excludes_noise_and_retains_reviewed_lodging():
     assert "restaurant" not in categories
     assert "hotel_condo" not in categories
     reviewed_lodging = {row["poi_id"] for row in pois if row["category"] == "hotel"}
-    assert {"grand_siri_apartment_san_phranet", "fuengfah_riverside_gardens_resort"}.issubset(reviewed_lodging)
+    assert "fuengfah_riverside_gardens_resort" in reviewed_lodging
+    assert any(row["poi_id"] == "grand_siri_apartment_san_phranet" and row["category"] == "apartment" for row in pois)
 
 
 def test_chiang_mai_competitor_loader_dedupes_known_duplicate_sites():
@@ -913,7 +917,7 @@ def test_huai_khamin_target_uses_route33_aadt_and_local_competition(monkeypatch)
     assert any(pin["category"] == "target_site" for pin in result["analysis_pins"])
 
 
-def test_marine_corps_commercial_target_uses_local_destination_aadt(monkeypatch):
+def test_marine_corps_target_does_not_inherit_a_distant_malls_classification(monkeypatch):
     monkeypatch.setattr(
         spatial,
         "lookup_water_surface",
@@ -947,8 +951,8 @@ def test_marine_corps_commercial_target_uses_local_destination_aadt(monkeypatch)
         price_per_kwh=7.9,
     )
 
-    assert result["location_type"] == "destination"
-    assert result["aadt_used"] == 5_000
+    assert result["location_type"] == "suburban"
+    assert result["aadt_used"] == 8_000
     assert result["nearest_competitor_km"] < 3.5
     assert result["competitor_penalty_sessions"] > 0
 

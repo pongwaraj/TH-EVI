@@ -14,6 +14,7 @@ from .charging_energy import allocate_energy_budget
 from .competition import dc_competition_pressure
 from .charging_profiles import configured_spatial_budget, profile_for_province
 from .constants import canonical_province_name
+from .poi_policy import screening_weight
 
 
 METHOD = "fixed_support_area_v1"
@@ -34,9 +35,12 @@ def allocate_support(points: list[dict], competitors: list[dict], *, energy_kwh=
     weights = {}
     for index, point in enumerate(points):
         # These are legacy spatial proxies ONLY; never generate a physical budget.
-        context = [max(0, point.get(k, 0)) for k in ("zone_score", "business_area_score", "poi_score")]
-        primary = max(context, default=0)
-        weights[str(index)] = max(0, point.get("model_sessions", 0)) + primary + 0.35 * (fsum(context) - primary) + max(0, point.get("district_score", 0))
+        evidence = screening_weight(
+            model_prior=point.get("model_sessions", 0), poi_score=point.get("poi_score", 0),
+            zone_score=point.get("zone_score", 0), business_area_score=point.get("business_area_score", 0),
+            district_score=point.get("district_score", 0),
+        )
+        weights[str(index)] = evidence["weight"]
     has_weights = fsum(weights.values()) > 0
     budget = float(energy_kwh) if physical else 100.0
     coverage = float(coverage_fraction) if physical else (1.0 if has_weights else 0.0)
