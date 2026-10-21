@@ -37,6 +37,18 @@ def test_pilot_reports_missing_behaviour_without_fake_defaults():
     assert data["observed_fleet"]["vehicle_segment"] == "ror1_passenger_car"
     assert data["energy_budget_enforced_in_heatmap"] is False
     assert data["validation_status"] == "not_validated_for_station_forecasting"
+    assert data["travel_soc_preview"] == {
+        "available": True, "endpoint": "/api/charging-demand/travel-preview",
+        "calibrated": False, "heatmap_integration_enabled": False,
+    }
+    assert data["pilot_evidence"]["available"] is True
+    assert data["pilot_evidence"]["forecast_enabled"] is False
+    assert set(data["pilot_evidence"]["sources"]) == {
+        "travel_routes", "housing_and_home_charging", "observed_station_behavior",
+        "observed_station_holdout",
+        "dc_session_energy",
+    }
+    assert "representative_travel_soc_evidence_and_calibration" in data["next_required_layers"]
 
 
 def test_other_province_does_not_borrow_chiang_mai_behaviour():
@@ -45,6 +57,8 @@ def test_other_province_does_not_borrow_chiang_mai_behaviour():
     assert result["status"] == "not_configured"
     assert "cohorts" in result["missing_energy_inputs"]
     assert result["observed_fleet"]["bev"] != observed_bev_fleet("Chiang Mai")["bev"]
+    assert result["pilot_evidence"]["available"] is False
+    assert result["pilot_evidence"]["sources"] == {}
 
 
 @pytest.mark.parametrize("province", ["Chiang Mai", "Chiang Rai"])
@@ -67,11 +81,34 @@ def test_unknown_province_has_no_fleet_fallback():
     assert "No observed DLT" in response.json()["detail"]
 
 
-@pytest.mark.parametrize("field", ["cohorts", "average_dc_session_kwh", "dc_vehicle_efficiency", "dc_station_efficiency"])
+@pytest.mark.parametrize("field", ["cohorts", "dc_vehicle_efficiency", "dc_station_efficiency"])
 def test_preview_requires_explicit_behaviour(field):
     payload = preview_payload()
     del payload[field]
     assert client.post("/api/charging-demand/preview", json=payload).status_code == 422
+
+
+def test_observed_session_default_does_not_change_energy_budget():
+    payload = preview_payload()
+    explicit = client.post("/api/charging-demand/preview", json=payload).json()
+    del payload["average_dc_session_kwh"]
+    response = client.post("/api/charging-demand/preview", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["session_energy_basis"]["average_session_kwh"] == 27
+    assert data["session_energy_basis"]["source"] == "province_observed_dc_orders"
+    assert data["energy_budget"]["public_dc_connector_kwh"] == explicit["energy_budget"]["public_dc_connector_kwh"]
+    assert data["energy_budget"]["dc_session_equivalents_per_day"] * 27 == pytest.approx(
+        explicit["energy_budget"]["dc_session_equivalents_per_day"] * 20)
+    assert data["heatmap_changed"] is False
+
+
+def test_other_province_still_requires_explicit_session_energy():
+    payload = preview_payload("Chiang Rai")
+    del payload["average_dc_session_kwh"]
+    response = client.post("/api/charging-demand/preview", json=payload)
+    assert response.status_code == 422
+    assert "province-local session energy" in response.json()["detail"]
 
 
 def test_preview_rejects_duplicate_or_incomplete_fleet_partition():

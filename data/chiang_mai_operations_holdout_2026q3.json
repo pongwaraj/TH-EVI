@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "province": "Chiang Mai",
+  "station_scope": "Meta Mall only",
+  "target": "connector_kwh_per_meaningful_order_conditional_on_an_order",
+  "stations_in_evaluation": 1,
+  "station_demand_holdout_ready": false,
+  "train": {
+    "range": {
+      "from": "2026-06-30T17:00:00.000Z",
+      "to": "2026-08-31T16:59:59.999Z"
+    },
+    "full_months": [
+      "2026-07",
+      "2026-08"
+    ],
+    "meaningful_orders": 1941,
+    "connector_kwh": 54553.11,
+    "mean_connector_kwh_per_order": 28.10567233384853
+  },
+  "holdout": {
+    "range": {
+      "from": "2026-08-31T17:00:00.000Z",
+      "to": "2026-09-30T16:59:59.999Z"
+    },
+    "full_months": [
+      "2026-09"
+    ],
+    "meaningful_orders": 1206,
+    "connector_kwh": 31732.86,
+    "mean_connector_kwh_per_order": 26.312487562189055
+  },
+  "prediction_using_train_mean": {
+    "connector_kwh": 33895.44083462133,
+    "signed_error_kwh": 2162.5808346213307,
+    "absolute_percentage_error": 0.06814957222958569
+  },
+  "illustrative_35_kwh_per_order_comparator": {
+    "connector_kwh": 42210,
+    "signed_error_kwh": 10477.14,
+    "absolute_percentage_error": 0.33016689954829154
+  },
+  "forecast_enabled": false,
+  "limitations": [
+    "One station, one holdout month, and meaningful orders conditional on observed visits only.",
+    "This does not validate visit frequency, station choice, province-wide session size or any new site.",
+    "The 35 kWh comparator assumes 35 kWh per order; proposal values stated per vehicle are not directly equivalent.",
+    "No station uptime or import-completeness proof is available from this aggregate endpoint."
+  ],
+  "validated_at": "2026-10-17T08:55:36.896485+00:00",
+  "source_application": "EV Station Operation Team",
+  "source_endpoints": [
+    "/api/dashboard/customer-value"
+  ],
+  "source_sha256": {
+    "train": "d27e3c97c9f7356bb621771098b95aefeabd6817299219470399981769e72607",
+    "holdout": "fa390e45e1de97d8500553537508bdf4f53b51f48dddb7afb612abfc393f357e"
+  }
+}

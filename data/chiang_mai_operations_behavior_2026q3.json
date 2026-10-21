@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "province": "Chiang Mai",
+  "station_scope": "Meta Mall only",
+  "source_application": "https://ev-station-operation-team.vercel.app",
+  "source_endpoints": [
+    "/api/dashboard/overview",
+    "/api/dashboard/customer-value"
+  ],
+  "range": {
+    "from": "2026-06-30T17:00:00.000Z",
+    "to": "2026-09-30T16:59:59.999Z"
+  },
+  "source_coverage": {
+    "firstSessionDate": "2026-05-18",
+    "lastSessionDate": "2026-10-16",
+    "lastAlarmDate": "2026-10-16",
+    "reportThroughDate": "2026-10-16"
+  },
+  "privacy": "aggregate_only_no_customer_order_vin_or_device_identifiers",
+  "normal_orders": {
+    "count": 3421,
+    "connector_kwh": 86755.14,
+    "mean_connector_kwh": 25.359584916691027,
+    "mean_duration_minutes": 24.24,
+    "short_orders": 162,
+    "short_definition": "Normal; duration < 60 seconds OR energy < 1 kWh"
+  },
+  "meaningful_orders": {
+    "count": 3147,
+    "connector_kwh": 86285.97,
+    "mean_connector_kwh": 27.418484270734034,
+    "excluded_count": 274,
+    "definition": "Normal; duration >= 300 seconds AND connector energy >= 1 kWh"
+  },
+  "hourly_normal_order_share": [
+    {
+      "bangkok_hour": 0,
+      "orders": 17,
+      "share": 0.004969307220111079
+    },
+    {
+      "bangkok_hour": 1,
+      "orders": 9,
+      "share": 0.002630809704764689
+    },
+    {
+      "bangkok_hour": 2,
+      "orders": 5,
+      "share": 0.0014615609470914938
+    },
+    {
+      "bangkok_hour": 4,
+      "orders": 6,
+      "share": 0.0017538731365097924
+    },
+    {
+      "bangkok_hour": 5,
+      "orders": 7,
+      "share": 0.0020461853259280912
+    },
+    {
+      "bangkok_hour": 6,
+      "orders": 33,
+      "share": 0.00964630225080386
+    },
+    {
+      "bangkok_hour": 7,
+      "orders": 108,
+      "share": 0.03156971645717627
+    },
+    {
+      "bangkok_hour": 8,
+      "orders": 173,
+      "share": 0.05057000876936568
+    },
+    {
+      "bangkok_hour": 9,
+      "orders": 188,
+      "share": 0.05495469161064016
+    },
+    {
+      "bangkok_hour": 10,
+      "orders": 150,
+      "share": 0.043846828412744815
+    },
+    {
+      "bangkok_hour": 11,
+      "orders": 210,
+      "share": 0.061385559777842734
+    },
+    {
+      "bangkok_hour": 12,
+      "orders": 236,
+      "share": 0.0689856767027185
+    },
+    {
+      "bangkok_hour": 13,
+      "orders": 233,
+      "share": 0.06810874013446361
+    },
+    {
+      "bangkok_hour": 14,
+      "orders": 266,
+      "share": 0.07775504238526747
+    },
+    {
+      "bangkok_hour": 15,
+      "orders": 264,
+      "share": 0.07717041800643087
+    },
+    {
+      "bangkok_hour": 16,
+      "orders": 277,
+      "share": 0.08097047646886875
+    },
+    {
+      "bangkok_hour": 17,
+      "orders": 300,
+      "share": 0.08769365682548963
+    },
+    {
+      "bangkok_hour": 18,
+      "orders": 271,
+      "share": 0.07921660333235896
+    },
+    {
+      "bangkok_hour": 19,
+      "orders": 215,
+      "share": 0.06284712072493423
+    },
+    {
+      "bangkok_hour": 20,
+      "orders": 195,
+      "share": 0.05700087693656825
+    },
+    {
+      "bangkok_hour": 21,
+      "orders": 123,
+      "share": 0.03595439929845075
+    },
+    {
+      "bangkok_hour": 22,
+      "orders": 89,
+      "share": 0.02601578485822859
+    },
+    {
+      "bangkok_hour": 23,
+      "orders": 46,
+      "share": 0.013446360713241743
+    }
+  ],
+  "soc_distribution": null,
+  "forecast_enabled": false,
+  "limitations": [
+    "Observed customers of one station, not all provincial EV owners.",
+    "Orders and retries are not necessarily unique visits or vehicles.",
+    "No SOC distribution is exposed by the current aggregate endpoints.",
+    "The mean duration includes Normal orders and is not mean duration of meaningful orders.",
+    "Dates with orders do not prove complete imports or station uptime.",
+    "No home access, travel distance, charger acceptance curve or new-site capture is inferred."
+  ],
+  "extracted_at": "2026-10-17T07:18:07.191378+00:00",
+  "source_sha256": {
+    "overview": "ccc2795e23991e40d7b8bc3ca6f8e9b4041deac787357ab1ef1e1672440bd5ef",
+    "meaningful": "8070e55d0a5c469071b4b7b5d3fe4a4662ee798048a4567097022aa889ccd727"
+  }
+}

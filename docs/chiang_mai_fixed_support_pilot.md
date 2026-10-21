@@ -91,7 +91,7 @@ Wire format แยก evidence ที่ซ้ำกันออกจากแ�
 
 ## สิ่งที่ยังต้องทำก่อนให้คะแนนความแม่นยำสูงขึ้น
 
-Travel/SOC simulation, OD reconciliation, home/work charging evidence, empirical station choice, queue/capacity และ holdout validation ยังไม่เสร็จ การอนุรักษ์คะแนนและแก้สมมติฐานคู่แข่งเป็นการปรับหลักการ แต่ไม่ใช่การพิสูจน์ความแม่นยำของจำนวนรถ ณ ทำเล
+เพิ่ม [Travel/SOC preview แบบระบุ input ชัดเจน](travel_soc_preview.md) แล้ว รวมการแก้ click boundary/cache ในหน้า Advanced แต่ยังไม่มี representative travel/SOC เชียงใหม่สำหรับเปิดใช้กับ Heat Map ส่วน OD reconciliation, home/work charging evidence, empirical station choice, queue/capacity และ holdout validation ยังไม่เสร็จ การอนุรักษ์คะแนนและทดสอบตัวจำลองเป็นการปรับหลักการ ไม่ใช่การพิสูจน์ความแม่นยำของจำนวนรถ ณ ทำเล
 
 ## การนำขึ้น production
 
@@ -102,3 +102,7 @@ Travel/SOC simulation, OD reconciliation, home/work charging evidence, empirical
 Runtime profile ยังคงอ่านเวอร์ชันที่ bundle มากับโค้ดเพื่อไม่ทำให้วิธีคิดเปลี่ยนเพราะ DB ไม่พร้อม ส่วน Neon เก็บ snapshot ที่ตรวจ hash เทียบกันได้ `/api/charging-demand/basis` ระบุ runtime source และ profile hash ชัดเจน การเก็บ snapshot ไม่ได้เปิด physical energy forecast ที่ข้อมูลยังไม่ครบ
 
 Deployment ใช้ source จาก Git commit โดยไม่รวมไฟล์ `.env`, ข้อมูลสำรอง DB หรือผลลัพธ์รายงานที่ยังไม่ commit
+
+## การประเมินรายสถานีจากข้อมูลอ้างอิง
+
+เพิ่ม [site-demand reference transfer](site_demand_reference_transfer.md) วันที่ 19 ตุลาคม 2569 สำหรับคำนวณครั้งชาร์จเทียบเท่าแบบมีเงื่อนไขจาก Meta Mall ผ่าน `/api/charging-demand/site-preview` โดยรับสเปกและ assumptions ชัดเจน ใช้บัญชี choice pool เดียวก่อน/หลังเพิ่มสถานีและตรวจ capacity ไม่ใช้ AADT fallback เป็นจำนวนลูกค้า โมดูลนี้แยกจากคะแนน Heat Map และยังไม่เปิด `forecast_available` เพราะยังไม่มี holdout ของทำเลใหม่

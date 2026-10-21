@@ -149,6 +149,10 @@ def test_click_analysis_exposes_validation_guardrail():
     assert "validation_summary" in result
     assert result["validation_summary"]["has_loo_metrics"] is False
     assert any("out-of-sample validation" in warning for warning in result["warnings"])
+    assert result["forecast_available"] is False
+    assert result["confidence"] == "not_validated"
+    assert result["data_confidence"] in {"low", "medium", "medium_high"}
+    assert result["estimate_semantics"] == "legacy_spatial_diagnostic_not_site_forecast"
 
 
 def test_zone_influence_decays_and_feeds_click_sessions():
@@ -626,14 +630,15 @@ def test_chiang_mai_poi_loader_covers_west_121_anchor_areas():
     }.issubset(poi_ids)
 
 
-def test_chiang_mai_poi_loader_excludes_site_specific_noise_categories():
+def test_chiang_mai_poi_loader_excludes_noise_and_retains_reviewed_lodging():
     pois = load_pois_for_province(CHIANG_MAI)
     categories = {str(row["category"]).strip() for row in pois}
 
     assert "residential" not in categories
     assert "restaurant" not in categories
-    assert "hotel" not in categories
     assert "hotel_condo" not in categories
+    reviewed_lodging = {row["poi_id"] for row in pois if row["category"] == "hotel"}
+    assert {"grand_siri_apartment_san_phranet", "fuengfah_riverside_gardens_resort"}.issubset(reviewed_lodging)
 
 
 def test_chiang_mai_competitor_loader_dedupes_known_duplicate_sites():

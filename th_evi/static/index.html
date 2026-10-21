@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<link rel="stylesheet" href="/static/map-coordinates.css">
+<script src="/static/map-coordinates.js"></script>
 <style>
 * { box-sizing: border-box; }
 :root { --panel-width: 460px; }
@@ -151,6 +153,7 @@ body[data-workspace-mode="planning"] [data-planning-hide="true"] { display: none
   <!-- Quick Settings bar — ค่าหลักที่ทีมปรับบ่อย -->
   <div class="quick-bar">
     <h2 data-i18n="quickSettings">&#9881; ค่าหลัก (ปรับได้ทันที)</h2>
+    <div id="coordinate-search"></div>
     <div class="grid" style="margin-bottom:8px">
       <label><span data-i18n="province">จังหวัด</span>
         <div class="province-picker">
@@ -1269,6 +1272,7 @@ function hasValidDraftCoordinates() {
 }
 
 function ensureDefaultMapView(force = false) {
+  if (coordinateSearch.getTarget()) return;
   if (!force && hasValidDraftCoordinates()) return;
   map.invalidateSize(false);
   map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: false });
@@ -1393,9 +1397,30 @@ function approxKmBetween(lat1, lon1, lat2, lon2) {
   return Math.sqrt((latKm * latKm) + (lonKm * lonKm));
 }
 
+function heatPointContains(lat, lon, point, data = latestHeatmapData) {
+  const dy = Number(data?.lat_step_deg || 0);
+  const dx = Number(data?.lon_step_deg || 0);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || !(dy > 0 && dx > 0)) return false;
+  if (point.cell_id && point.cell_id !== `${Math.floor(lat / dy)}:${Math.floor(lon / dx)}`) return false;
+  const fragments = point.coverage_fragments || [[
+    [Number(point.lat) - dy / 2, Number(point.lon) - dx / 2],
+    [Number(point.lat) + dy / 2, Number(point.lon) + dx / 2]
+  ]];
+  if (!point.coverage_fragments && point.cell_id) return true;
+  return fragments.some(([[s, w], [n, e]]) => s <= lat && lat < n && w <= lon && lon < e);
+}
+
+function heatmapMatchesSelection(data, province, year, scenario, mode, resolution) {
+  return data && data.province === province && Number(data.year) === year &&
+    data.scenario === scenario && data.mode === mode && Number(data.resolution_km) === resolution;
+}
+
 function nearestHeatPoint(lat, lon) {
   if (!latestHeatmapData || !Array.isArray(latestHeatmapData.points) || !latestHeatmapData.points.length) {
     return null;
+  }
+  if (latestHeatmapData.metadata?.production_method === "fixed_support_area_v1") {
+    return latestHeatmapData.points.find(point => heatPointContains(lat, lon, point)) || null;
   }
   let nearest = null;
   let nearestDistance = Infinity;
@@ -1448,7 +1473,7 @@ function showAreaDemandPopup(lat, lon, summary) {
   const areaScore = Number(summary.area_score ?? summary.heat_score ?? summary.gross_area_demand_sessions ?? 0);
   const cellLabel = summary.cell_label || `${fmt(summary.resolution_km || latestHeatmapData?.resolution_km || 1.0)} km`;
   const scoreLabel = heatmapMetricLabel(metric);
-  const scoreFmt = value => summary.score_semantics === "normalized_screening_share_percent"
+  const scoreFmt = value => summary.eligibility_status === "outside_support" ? '—' : summary.score_semantics === "normalized_screening_share_percent"
     ? Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 3 }) : fmt(value);
   const demandScore = Number(summary.demand_score ?? 0);
   const competitionScore = Number(summary.competition_score ?? 0);
@@ -1464,7 +1489,7 @@ function showAreaDemandPopup(lat, lon, summary) {
     '<tr><td style="padding:4px">' + t("netOpportunityLabel") + ':</td><td style="text-align:right">' + scoreFmt(netScore) + '</td></tr>' +
     '<tr><td style="padding:4px">' + t("cellLabel") + ':</td><td style="text-align:right">' + cellLabel + '</td></tr>' +
     '</table>' +
-    '<div class="muted" style="margin-bottom:8px">' + (summary.score_semantics === "normalized_screening_share_percent" ? 'หน่วย: สัดส่วนคะแนนในพื้นที่คัดกรอง (%) ฐานคำนวณ 1 กม. ไม่ใช่คัน/วันหรือยอดขายของสถานี' : t("scoreNotForecast")) + '</div>' +
+    '<div class="muted" style="margin-bottom:8px">' + (summary.eligibility_status === "outside_support" ? 'พิกัดนี้อยู่นอกพื้นที่ที่มีข้อมูลรองรับ ยังไม่สามารถสรุปได้ว่าไม่มีดีมานด์' : summary.score_semantics === "normalized_screening_share_percent" ? 'หน่วย: สัดส่วนคะแนนในพื้นที่คัดกรอง (%) ฐานคำนวณ 1 กม. ไม่ใช่คัน/วันหรือยอดขายของสถานี' : t("scoreNotForecast")) + '</div>' +
     (summary.competition_unknown_count ? '<div class="muted">คู่แข่งบางแห่งยังไม่ยืนยันประเภท กำลัง หรือจำนวนหัวชาร์จ แรงแข่งขันอาจสูงกว่าที่แสดง</div>' : '') +
     heatmapPopupActionButtons(lat, lon, true) +
     '</div>';
@@ -1534,7 +1559,9 @@ function setDraftMarker(lat, lon, options = {}) {
 
 // Quick estimate เมื่อคลิกแผนที่
 let estimateMarker = null;
+let activeClickRequestId = 0;
 async function quickEstimate(lat, lon, heatPoint = null) {
+  const requestId = ++activeClickRequestId;
   const year = num("year") || new Date().getFullYear();
   const avgKwh = num("avg_kwh") || 32;
   const price = num("price") || 6.8;
@@ -1543,7 +1570,12 @@ async function quickEstimate(lat, lon, heatPoint = null) {
   const mode = $("heatmap_mode").value || "urban";
   const metric = currentHeatmapMetric();
   const showPointForecast = bool("show_point_forecast");
-  const nearbyHeatPoint = heatPoint || nearestHeatPoint(lat, lon);
+  const resolution = Number($("heatmap_resolution").value || 1.0);
+  const matchingHeatmap = heatmapMatchesSelection(latestHeatmapData, province, year, scenario, mode, resolution);
+  const isPilot = latestHeatmapData?.metadata?.production_method === "fixed_support_area_v1";
+  const nearbyHeatPoint = matchingHeatmap
+    ? ((heatPoint && (!isPilot || heatPointContains(lat, lon, heatPoint))) ? heatPoint : nearestHeatPoint(lat, lon))
+    : null;
 
   if ((!showPointForecast || nearbyHeatPoint?.forecast_available === false) && nearbyHeatPoint) {
     showAreaDemandPopup(lat, lon, {
@@ -1580,7 +1612,7 @@ async function quickEstimate(lat, lon, heatPoint = null) {
         province,
         scenario,
         mode,
-        resolution_km: Number($("heatmap_resolution").value || 1.0),
+        resolution_km: resolution,
         method: new URLSearchParams(location.search).get("method") || "auto",
         avg_kwh_per_session: avgKwh,
         price_per_kwh: price
@@ -1589,13 +1621,14 @@ async function quickEstimate(lat, lon, heatPoint = null) {
     if (!resp.ok) throw new Error("Click analysis failed");
     const data = await resp.json();
 
+    if (requestId !== activeClickRequestId) return;
     if (data.forecast_available === false) {
       showAreaDemandPopup(lat, lon, {
         metric, area_score: metric === "demand" ? data.demand_score : data.net_opportunity_score,
         demand_score: data.demand_score, competition_score: data.competition_score,
         net_opportunity_score: data.net_opportunity_score, score_semantics: data.score_semantics,
         competition_unknown_count: data.competition_unknown_count,
-        resolution_km: data.resolution_km
+        resolution_km: data.resolution_km, eligibility_status: data.eligibility_status
       });
       return;
     }
@@ -1692,6 +1725,7 @@ async function quickEstimate(lat, lon, heatPoint = null) {
     map.setView([lat, lon], 15);
 
   } catch (err) {
+    if (requestId !== activeClickRequestId) return;
     console.error("Estimate error:", err);
     // ไม่แสดง alert ให้ผู้ใช้ได้คลิก map ต่อได้
     $("status").textContent = `⚠ Error: ${err.message}`;
@@ -1713,6 +1747,7 @@ function useAsCandidate(lat, lon) {
 
 // ปิด estimate popup
 function closeEstimate() {
+  ++activeClickRequestId;
   if (estimateMarker) {
     estimateMarker.remove();
   }
@@ -2022,6 +2057,7 @@ async function loadReferenceLayers() {
 }
 
 async function loadHeatMap() {
+  closeEstimate();
   const province = apiProvinceValue();
   const mode = $("heatmap_mode").value || "urban";
   const view = $("heatmap_view").value || "grid";
@@ -2056,8 +2092,8 @@ async function loadHeatMap() {
         Object.assign(point, data.support_evidence?.[point.support_ids?.[0]] || {});
       });
     }
-    latestHeatmapData = data;
     if (requestId !== activeHeatmapRequestId) return;
+    latestHeatmapData = data;
     heatmapLayer.clearLayers();
 
     if (view === "classic") {
@@ -2086,7 +2122,7 @@ async function loadHeatMap() {
       ? `✓ ${t("heatmapLoaded")} (${t("exclusionsForceGrid")})`
       : `✓ ${t("heatmapLoaded")}`;
     $("status").style.color = "#2f855a";
-    if (data.bounds) {
+    if (data.bounds && !coordinateSearch.getTarget()) {
       map.fitBounds([
         [data.bounds.lat_min, data.bounds.lon_min],
         [data.bounds.lat_max, data.bounds.lon_max]
@@ -2094,6 +2130,7 @@ async function loadHeatMap() {
     }
   } catch (err) {
     if (err && err.name === "AbortError") return;
+    if (requestId !== activeHeatmapRequestId) return;
     heatmapLayer.clearLayers();
     latestHeatmapData = null;
     $("heatmap-meta").textContent = t("heatmapUnavailable");
@@ -2103,6 +2140,7 @@ async function loadHeatMap() {
     if (requestId === activeHeatmapRequestId) {
       $("heatmap-btn").disabled = false;
       activeHeatmapController = null;
+      coordinateSearch.refresh();
     }
   }
 }
@@ -2116,6 +2154,17 @@ function refreshLayerControlLabels() {
     [t("existingChargers")]: chargerLayer
   }).addTo(map);
 }
+
+const coordinateSearch = MapCoordinates.mount({
+  container: $("coordinate-search"), map, bounds: THAILAND_BOUNDS,
+  getHeatmap: () => heatmapMatchesSelection(latestHeatmapData, apiProvinceValue(), num("year"),
+    $("scenario").value, $("heatmap_mode").value, Number($("heatmap_resolution").value)) ? latestHeatmapData : null,
+  onNavigate: async () => {
+    if (!heatmapMatchesSelection(latestHeatmapData, apiProvinceValue(), num("year"),
+      $("scenario").value, $("heatmap_mode").value, Number($("heatmap_resolution").value))) await loadHeatMap();
+  },
+  onPoint: () => { closeEstimate(); dismissMapHint(); }
+});
 
 $("analysis-form").addEventListener("submit", analyze);
 $("refresh-btn").addEventListener("click", loadSavedSites);

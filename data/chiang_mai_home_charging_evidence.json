@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "province": "Chiang Mai",
+  "survey_housing": {
+    "year": 2023,
+    "geography": "Chiang Mai province",
+    "population": "all_households_not_ev_owners",
+    "source": "Chiang Mai Provincial Statistical Report 2024, table 1.10, printed page 19",
+    "source_url": "https://chiangmai.nso.go.th/images/2025/SPB2567-50-%2008-11-67_compressed.pdf",
+    "percent": {
+      "detached_house": 85.1,
+      "row_house_or_shophouse": 10.3,
+      "townhouse_or_twinhouse": 0.1,
+      "apartment_or_flat": 4.0,
+      "improvised_quarters": 0.5
+    },
+    "note": "Apartment or flat is broader than condominium. Dwelling type does not establish EV ownership or private AC charger access."
+  },
+  "thai_home_charging_context": {
+    "reported_share_percent": 80,
+    "geography": "Thailand",
+    "year": 2024,
+    "source": "Energy Regulatory Commission article citing Ministry of Energy preliminary information",
+    "source_url": "https://www.erc.or.th/th/energy-articles/3094",
+    "measure": "share_prefer_to_charge_at_home_not_charger_installation_rate",
+    "note": "Reported national charging preference cannot be used as P(home AC charger | EV owner in detached house, Chiang Mai)."
+  },
+  "private_home_ac_access": {
+    "detached_house_ev_owner_probability": null,
+    "condo_ev_owner_probability": null,
+    "status": "conditional_rates_not_observed",
+    "scenario_note": "A zero private-wallbox case for some condominium residents can be tested as a scenario; shared building chargers still exist."
+  },
+  "ev_owner_housing_mix": null,
+  "forecast_enabled": false
+}

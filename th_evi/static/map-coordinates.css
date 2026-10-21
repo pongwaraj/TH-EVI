@@ -1,0 +1,12 @@
+.coordinate-search { margin-bottom: 12px; min-width: 0; }
+.coordinate-search label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #34495e; letter-spacing: 0; }
+.coordinate-search form { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 6px; }
+.coordinate-search input { width: 100%; min-width: 0; height: 44px; padding: 9px 10px; border: 1px solid #b8c8d5; border-radius: 6px; font: inherit; font-size: 14px; background: #fff; color: #17202a; }
+.coordinate-search input[aria-invalid="true"] { border-color: #b42318; }
+.coordinate-search button { width: 44px; height: 44px; padding: 0; border: 1px solid #1565c0; border-radius: 6px; background: #1565c0; color: #fff; font-size: 24px; cursor: pointer; }
+.coordinate-search button:hover { background: #104e96; }
+.coordinate-search button:focus-visible, .coordinate-search input:focus-visible { outline: 2px solid #1565c0; outline-offset: 2px; }
+.coordinate-search-status { min-height: 18px; margin-top: 5px; font-size: 12px; line-height: 1.5; color: #526577; overflow-wrap: anywhere; }
+.coordinate-search-status.error { color: #b42318; }
+.coordinate-search-status.warning { color: #875400; }
+.coordinate-popup-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }

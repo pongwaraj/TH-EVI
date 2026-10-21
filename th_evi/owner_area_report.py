@@ -322,7 +322,13 @@ def _projection_rows(req: OwnerAreaReportRequest) -> list[dict[str, Any]]:
             mode=req.mode,
             avg_kwh_per_session=req.avg_kwh_per_session,
             price_per_kwh=req.price_per_kwh,
+            method="auto",
         )
+        if result.get("forecast_available") is False or result.get("net_sessions_per_day") is None:
+            raise ValueError(
+                "A site-level demand forecast is not available for this area model yet. "
+                "The current result is screening-only and cannot support financial projections."
+            )
         result["area_daily_kwh"] = result["daily_kwh"]
         service = _service_result(req, result["net_sessions_per_day"])
         result.update({

@@ -24,6 +24,7 @@ def _write_csv(path, fieldnames, rows):
 
 
 def _clear_spatial_caches():
+    spatial._has_published_database_release.cache_clear()
     spatial.load_pois_for_province.cache_clear()
     spatial.load_competitors_for_province.cache_clear()
     spatial.load_hot_zones_for_province.cache_clear()
@@ -152,7 +153,7 @@ def test_spatial_reference_loaders_merge_db_and_csv(monkeypatch, tmp_path):
     _clear_spatial_caches()
 
     poi_rows = spatial.load_pois_for_province("เชียงใหม่")
-    competitor_rows = spatial.load_competitors_for_province("เชียงใหม่")
+    competitor_rows = spatial.load_competitors_for_province("เชียงใหม่", include_nationwide_kml=False)
     business_rows = spatial.load_business_areas_for_province("เชียงใหม่")
     exclusion_rows = spatial.load_heatmap_exclusions_for_province("เชียงใหม่")
     zone_rows = spatial.load_hot_zones_for_province("เชียงใหม่")

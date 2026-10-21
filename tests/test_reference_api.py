@@ -43,7 +43,8 @@ def test_reference_api_can_list_create_and_update(monkeypatch, tmp_path):
 
     monkeypatch.setattr(api, "session_scope", lambda: _session_scope_for(Session))
     monkeypatch.setattr(api, "_clear_reference_caches", lambda: None)
-    client = TestClient(app)
+    monkeypatch.setenv("TH_EVI_ADMIN_TOKEN", "test-token")
+    client = TestClient(app, headers={"X-TH-EVI-Admin-Token": "test-token"})
 
     meta = client.get("/api/reference/meta")
     assert meta.status_code == 200

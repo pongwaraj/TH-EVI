@@ -13,6 +13,7 @@ from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import or_, text
 import uvicorn
@@ -23,7 +24,10 @@ from .data import (
     load_doh_aadt,
 )
 from .charging_energy import ChargingWindow, TravelCohort, calculate_daily_energy_budget
-from .charging_profiles import charging_basis_status, observed_bev_fleet
+from .charging_evidence import normalized_route_preview, route_evidence_catalog
+from .charging_profiles import charging_basis_status, observed_bev_fleet, resolve_dc_session_energy
+from .site_demand import ProposedStation, preview_site_demand, site_reference_status
+from .travel_soc import ChargeOpportunity, DCPowerBand, TravelEvent, VehicleSpec, simulate_travel_soc
 from .db import (
     AnalysisResult,
     AnalysisRun,
@@ -68,6 +72,7 @@ STATIC_DIR = HERE / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 
 app = FastAPI(title="TH-EVI", version="0.2.0")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 logger = logging.getLogger(__name__)
 
 model = LocationDemandModel(province="เชียงใหม่")
@@ -108,9 +113,117 @@ class ChargingEnergyPreviewRequest(BaseModel):
 
     province: str = Field(..., min_length=1, max_length=120)
     cohorts: list[TravelCohortInput] = Field(..., min_length=1, max_length=100)
-    average_dc_session_kwh: float = Field(..., gt=0, allow_inf_nan=False)
+    average_dc_session_kwh: float | None = Field(None, gt=0, allow_inf_nan=False)
     dc_vehicle_efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
     dc_station_efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+
+
+class EvidenceRoutePreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    province: str = Field(..., min_length=1, max_length=120)
+    origin_id: str = Field(..., min_length=1, max_length=120)
+    destination_id: str = Field(..., min_length=1, max_length=120)
+    outings_per_week: float = Field(..., ge=0, le=7, allow_inf_nan=False)
+    battery_kwh_per_km: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+    home_access_share: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    home_energy_share_if_access: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    other_ac_share_of_remaining: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    dc_share_of_remaining: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    dc_vehicle_efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+
+
+class SiteTransferStationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    guns: int = Field(..., ge=1, le=100, strict=True)
+    total_site_kw: float = Field(..., gt=0, allow_inf_nan=False)
+    max_kw_per_gun: float = Field(..., gt=0, allow_inf_nan=False)
+    operating_hours: float = Field(..., gt=0, le=24, allow_inf_nan=False)
+    availability: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+    mean_active_kw: float = Field(..., gt=0, allow_inf_nan=False)
+    plug_overhead_minutes: float = Field(..., ge=0, le=120, allow_inf_nan=False)
+    demand_in_open_hours_share: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+
+
+class SiteTransferScenarioInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., min_length=1, max_length=80)
+    relative_access_attractiveness: float = Field(..., ge=0, le=2, allow_inf_nan=False)
+    market_multiplier: float = Field(..., ge=0, le=3, allow_inf_nan=False)
+
+
+class SiteDemandPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    province: str = Field(..., min_length=1, max_length=120)
+    lat: float = Field(..., ge=-90, le=90, allow_inf_nan=False)
+    lon: float = Field(..., ge=-180, le=180, allow_inf_nan=False)
+    year: int = Field(..., ge=2025, le=2050, strict=True)
+    station: SiteTransferStationInput
+    average_session_kwh: float | None = Field(None, gt=0, allow_inf_nan=False)
+    kernel_radius_km: float = Field(..., gt=0, le=10, allow_inf_nan=False)
+    outside_option_weight: float = Field(..., gt=0, le=100, allow_inf_nan=False)
+    scenarios: list[SiteTransferScenarioInput] = Field(..., min_length=1, max_length=10)
+    public_access_assumed: bool = Field(..., strict=True)
+
+
+class DCPowerBandInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    soc_from: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    soc_to: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    connector_kw: float = Field(..., ge=0, allow_inf_nan=False)
+
+
+class TravelVehicleInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    usable_battery_kwh: float = Field(..., gt=0, allow_inf_nan=False)
+    battery_kwh_per_km: float = Field(..., gt=0, allow_inf_nan=False)
+    initial_soc: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    reserve_soc: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    ac_max_kw: float = Field(..., ge=0, allow_inf_nan=False)
+    dc_bands: list[DCPowerBandInput] = Field(..., max_length=20)
+
+
+class TravelChargingInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    charger_id: str = Field(..., min_length=1, max_length=120)
+    kind: str = Field(..., pattern="^(home|work|public_ac|public_dc)$")
+    connector: str = Field(..., pattern="^(ac|dc)$")
+    connector_kw: float = Field(..., ge=0, allow_inf_nan=False)
+    vehicle_efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+    station_efficiency: float = Field(..., gt=0, le=1, allow_inf_nan=False)
+    trigger_soc: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    target_soc: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    plug_overhead_hours: float = Field(..., ge=0, le=24, allow_inf_nan=False)
+
+
+class TravelEventInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: str = Field(..., min_length=1, max_length=120)
+    kind: str = Field(..., pattern="^(trip|dwell)$")
+    start_hour: float = Field(..., ge=0, le=24, allow_inf_nan=False)
+    end_hour: float = Field(..., ge=0, le=24, allow_inf_nan=False)
+    origin: str = Field(..., min_length=1, max_length=120)
+    destination: str = Field(..., min_length=1, max_length=120)
+    distance_km: float = Field(..., ge=0, allow_inf_nan=False)
+    charging: TravelChargingInput | None
+
+
+class TravelSOCPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    province: str = Field(..., min_length=1, max_length=120)
+    vehicle: TravelVehicleInput
+    itinerary: list[TravelEventInput] = Field(..., min_length=1, max_length=96)
+    days: int = Field(..., ge=1, le=90, strict=True)
+    warmup_days: int = Field(..., ge=0, le=30, strict=True)
+    trace_limit: int = Field(500, ge=0, le=2000, strict=True)
 
 
 class CandidateSiteInput(BaseModel):
@@ -513,9 +626,14 @@ def _clear_reference_caches() -> None:
 
 
 def _require_reference_admin_access(token: str | None) -> None:
-    """Protect mutations when an admin token is configured; keep local use simple."""
+    """Fail closed when the Data Admin credential is missing or invalid."""
     expected = os.getenv("TH_EVI_ADMIN_TOKEN")
-    if expected and (not token or not hmac.compare_digest(token, expected)):
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail="Data Admin is not configured. Set TH_EVI_ADMIN_TOKEN before using it.",
+        )
+    if not token or not hmac.compare_digest(token, expected):
         raise HTTPException(status_code=403, detail="Data Admin authorization is required.")
 
 
@@ -733,7 +851,41 @@ def estimate_location(req: EstimateRequest):
 @app.get("/api/charging-demand/basis")
 def charging_demand_basis(province: str = Query(..., min_length=1, max_length=120)):
     """Expose observed fleet provenance and missing pilot inputs, not a forecast."""
-    return charging_basis_status(province)
+    return {**charging_basis_status(province),
+            "site_demand_preview": {"endpoint": "/api/charging-demand/site-preview",
+                                    **site_reference_status(province)}}
+
+
+@app.get("/api/charging-demand/site-reference")
+def charging_site_reference(province: str = Query(..., min_length=1, max_length=120)):
+    return site_reference_status(province)
+
+
+@app.post("/api/charging-demand/site-preview")
+def charging_site_preview(req: SiteDemandPreviewRequest):
+    """Conditional site estimates using observed energy and explicit choice assumptions."""
+    try:
+        values = _dump_model(req)
+        values["station"] = ProposedStation(**values["station"])
+        return preview_site_demand(**values)
+    except (KeyError, TypeError, ValueError, OverflowError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/charging-demand/route-evidence")
+def charging_route_evidence(province: str = Query(..., min_length=1, max_length=120)):
+    result = route_evidence_catalog(province)
+    if result is None:
+        raise HTTPException(status_code=404, detail="No province-scoped road route evidence")
+    return result
+
+
+@app.post("/api/charging-demand/evidence-preview")
+def charging_evidence_preview(req: EvidenceRoutePreviewRequest):
+    try:
+        return normalized_route_preview(**_dump_model(req))
+    except (ValueError, OverflowError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/charging-demand/preview")
@@ -744,6 +896,7 @@ def charging_demand_preview(req: ChargingEnergyPreviewRequest):
         raise HTTPException(status_code=422, detail="No observed DLT passenger-car BEV fleet for this province")
     try:
         cohorts = []
+        session_energy = resolve_dc_session_energy(req.province, req.average_dc_session_kwh)
         for item in req.cohorts:
             values = _dump_model(item)
             for window in ("home", "work", "public_ac"):
@@ -751,7 +904,7 @@ def charging_demand_preview(req: ChargingEnergyPreviewRequest):
             cohorts.append(TravelCohort(**values))
         budget = calculate_daily_energy_budget(
             bev_fleet=fleet["bev"], cohorts=cohorts,
-            average_dc_session_kwh=req.average_dc_session_kwh,
+            average_dc_session_kwh=session_energy["average_session_kwh"],
             dc_vehicle_efficiency=req.dc_vehicle_efficiency,
             dc_station_efficiency=req.dc_station_efficiency,
         )
@@ -761,6 +914,7 @@ def charging_demand_preview(req: ChargingEnergyPreviewRequest):
         "status": "assumption_preview_not_calibrated",
         "observed_fleet": fleet,
         "energy_budget": budget,
+        "session_energy_basis": session_energy,
         "heatmap_changed": False,
         "limitations": [
             "Passenger-car BEVs only; not all EV classes or PHEVs.",
@@ -769,6 +923,26 @@ def charging_demand_preview(req: ChargingEnergyPreviewRequest):
             "No site capture, trip/SOC feasibility or external travel has been inferred.",
         ],
     }
+
+
+@app.post("/api/charging-demand/travel-preview")
+def charging_travel_preview(req: TravelSOCPreviewRequest):
+    """Simulate explicit itinerary/SOC assumptions without changing production demand."""
+    try:
+        values = _dump_model(req.vehicle)
+        values["dc_bands"] = tuple(DCPowerBand(**band) for band in values["dc_bands"])
+        vehicle = VehicleSpec(**values)
+        events = []
+        for item in req.itinerary:
+            values = _dump_model(item)
+            if values["charging"] is not None:
+                values["charging"] = ChargeOpportunity(**values["charging"])
+            events.append(TravelEvent(**values))
+        result = simulate_travel_soc(vehicle=vehicle, itinerary=events, days=req.days,
+                                     warmup_days=req.warmup_days, trace_limit=req.trace_limit)
+    except (ValueError, OverflowError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"province": req.province, "province_role": "context_label_only_no_fleet_scaling", **result}
 
 
 @app.post("/api/click-analysis")
@@ -796,37 +970,40 @@ def owner_area_analysis_report(req: OwnerAreaAnalysisReportRequest):
     if req.report_type not in {"owner-area-analysis", "owner-gp-opportunity", "investor-case"}:
         raise HTTPException(status_code=400, detail="Unsupported report_type")
 
-    output_path = create_owner_area_analysis_report(
-        OwnerAreaReportDocRequest(
-            report_type=req.report_type,
-            site_name=req.site_name,
-            province=req.province,
-            lat=req.lat,
-            lon=req.lon,
-            mode=req.mode,
-            scenario=req.scenario,
-            start_year=req.start_year,
-            end_year=req.end_year,
-            avg_kwh_per_session=req.avg_kwh_per_session,
-            price_per_kwh=req.price_per_kwh,
-            electricity_cost_per_kwh=req.electricity_cost_per_kwh,
-            cpo_gp_rate=req.cpo_gp_rate,
-            annual_o_and_m=req.annual_o_and_m,
-            project_capex_ex_vat=req.project_capex_ex_vat,
-            perception_factor=req.perception_factor,
-            recommended_spec=req.recommended_spec,
-            metric_label=req.metric_label,
-            metric_value=req.metric_value,
-            owner_gp_per_kwh=req.owner_gp_per_kwh,
-            note=req.note,
-            station_guns=req.station_guns,
-            station_total_site_kw=req.station_total_site_kw,
-            station_max_kw_per_gun=req.station_max_kw_per_gun,
-            station_operating_hours=req.station_operating_hours,
-            station_availability=req.station_availability,
-            station_energy_utilization_ceiling=req.station_energy_utilization_ceiling,
+    try:
+        output_path = create_owner_area_analysis_report(
+            OwnerAreaReportDocRequest(
+                report_type=req.report_type,
+                site_name=req.site_name,
+                province=req.province,
+                lat=req.lat,
+                lon=req.lon,
+                mode=req.mode,
+                scenario=req.scenario,
+                start_year=req.start_year,
+                end_year=req.end_year,
+                avg_kwh_per_session=req.avg_kwh_per_session,
+                price_per_kwh=req.price_per_kwh,
+                electricity_cost_per_kwh=req.electricity_cost_per_kwh,
+                cpo_gp_rate=req.cpo_gp_rate,
+                annual_o_and_m=req.annual_o_and_m,
+                project_capex_ex_vat=req.project_capex_ex_vat,
+                perception_factor=req.perception_factor,
+                recommended_spec=req.recommended_spec,
+                metric_label=req.metric_label,
+                metric_value=req.metric_value,
+                owner_gp_per_kwh=req.owner_gp_per_kwh,
+                note=req.note,
+                station_guns=req.station_guns,
+                station_total_site_kw=req.station_total_site_kw,
+                station_max_kw_per_gun=req.station_max_kw_per_gun,
+                station_operating_hours=req.station_operating_hours,
+                station_availability=req.station_availability,
+                station_energy_utilization_ceiling=req.station_energy_utilization_ceiling,
+            )
         )
-    )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     download_name = output_path.name
     return FileResponse(
         str(output_path),
@@ -843,37 +1020,40 @@ def owner_area_analysis_pdf(req: OwnerAreaAnalysisReportRequest):
     if req.report_type not in {"owner-area-analysis", "owner-gp-opportunity", "investor-case"}:
         raise HTTPException(status_code=400, detail="Unsupported report_type")
 
-    output_path = create_owner_area_analysis_pdf(
-        OwnerAreaReportDocRequest(
-            report_type=req.report_type,
-            site_name=req.site_name,
-            province=req.province,
-            lat=req.lat,
-            lon=req.lon,
-            mode=req.mode,
-            scenario=req.scenario,
-            start_year=req.start_year,
-            end_year=req.end_year,
-            avg_kwh_per_session=req.avg_kwh_per_session,
-            price_per_kwh=req.price_per_kwh,
-            electricity_cost_per_kwh=req.electricity_cost_per_kwh,
-            cpo_gp_rate=req.cpo_gp_rate,
-            annual_o_and_m=req.annual_o_and_m,
-            project_capex_ex_vat=req.project_capex_ex_vat,
-            perception_factor=req.perception_factor,
-            recommended_spec=req.recommended_spec,
-            metric_label=req.metric_label,
-            metric_value=req.metric_value,
-            owner_gp_per_kwh=req.owner_gp_per_kwh,
-            note=req.note,
-            station_guns=req.station_guns,
-            station_total_site_kw=req.station_total_site_kw,
-            station_max_kw_per_gun=req.station_max_kw_per_gun,
-            station_operating_hours=req.station_operating_hours,
-            station_availability=req.station_availability,
-            station_energy_utilization_ceiling=req.station_energy_utilization_ceiling,
+    try:
+        output_path = create_owner_area_analysis_pdf(
+            OwnerAreaReportDocRequest(
+                report_type=req.report_type,
+                site_name=req.site_name,
+                province=req.province,
+                lat=req.lat,
+                lon=req.lon,
+                mode=req.mode,
+                scenario=req.scenario,
+                start_year=req.start_year,
+                end_year=req.end_year,
+                avg_kwh_per_session=req.avg_kwh_per_session,
+                price_per_kwh=req.price_per_kwh,
+                electricity_cost_per_kwh=req.electricity_cost_per_kwh,
+                cpo_gp_rate=req.cpo_gp_rate,
+                annual_o_and_m=req.annual_o_and_m,
+                project_capex_ex_vat=req.project_capex_ex_vat,
+                perception_factor=req.perception_factor,
+                recommended_spec=req.recommended_spec,
+                metric_label=req.metric_label,
+                metric_value=req.metric_value,
+                owner_gp_per_kwh=req.owner_gp_per_kwh,
+                note=req.note,
+                station_guns=req.station_guns,
+                station_total_site_kw=req.station_total_site_kw,
+                station_max_kw_per_gun=req.station_max_kw_per_gun,
+                station_operating_hours=req.station_operating_hours,
+                station_availability=req.station_availability,
+                station_energy_utilization_ceiling=req.station_energy_utilization_ceiling,
+            )
         )
-    )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return FileResponse(
         str(output_path),
         media_type="application/pdf",

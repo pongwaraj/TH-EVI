@@ -324,6 +324,7 @@ POI_CATEGORY_RULES = {
     "hospital": (22.0, 2.3),
     "education": (22.0, 2.8),
     "recreation": (18.0, 2.3),
+    "neighborhood_recreation": (3.0, 1.0),
     "tourism": (18.0, 2.6),
     "tourism_museum": (18.0, 2.6),
     "market_tourism": (18.0, 2.3),
@@ -500,8 +501,22 @@ def _merge_reference_rows(
 ) -> list[dict[str, Any]]:
     """CSV is the fallback authority until verified DB parity is published."""
     if _has_published_database_release(province):
-        return _merge_rows(db_rows, csv_rows, id_key)
-    return _merge_rows(csv_rows, db_rows, id_key)
+        inactive_ids = {
+            str(row.get(id_key) or "").strip()
+            for row in db_rows
+            if row.get("active") is False and str(row.get(id_key) or "").strip()
+        }
+        active_db_rows = [row for row in db_rows if row.get("active") is not False]
+        fallback_rows = [
+            row for row in csv_rows
+            if str(row.get(id_key) or "").strip() not in inactive_ids
+        ]
+        rows = _merge_rows(active_db_rows, fallback_rows, id_key)
+    else:
+        rows = _merge_rows(csv_rows, [row for row in db_rows if row.get("active") is not False], id_key)
+    for row in rows:
+        row.pop("active", None)
+    return rows
 
 
 def _load_db_pois_for_province(province: str) -> list[dict[str, Any]]:
@@ -510,7 +525,7 @@ def _load_db_pois_for_province(province: str) -> list[dict[str, Any]]:
         with get_session_factory()() as session:
             rows = (
                 session.query(POIReference)
-                .filter(POIReference.province.in_(names), POIReference.active.is_(True))
+                .filter(POIReference.province.in_(names))
                 .all()
             )
     except Exception:
@@ -530,6 +545,7 @@ def _load_db_pois_for_province(province: str) -> list[dict[str, Any]]:
             "verification_status": row.verification_status,
             "confidence": row.confidence,
             "notes": row.notes,
+            "active": row.active,
         }
         for row in rows
     ]
@@ -541,7 +557,7 @@ def _load_db_competitors_for_province(province: str) -> list[dict[str, Any]]:
         with get_session_factory()() as session:
             rows = (
                 session.query(ChargerCompetitor)
-                .filter(ChargerCompetitor.province.in_(names), ChargerCompetitor.active.is_(True))
+                .filter(ChargerCompetitor.province.in_(names))
                 .all()
             )
     except Exception:
@@ -568,6 +584,7 @@ def _load_db_competitors_for_province(province: str) -> list[dict[str, Any]]:
             "verification_status": row.verification_status,
             "confidence": row.confidence,
             "notes": row.notes,
+            "active": row.active,
         }
         for row in rows
     ]
@@ -579,7 +596,7 @@ def _load_db_business_areas_for_province(province: str) -> list[dict[str, Any]]:
         with get_session_factory()() as session:
             rows = (
                 session.query(BusinessAreaReference)
-                .filter(BusinessAreaReference.province.in_(names), BusinessAreaReference.active.is_(True))
+                .filter(BusinessAreaReference.province.in_(names))
                 .all()
             )
     except Exception:
@@ -600,6 +617,7 @@ def _load_db_business_areas_for_province(province: str) -> list[dict[str, Any]]:
             "confidence": row.confidence,
             "notes": row.notes,
             "last_verified_date": row.last_verified_date,
+            "active": row.active,
         }
         for row in rows
     ]
@@ -613,7 +631,6 @@ def _load_db_heatmap_exclusions_for_province(province: str) -> list[dict[str, An
                 session.query(HeatmapExclusionReference)
                 .filter(
                     HeatmapExclusionReference.province.in_(names),
-                    HeatmapExclusionReference.active.is_(True),
                 )
                 .all()
             )
@@ -631,6 +648,7 @@ def _load_db_heatmap_exclusions_for_province(province: str) -> list[dict[str, An
             "confidence": row.confidence,
             "reason": row.reason,
             "last_verified_date": row.last_verified_date,
+            "active": row.active,
         }
         for row in rows
     ]
@@ -642,7 +660,7 @@ def _load_db_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
         with get_session_factory()() as session:
             rows = (
                 session.query(HotZoneReference)
-                .filter(HotZoneReference.province.in_(names), HotZoneReference.active.is_(True))
+                .filter(HotZoneReference.province.in_(names))
                 .all()
             )
     except Exception:
@@ -663,6 +681,7 @@ def _load_db_hot_zones_for_province(province: str) -> list[dict[str, Any]]:
             "capture_notes": row.capture_notes,
             "confidence": row.confidence,
             "last_verified_date": row.last_verified_date,
+            "active": row.active,
         }
         for row in rows
     ]
@@ -674,7 +693,7 @@ def _load_db_district_nodes_for_province(province: str) -> list[dict[str, Any]]:
         with get_session_factory()() as session:
             rows = (
                 session.query(DistrictNodeReference)
-                .filter(DistrictNodeReference.province.in_(names), DistrictNodeReference.active.is_(True))
+                .filter(DistrictNodeReference.province.in_(names))
                 .all()
             )
     except Exception:
@@ -692,6 +711,7 @@ def _load_db_district_nodes_for_province(province: str) -> list[dict[str, Any]]:
             "confidence_multiplier": row.confidence_multiplier,
             "confidence": row.confidence,
             "notes": row.notes,
+            "active": row.active,
         }
         for row in rows
     ]
@@ -765,7 +785,11 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
         if str(row.get("connector_summary") or "").strip().lower() == "not_charger":
             continue
         station_id = str(row.get("station_id") or "").strip()
-        if station_id in {"byd_city_osm", "mg_supercharge_city_osm"}:
+        if station_id in {
+            "byd_city_osm",
+            "mg_supercharge_city_osm",
+            "chiang_mai_kml_1193022ca11b",
+        }:
             continue
         source_type = str(row.get("source_type") or "").strip().lower()
         operator = str(row.get("operator") or "").strip().lower()
@@ -1950,4 +1974,13 @@ def analyze_click_location(
         "confidence": confidence,
         "warnings": warnings,
         "validation_summary": validation_summary,
+        **({
+            "estimate_available": True,
+            "forecast_available": False,
+            "estimate_semantics": "legacy_spatial_diagnostic_not_site_forecast",
+            "validation_status": "not_validated_for_station_forecasting",
+            "data_confidence": confidence,
+            "confidence": "not_validated",
+            "site_estimate_endpoint": "/api/charging-demand/site-preview",
+        } if use_pilot(province, "auto") else {}),
     }

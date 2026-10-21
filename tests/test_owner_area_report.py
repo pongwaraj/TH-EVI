@@ -1,6 +1,8 @@
 from pathlib import Path
 from zipfile import ZipFile
 
+import pytest
+
 from th_evi.owner_area_report import (
     OwnerAreaReportRequest,
     _projection_rows,
@@ -9,6 +11,47 @@ from th_evi.owner_area_report import (
     create_owner_area_analysis_pdf,
     create_owner_area_analysis_report,
 )
+
+
+@pytest.fixture
+def report_forecast_fixture(monkeypatch):
+    """Rendering tests use an explicit test forecast, not live screening values."""
+    import th_evi.spatial as spatial
+    import th_evi.heatmap as heatmap
+    import th_evi.owner_area_report as reports
+
+    def forecast(**kwargs):
+        return {"year": kwargs["year"], "net_sessions_per_day": 25.0,
+                "gross_area_demand_sessions": 30.0, "competitor_penalty_sessions": 5.0,
+                "daily_kwh": 25 * kwargs["avg_kwh_per_session"], "location_type": "community",
+                "eligibility_status": "eligible", "eligibility_reason": "test fixture",
+                "confidence": "medium", "aadt_used": 5000, "forecast_available": True,
+                "top_pois": [], "top_competitors": [], "top_business_areas": [],
+                "top_zones": [], "top_districts": [], "warnings": []}
+
+    def no_tiles(*args):
+        raise RuntimeError("Offline image test")
+
+    monkeypatch.setattr(spatial, "analyze_click_location", forecast)
+    monkeypatch.setattr(reports, "_render_context_map_with_tiles", no_tiles)
+    monkeypatch.setattr(reports, "_render_heatmap_with_tiles", no_tiles)
+    monkeypatch.setattr(reports, "_build_map_features", lambda req, first: [
+        {"kind": "site", "lat": req.lat, "lon": req.lon, "name": "test site"}])
+    monkeypatch.setattr(heatmap, "generate_province_heatmap", lambda *args, **kwargs: {
+        "points": [{"lat": 18.902150, "lon": 98.948371, "intensity": 0.7}],
+        "lat_step_deg": 0.005, "lon_step_deg": 0.005})
+
+
+@pytest.mark.parametrize("sessions", [None, 24.2])
+def test_screening_or_conditional_estimate_cannot_become_financial_projection(monkeypatch, sessions):
+    import th_evi.spatial as spatial
+
+    monkeypatch.setattr(spatial, "analyze_click_location", lambda **kwargs: {
+        "forecast_available": False, "estimate_available": True,
+        "net_sessions_per_day": sessions, "daily_kwh": 500,
+    })
+    with pytest.raises(ValueError, match="screening-only"):
+        _projection_rows(OwnerAreaReportRequest("test", "Chiang Mai", 18.8, 99))
 
 
 def test_report_uses_station_spec_to_cap_served_sessions(monkeypatch):
@@ -57,7 +100,7 @@ def test_report_parses_legacy_recommended_spec():
     assert spec.max_kw_per_gun == 180
 
 
-def test_owner_area_report_includes_generated_map_image(tmp_path, monkeypatch):
+def test_owner_area_report_includes_generated_map_image(tmp_path, monkeypatch, report_forecast_fixture):
     import th_evi.owner_area_report as owner_report
 
     monkeypatch.setattr(owner_report, "REPORT_OUTPUT_DIR", tmp_path)
@@ -83,7 +126,7 @@ def test_owner_area_report_includes_generated_map_image(tmp_path, monkeypatch):
         assert len(media_files) >= 2
 
 
-def test_owner_area_report_generates_pdf(tmp_path, monkeypatch):
+def test_owner_area_report_generates_pdf(tmp_path, monkeypatch, report_forecast_fixture):
     import th_evi.owner_area_report as owner_report
 
     monkeypatch.setattr(owner_report, "REPORT_OUTPUT_DIR", tmp_path)

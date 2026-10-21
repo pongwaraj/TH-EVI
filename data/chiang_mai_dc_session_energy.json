@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "province": "Chiang Mai",
+  "reviewed_on": "2026-10-19",
+  "scope": "observed_urban_public_dc_orders_not_provincial_fleet",
+  "definition": "Normal; duration >= 300 seconds AND connector energy >= 1 kWh",
+  "aggregation": "sum_connector_kwh_divided_by_sum_meaningful_orders",
+  "stations": [
+    {
+      "station_id": "tce_ev_meta_mall",
+      "start_date": "2026-07-01",
+      "end_date": "2026-09-30",
+      "meaningful_orders": 3147,
+      "connector_kwh": 86285.97,
+      "source_file": "data/chiang_mai_operations_behavior_2026q3.json",
+      "source_sha256": "8070e55d0a5c469071b4b7b5d3fe4a4662ee798048a4567097022aa889ccd727"
+    },
+    {
+      "station_id": "tce_ev_grand_siri",
+      "start_date": "2026-10-09",
+      "end_date": "2026-10-18",
+      "meaningful_orders": 71,
+      "connector_kwh": 1728.75,
+      "source_file": "Order List (76).xlsx",
+      "source_sheet": "Order Data",
+      "source_range": "A1:X74",
+      "source_sha256": "8aac8dc76ffbfd154f7e8d489ece84aa8f91cd8a47d49df02bcf8b3193af29c3"
+    }
+  ],
+  "pooled_meaningful_orders": 3218,
+  "pooled_connector_kwh": 88014.72,
+  "pooled_mean_connector_kwh": 27.35075201988813,
+  "default_session_kwh": 27.0,
+  "rounding": "nearest_whole_kwh",
+  "forecast_enabled": false,
+  "privacy": "aggregates_only_no_customer_order_account_vin_or_device_identifiers",
+  "limitations": [
+    "Meta Mall contributes approximately 98 percent of orders; the two stations are not equally weighted.",
+    "Grand Siri is in its opening period; repeat accounts are not unique vehicles.",
+    "Observed energy per order does not validate visits per day, station capture or an investment forecast.",
+    "This urban DC reference is not established for highway charging or other provinces.",
+    "Changing the session-energy divisor must not multiply the underlying energy demand."
+  ]
+}

@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "province": "Chiang Mai",
+  "source": "OSRM driving on OpenStreetMap",
+  "source_url": "https://router.project-osrm.org/table/v1/driving/99.0018368,18.9034445;99.0058481,18.8284248;99.0773634,18.7936345;98.9888152,18.7663956;99.0286005,18.7823998;98.9934,18.7879;98.9532,18.8054;98.967,18.8029;99.0179,18.8074;98.9747,18.7897?annotations=distance,duration",
+  "attribution": "OpenStreetMap contributors (ODbL); OSRM",
+  "computed_at": "2026-10-17T07:20:46.351738+00:00",
+  "origins": [
+    {
+      "id": "ornsirin_11",
+      "name": "Ornsirin 11 Maejo",
+      "housing_type": "house",
+      "lat": 18.9034445,
+      "lon": 99.0018368,
+      "source_url": "https://ornsirin.co.th/en/property-item/ornsirin-11-maejo/",
+      "coordinate_basis": "developer_linked_map_place_coordinate_not_verified_gate"
+    },
+    {
+      "id": "setthasiri_ruamchok",
+      "name": "Setthasiri Ruamchok",
+      "housing_type": "house",
+      "lat": 18.8284248,
+      "lon": 99.0058481,
+      "source_url": "https://www.sansiri.com/singlehouse/setthasiri-ruamchok/th/",
+      "coordinate_basis": "developer_linked_map_place_coordinate_not_verified_gate"
+    },
+    {
+      "id": "habitat_wongwaen",
+      "name": "Habitat Wongwaen Sankamphaeng",
+      "housing_type": "house",
+      "lat": 18.7936345,
+      "lon": 99.0773634,
+      "source_url": "https://ornsirin.co.th/en/property-item/habitat-wongwaen-sankhampang/",
+      "coordinate_basis": "developer_linked_map_place_coordinate_not_verified_gate"
+    },
+    {
+      "id": "habitat_mahidol",
+      "name": "Habitat Mahidol",
+      "housing_type": "house",
+      "lat": 18.7663956,
+      "lon": 98.9888152,
+      "source_url": "https://ornsirin.co.th/en/property-item/habitat-mahidol/",
+      "coordinate_basis": "developer_linked_map_place_coordinate_not_verified_gate"
+    },
+    {
+      "id": "the_next_2",
+      "name": "The Next 2 Nong Prathip",
+      "housing_type": "condo",
+      "lat": 18.7823998,
+      "lon": 99.0286005,
+      "source_url": "https://ornsirin.co.th/en/property-item/the-next-2-nong-prateep/",
+      "coordinate_basis": "developer_linked_map_place_coordinate_not_verified_gate"
+    }
+  ],
+  "destinations": [
+    {
+      "id": "thapae_gate",
+      "name": "Tha Phae Gate",
+      "lat": 18.7879,
+      "lon": 98.9934,
+      "coordinate_basis": "existing_seed_poi_not_verified_gate"
+    },
+    {
+      "id": "cmu_main_campus",
+      "name": "Chiang Mai University main campus",
+      "lat": 18.8054,
+      "lon": 98.9532,
+      "coordinate_basis": "existing_seed_poi_not_verified_gate"
+    },
+    {
+      "id": "maya_lifestyle_mall",
+      "name": "MAYA Lifestyle Shopping Center",
+      "lat": 18.8029,
+      "lon": 98.967,
+      "coordinate_basis": "existing_seed_poi_not_verified_gate"
+    },
+    {
+      "id": "central_festival_chiangmai",
+      "name": "Central Festival Chiangmai",
+      "lat": 18.8074,
+      "lon": 99.0179,
+      "coordinate_basis": "existing_seed_poi_not_verified_gate"
+    },
+    {
+      "id": "maharaj_medical_cluster",
+      "name": "Maharaj / Suan Dok medical cluster",
+      "lat": 18.7897,
+      "lon": 98.9747,
+      "coordinate_basis": "existing_seed_poi_not_verified_gate"
+    }
+  ],
+  "routes": [
+    {
+      "origin_id": "ornsirin_11",
+      "destination_id": "thapae_gate",
+      "outbound_road_km": 15.3219,
+      "return_road_km": 15.1531,
+      "round_trip_road_km": 30.475,
+      "outbound_free_flow_minutes": 19.243333333333332,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "ornsirin_11",
+      "destination_id": "cmu_main_campus",
+      "outbound_road_km": 18.1874,
+      "return_road_km": 18.0517,
+      "round_trip_road_km": 36.23910000000001,
+      "outbound_free_flow_minutes": 21.915000000000003,
+      "max_road_snap_metres": 17.61845916,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "ornsirin_11",
+      "destination_id": "maya_lifestyle_mall",
+      "outbound_road_km": 16.429599999999997,
+      "return_road_km": 16.1236,
+      "round_trip_road_km": 32.5532,
+      "outbound_free_flow_minutes": 19.05666666666667,
+      "max_road_snap_metres": 17.61845916,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "ornsirin_11",
+      "destination_id": "central_festival_chiangmai",
+      "outbound_road_km": 12.1691,
+      "return_road_km": 12.8865,
+      "round_trip_road_km": 25.0556,
+      "outbound_free_flow_minutes": 15.588333333333333,
+      "max_road_snap_metres": 17.61845916,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "ornsirin_11",
+      "destination_id": "maharaj_medical_cluster",
+      "outbound_road_km": 18.7159,
+      "return_road_km": 18.1453,
+      "round_trip_road_km": 36.8612,
+      "outbound_free_flow_minutes": 21.63,
+      "max_road_snap_metres": 17.61845916,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "setthasiri_ruamchok",
+      "destination_id": "thapae_gate",
+      "outbound_road_km": 7.0318000000000005,
+      "return_road_km": 6.5644,
+      "round_trip_road_km": 13.596200000000001,
+      "outbound_free_flow_minutes": 10.058333333333334,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "setthasiri_ruamchok",
+      "destination_id": "cmu_main_campus",
+      "outbound_road_km": 9.8973,
+      "return_road_km": 9.4631,
+      "round_trip_road_km": 19.360400000000002,
+      "outbound_free_flow_minutes": 12.729999999999999,
+      "max_road_snap_metres": 14.82844151,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "setthasiri_ruamchok",
+      "destination_id": "maya_lifestyle_mall",
+      "outbound_road_km": 8.1395,
+      "return_road_km": 7.5348999999999995,
+      "round_trip_road_km": 15.6744,
+      "outbound_free_flow_minutes": 9.871666666666666,
+      "max_road_snap_metres": 12.42545801,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "setthasiri_ruamchok",
+      "destination_id": "central_festival_chiangmai",
+      "outbound_road_km": 3.8789000000000002,
+      "return_road_km": 4.297899999999999,
+      "round_trip_road_km": 8.1768,
+      "outbound_free_flow_minutes": 6.403333333333333,
+      "max_road_snap_metres": 12.42545801,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "setthasiri_ruamchok",
+      "destination_id": "maharaj_medical_cluster",
+      "outbound_road_km": 10.425799999999999,
+      "return_road_km": 9.556700000000001,
+      "round_trip_road_km": 19.9825,
+      "outbound_free_flow_minutes": 12.445,
+      "max_road_snap_metres": 12.42545801,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_wongwaen",
+      "destination_id": "thapae_gate",
+      "outbound_road_km": 11.5794,
+      "return_road_km": 12.874,
+      "round_trip_road_km": 24.453400000000002,
+      "outbound_free_flow_minutes": 16.15,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_wongwaen",
+      "destination_id": "cmu_main_campus",
+      "outbound_road_km": 18.449099999999998,
+      "return_road_km": 18.4423,
+      "round_trip_road_km": 36.8914,
+      "outbound_free_flow_minutes": 22.134999999999998,
+      "max_road_snap_metres": 14.82844151,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_wongwaen",
+      "destination_id": "maya_lifestyle_mall",
+      "outbound_road_km": 16.6913,
+      "return_road_km": 16.5141,
+      "round_trip_road_km": 33.2054,
+      "outbound_free_flow_minutes": 19.276666666666664,
+      "max_road_snap_metres": 7.891992869,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_wongwaen",
+      "destination_id": "central_festival_chiangmai",
+      "outbound_road_km": 12.4975,
+      "return_road_km": 11.0819,
+      "round_trip_road_km": 23.5794,
+      "outbound_free_flow_minutes": 15.903333333333334,
+      "max_road_snap_metres": 6.26677865,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_wongwaen",
+      "destination_id": "maharaj_medical_cluster",
+      "outbound_road_km": 14.558399999999999,
+      "return_road_km": 18.5358,
+      "round_trip_road_km": 33.094199999999994,
+      "outbound_free_flow_minutes": 21.355,
+      "max_road_snap_metres": 7.306260809,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_mahidol",
+      "destination_id": "thapae_gate",
+      "outbound_road_km": 6.3308,
+      "return_road_km": 3.7828000000000004,
+      "round_trip_road_km": 10.1136,
+      "outbound_free_flow_minutes": 8.501666666666667,
+      "max_road_snap_metres": 25.59693849,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_mahidol",
+      "destination_id": "cmu_main_campus",
+      "outbound_road_km": 10.1811,
+      "return_road_km": 9.016200000000001,
+      "round_trip_road_km": 19.197300000000002,
+      "outbound_free_flow_minutes": 14.405,
+      "max_road_snap_metres": 25.59693849,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_mahidol",
+      "destination_id": "maya_lifestyle_mall",
+      "outbound_road_km": 8.4233,
+      "return_road_km": 8.9237,
+      "round_trip_road_km": 17.347,
+      "outbound_free_flow_minutes": 11.546666666666665,
+      "max_road_snap_metres": 25.59693849,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_mahidol",
+      "destination_id": "central_festival_chiangmai",
+      "outbound_road_km": 9.5466,
+      "return_road_km": 7.9333,
+      "round_trip_road_km": 17.4799,
+      "outbound_free_flow_minutes": 12.7,
+      "max_road_snap_metres": 25.59693849,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "habitat_mahidol",
+      "destination_id": "maharaj_medical_cluster",
+      "outbound_road_km": 6.5558000000000005,
+      "return_road_km": 5.2772,
+      "round_trip_road_km": 11.833,
+      "outbound_free_flow_minutes": 8.503333333333334,
+      "max_road_snap_metres": 25.59693849,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "the_next_2",
+      "destination_id": "thapae_gate",
+      "outbound_road_km": 4.251600000000001,
+      "return_road_km": 4.465,
+      "round_trip_road_km": 8.7166,
+      "outbound_free_flow_minutes": 6.096666666666667,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "the_next_2",
+      "destination_id": "cmu_main_campus",
+      "outbound_road_km": 10.9346,
+      "return_road_km": 10.9534,
+      "round_trip_road_km": 21.888,
+      "outbound_free_flow_minutes": 13.035,
+      "max_road_snap_metres": 14.82844151,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "the_next_2",
+      "destination_id": "maya_lifestyle_mall",
+      "outbound_road_km": 9.1768,
+      "return_road_km": 9.0252,
+      "round_trip_road_km": 18.202,
+      "outbound_free_flow_minutes": 10.176666666666668,
+      "max_road_snap_metres": 11.17829817,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "the_next_2",
+      "destination_id": "central_festival_chiangmai",
+      "outbound_road_km": 4.9765,
+      "return_road_km": 3.6176999999999997,
+      "round_trip_road_km": 8.5942,
+      "outbound_free_flow_minutes": 7.005,
+      "max_road_snap_metres": 11.17829817,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "the_next_2",
+      "destination_id": "maharaj_medical_cluster",
+      "outbound_road_km": 7.2307,
+      "return_road_km": 7.3441,
+      "round_trip_road_km": 14.5748,
+      "outbound_free_flow_minutes": 11.301666666666668,
+      "max_road_snap_metres": 11.17829817,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "thapae_gate",
+      "destination_id": "cmu_main_campus",
+      "outbound_road_km": 6.38,
+      "return_road_km": 5.7858,
+      "round_trip_road_km": 12.165799999999999,
+      "outbound_free_flow_minutes": 11.193333333333333,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "thapae_gate",
+      "destination_id": "maya_lifestyle_mall",
+      "outbound_road_km": 4.6221000000000005,
+      "return_road_km": 5.732600000000001,
+      "round_trip_road_km": 10.354700000000001,
+      "outbound_free_flow_minutes": 8.335,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "thapae_gate",
+      "destination_id": "central_festival_chiangmai",
+      "outbound_road_km": 5.3201,
+      "return_road_km": 4.5546999999999995,
+      "round_trip_road_km": 9.874799999999999,
+      "outbound_free_flow_minutes": 8.516666666666667,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    },
+    {
+      "origin_id": "thapae_gate",
+      "destination_id": "maharaj_medical_cluster",
+      "outbound_road_km": 3.3242,
+      "return_road_km": 3.1426,
+      "round_trip_road_km": 6.466799999999999,
+      "outbound_free_flow_minutes": 6.225,
+      "max_road_snap_metres": 21.60545844,
+      "status": "road_distance_proxy",
+      "trip_frequency_per_vehicle_day": null
+    }
+  ],
+  "forecast_enabled": false,
+  "limitations": [
+    "Purposive examples from a few developers, not a representative commuter sample.",
+    "Project map points and POI seed points are not independently verified entrances.",
+    "Driving distances use road routing, not straight-line distance; free-flow duration is not traffic time.",
+    "A round trip is a possible itinerary, not observed daily km or a required trip every day.",
+    "Trip frequency, destination choice, extra stops, occupancy and EV ownership weights are missing."
+  ]
+}

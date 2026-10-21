@@ -46,7 +46,7 @@ def test_reference_release_api_lists_and_publishes(monkeypatch, tmp_path):
         session.add(_release("published-v1"))
         session.commit()
 
-    def fake_sync(session, slug, *, publish, actor):
+    def fake_sync(session, slug, *, publish, actor, runtime_safe):
         assert slug == "chiang_mai"
         assert publish is True
         assert actor == "qa_user"
@@ -65,7 +65,8 @@ def test_reference_release_api_lists_and_publishes(monkeypatch, tmp_path):
     monkeypatch.setattr(api, "session_scope", lambda: _session_scope_for(Session))
     monkeypatch.setattr(api, "sync_province_reference", fake_sync)
     monkeypatch.setattr(api, "_clear_reference_caches", lambda: None)
-    client = TestClient(app)
+    monkeypatch.setenv("TH_EVI_ADMIN_TOKEN", "test-token")
+    client = TestClient(app, headers={"X-TH-EVI-Admin-Token": "test-token"})
 
     listed = client.get("/api/reference/releases", params={"province": "Chiang Mai"})
     assert listed.status_code == 200
@@ -96,3 +97,13 @@ def test_reference_release_api_requires_configured_token(monkeypatch, tmp_path):
         headers={"X-TH-EVI-Admin-Token": "test-token"},
     )
     assert accepted.status_code == 200
+
+
+def test_reference_admin_fails_closed_without_configuration(monkeypatch):
+    monkeypatch.delenv("TH_EVI_ADMIN_TOKEN", raising=False)
+    client = TestClient(app)
+    response = client.get("/api/reference/releases", params={"province": "Chiang Mai"})
+    assert response.status_code == 503
+    assert "not configured" in response.json()["detail"]
+    response = client.post("/api/reference/poi", json={"values": {}})
+    assert response.status_code == 503

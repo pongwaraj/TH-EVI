@@ -6,6 +6,8 @@
 <title>TH-EVI Planning | Heat Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/static/map-coordinates.css">
+<script src="/static/map-coordinates.js"></script>
 <style>
 * { box-sizing: border-box; }
 :root {
@@ -198,6 +200,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
   </section>
 
   <section class="section">
+    <div id="coordinate-search"></div>
     <div class="field">
       <label class="label" for="province-search">จังหวัด</label>
       <input id="province-search" list="province-options" autocomplete="off" placeholder="ค้นหาจังหวัด">
@@ -548,6 +551,25 @@ let shortlist = readShortlist();
 let teamShortlist = [];
 let reportSelectionPoint = null;
 let reportSelectionTemplate = "owner-area-analysis";
+let activeHeatmapRequestId = 0;
+let activeHeatmapController = null;
+
+function coordinateHeatmapData() {
+  return latestHeatmapData?.province === apiProvinceValue() &&
+    Number(latestHeatmapData.year) === new Date().getFullYear() &&
+    latestHeatmapData.mode === $("scope").value &&
+    Number(latestHeatmapData.resolution_km) === Number($("resolution").value)
+    ? latestHeatmapData : null;
+}
+
+const coordinateSearch = MapCoordinates.mount({
+  container: $("coordinate-search"), map, bounds: THAILAND_BOUNDS,
+  getHeatmap: coordinateHeatmapData,
+  onNavigate: async () => {
+    syncProvinceSearch();
+    if (!coordinateHeatmapData()) await loadHeatmap();
+  }
+});
 
 function apiProvinceValue() {
   return PROVINCE_API_VALUES[$("province").value] || $("province").value;
@@ -1080,15 +1102,19 @@ async function loadHeatmap() {
   const resolution = $("resolution").value;
   const metric = currentMetric();
   const year = new Date().getFullYear();
+  const requestId = ++activeHeatmapRequestId;
+  if (activeHeatmapController) activeHeatmapController.abort();
+  activeHeatmapController = new AbortController();
   $("status").textContent = "กำลังโหลด Heat Map...";
   $("status").className = "status";
   $("load-btn").disabled = true;
   heatmapLayer.clearLayers();
   districtLayer.clearLayers();
   try {
-    const resp = await fetch(`/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=base&mode=${mode}&resolution_km=${encodeURIComponent(resolution)}&method=${encodeURIComponent(new URLSearchParams(location.search).get("method") || "auto")}`);
+    const resp = await fetch(`/api/heatmap?province=${encodeURIComponent(province)}&year=${year}&scenario=base&mode=${mode}&resolution_km=${encodeURIComponent(resolution)}&method=${encodeURIComponent(new URLSearchParams(location.search).get("method") || "auto")}`, { signal: activeHeatmapController.signal });
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
+    if (requestId !== activeHeatmapRequestId) return;
     if (data.metadata?.production_method === "fixed_support_area_v1") {
       (data.points || []).forEach(point => {
         point.forecast_available = false;
@@ -1107,7 +1133,7 @@ async function loadHeatmap() {
     (data.points || []).forEach(point => attachCell(point, data));
     renderDistrictList(data);
     if (mode === "district") drawDistrictSummaries(data);
-    if (data.bounds) {
+    if (data.bounds && !coordinateSearch.getTarget()) {
       map.fitBounds([
         [data.bounds.lat_min, data.bounds.lon_min],
         [data.bounds.lat_max, data.bounds.lon_max]
@@ -1115,19 +1141,27 @@ async function loadHeatmap() {
     }
     await loadCompetitors();
     await loadTeamShortlist();
+    if (requestId !== activeHeatmapRequestId) return;
     const maxMetric = metric === "net"
       ? Number(data.max_heat_score || 0)
       : Number(data.max_scores?.demand ?? data.layer_max_scores?.demand ?? data.max_heat_score ?? 0);
     $("status").textContent = `โหลดแล้ว ${data.point_count} cells | Max ${metricLabel(metric)} ${fmt(maxMetric)}`;
   } catch (err) {
+    if (err.name === "AbortError" || requestId !== activeHeatmapRequestId) return;
+    latestHeatmapData = null;
     $("status").textContent = `โหลด Heat Map ไม่สำเร็จ: ${err.message}`;
     $("status").className = "status error";
   } finally {
-    $("load-btn").disabled = false;
+    if (requestId === activeHeatmapRequestId) {
+      $("load-btn").disabled = false;
+      activeHeatmapController = null;
+      coordinateSearch.refresh();
+    }
   }
 }
 
 function resetView() {
+  coordinateSearch.clear();
   map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 }
 
