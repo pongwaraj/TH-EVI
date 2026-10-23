@@ -11,6 +11,8 @@
 <script src="/static/map-coordinates.js"></script>
 <link rel="stylesheet" href="/static/site-forecast.css">
 <script src="/static/site-forecast.js"></script>
+<link rel="stylesheet" href="/static/map-layers.css">
+<script src="/static/map-layers.js"></script>
 <style>
 * { box-sizing: border-box; }
 :root { --panel-width: 460px; }
@@ -818,8 +820,9 @@ const candidateLayer = L.layerGroup().addTo(map);
 const chargerLayer = L.layerGroup().addTo(map);
 const landmarkLayer = L.layerGroup().addTo(map);
 const heatmapLayer = L.layerGroup().addTo(map);
+const mapLayers = THEVIMapLayers.mount({ map, heatLayers: [heatmapLayer], poiLayer: landmarkLayer,
+  competitorLayer: chargerLayer, candidateLayer });
 let draftMarker = null;
-let layerControl = null;
 let latestHeatmapData = null;
 const CANDIDATE_STATE_KEY = "th-evi-candidate-state-v2";
 const PANEL_WIDTH_KEY = "th-evi-panel-width";
@@ -2042,30 +2045,7 @@ async function saveReferenceRecord() {
 }
 
 async function loadReferenceLayers() {
-  const province = apiProvinceValue();
-  landmarkLayer.clearLayers();
-  chargerLayer.clearLayers();
-  const [landmarks, chargers] = await Promise.all([
-    fetch("/api/landmarks").then(r => r.json()),
-    fetch(`/api/chargers?province=${encodeURIComponent(province)}`).then(r => r.json())
-  ]);
-  landmarks.forEach(l => {
-    L.circleMarker([l.lat, l.lon], {
-      radius: 5,
-      color: "#2f855a",
-      fillOpacity: 0.65
-    }).bindPopup(`<b>${l.name}</b><br>${l.type}`).addTo(landmarkLayer);
-  });
-  (chargers.stations || []).forEach(st => {
-    if (!st.lat || !st.lon) return;
-    L.circleMarker([st.lat, st.lon], {
-      radius: 5,
-      color: "#805ad5",
-      fillOpacity: 0.65
-    }).bindPopup(
-      `<b>${st.name || st.operator || t("charger")}</b><br>${st.network || st.operator || ""}<br>${st.max_kw || st.capacity || "?"} ${st.max_kw ? "kW" : "bays"}`
-    ).addTo(chargerLayer);
-  });
+  await mapLayers.setProvince(apiProvinceValue());
 }
 
 async function loadHeatMap() {
@@ -2159,13 +2139,7 @@ async function loadHeatMap() {
 }
 
 function refreshLayerControlLabels() {
-  if (layerControl) map.removeControl(layerControl);
-  layerControl = L.control.layers(null, {
-    [t("candidateSites")]: candidateLayer,
-    [t("areaDemandHeat")]: heatmapLayer,
-    [t("referenceLandmarks")]: landmarkLayer,
-    [t("existingChargers")]: chargerLayer
-  }).addTo(map);
+  mapLayers.setLanguage(currentLang);
 }
 
 THEVISiteForecast.mountSettings(document.getElementById('site-forecast-settings'));

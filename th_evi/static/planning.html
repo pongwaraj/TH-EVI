@@ -10,6 +10,8 @@
 <script src="/static/map-coordinates.js"></script>
 <link rel="stylesheet" href="/static/site-forecast.css">
 <script src="/static/site-forecast.js"></script>
+<link rel="stylesheet" href="/static/map-layers.css">
+<script src="/static/map-layers.js"></script>
 <style>
 * { box-sizing: border-box; }
 :root {
@@ -262,10 +264,6 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
       <label class="label" for="recorded-by">ชื่อผู้บันทึก</label>
       <input id="recorded-by" type="text" placeholder="เช่น Aom / ฝ่ายขายเหนือ">
     </div>
-    <label class="check-row">
-      <input id="show-competitors" type="checkbox">
-      แสดงสถานีคู่แข่ง
-    </label>
     <div class="shortlist-actions">
       <button class="btn btn-primary" id="load-btn" type="button">โหลด Heat Map</button>
       <button class="btn btn-ghost" id="reset-btn" type="button">รีเซ็ตมุมมอง</button>
@@ -550,6 +548,8 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 const heatmapLayer = L.layerGroup().addTo(map);
 const districtLayer = L.layerGroup().addTo(map);
 const competitorLayer = L.layerGroup().addTo(map);
+const poiLayer = L.layerGroup();
+const mapLayers = THEVIMapLayers.mount({ map, heatLayers: [heatmapLayer, districtLayer], poiLayer, competitorLayer });
 let latestHeatmapData = null;
 let selectedPlanningPoint = null;
 THEVISiteForecast.mountSettings(document.getElementById('site-forecast-settings'));
@@ -602,6 +602,7 @@ function syncProvinceSearch() {
   } else {
     $("province-search").value = $("province").value;
   }
+  mapLayers.setProvince(apiProvinceValue());
 }
 
 function colorForIntensity(intensity) {
@@ -1048,34 +1049,6 @@ function drawDistrictSummaries(data) {
   });
 }
 
-function drawCompetitors(rows) {
-  competitorLayer.clearLayers();
-  if (!$("show-competitors").checked) return;
-  (rows || []).forEach(row => {
-    if (!row.lat || !row.lon) return;
-    L.circleMarker([row.lat, row.lon], {
-      radius: 5,
-      color: "#7c3aed",
-      fillColor: "#7c3aed",
-      fillOpacity: 0.75,
-      weight: 1
-    }).bindPopup(`
-      <div>
-        <h3>${row.name || row.operator || "Competitor"}</h3>
-        <div>${row.network || row.operator || "-"}</div>
-        <div>${row.max_kw ? `${row.max_kw} kW` : "Power not confirmed"}</div>
-      </div>
-    `).addTo(competitorLayer);
-  });
-}
-
-async function loadCompetitors() {
-  const resp = await fetch(`/api/chargers?province=${encodeURIComponent(apiProvinceValue())}`);
-  if (!resp.ok) return;
-  const data = await resp.json();
-  drawCompetitors(data.stations || []);
-}
-
 function attachCell(point, data) {
   const latHalf = Number(data.lat_step_deg || 0) / 2;
   const lonHalf = Number(data.lon_step_deg || 0) / 2;
@@ -1156,7 +1129,7 @@ async function loadHeatmap() {
         [data.bounds.lat_max, data.bounds.lon_max]
       ], { padding: [18, 18] });
     }
-    await loadCompetitors();
+    await mapLayers.setProvince(province);
     await loadTeamShortlist();
     if (requestId !== activeHeatmapRequestId) return;
     const maxMetric = metric === "net"
@@ -1211,8 +1184,7 @@ window.phase1SaveTeamPoint = (lat, lon) => {
 
 $("province-search").addEventListener("change", syncProvinceSearch);
 $("province-search").addEventListener("blur", syncProvinceSearch);
-$("province").addEventListener("change", () => { $("province-search").value = $("province").value; renderTeamShortlist(); });
-$("show-competitors").addEventListener("change", loadCompetitors);
+$("province").addEventListener("change", () => { $("province-search").value = $("province").value; renderTeamShortlist(); mapLayers.setProvince(apiProvinceValue()); });
 $("recorded-by").addEventListener("input", saveRecorderName);
 ["report-template","report-site-name","report-start-year","report-end-year","report-avg-kwh","report-price","report-owner-gp","report-electricity-cost","report-cpo-gp-rate","report-capex","report-annual-om","report-perception-factor","report-spec","report-note"].forEach(id => {
   $(id).addEventListener("input", saveReportOptions);
@@ -1247,6 +1219,7 @@ $("clear-shortlist").addEventListener("click", () => {
 });
 
 renderProvinceOptions();
+mapLayers.setProvince(apiProvinceValue());
 $("recorded-by").value = window.localStorage.getItem(RECORDER_NAME_KEY) || "";
 applyReportOptions();
 renderShortlist();

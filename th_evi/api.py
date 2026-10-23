@@ -1078,6 +1078,26 @@ def list_highways():
     return {"segments": segments, "routes": aadt}
 
 
+@app.get("/api/pois")
+def list_map_pois(province: str = Query("Chiang Mai", min_length=1)):
+    """Read-only map POIs from the same merged reference inventory as the model."""
+    points = []
+    for row in spatial_module.load_pois_for_province(province):
+        try:
+            lat, lon = float(row["lat"]), float(row["lon"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not (math.isfinite(lat) and math.isfinite(lon) and 5 <= lat <= 21 and 97 <= lon <= 106):
+            continue
+        points.append({
+            "poi_id": row.get("poi_id"), "name": row.get("name") or row.get("poi_id") or "POI",
+            "lat": lat, "lon": lon, "category": row.get("category"),
+            "verification_status": row.get("verification_status"),
+            "source_url": row.get("source_url"),
+        })
+    return {"province": province, "pois": _json_safe(points), "poi_count": len(points)}
+
+
 @app.get("/api/chargers")
 def list_chargers(province: str = Query("Chiang Mai", min_length=1)):
     """Return existing charger competitors for the selected province."""

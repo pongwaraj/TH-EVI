@@ -1,0 +1,16 @@
+.map-layers-control { width: 218px; max-width: calc(100vw - 80px); border: 1px solid #c9d4de; border-radius: 6px; background: #fff; color: #172b3a; box-shadow: 0 1px 5px #0003; padding: 0 10px; font: 12px/1.4 "Segoe UI", Tahoma, sans-serif; letter-spacing: 0; }
+.map-layers-control summary { cursor: pointer; font-weight: 700; padding: 9px 0; }
+.map-layer-row { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 6px; min-height: 36px; border-top: 1px solid #edf1f5; padding: 4px 0; }
+.map-layer-row label { display: flex; flex-direction: row; align-items: center; gap: 7px; margin: 0; font: inherit; min-width: 0; cursor: pointer; flex: 1; }
+.map-layer-row input[type="checkbox"] { flex: 0 0 auto; width: 16px; height: 16px; min-height: 0; padding: 0; margin: 0; accent-color: #1565c0; }
+.map-layer-count { color: #596b78; font-size: 10px; max-width: 75px; overflow-wrap: anywhere; }
+.map-layer-swatch { display: inline-block; flex: 0 0 9px; width: 9px; height: 9px; border-radius: 50%; background: #087e8b; }
+.swatch-heat { background: #f8961e; border-radius: 1px; }
+.swatch-competitors { background: #7c3aed; }
+.swatch-candidates { background: #2463b3; }
+.map-layer-retry { width: auto; border: 0; background: transparent; color: #1565c0; font: inherit; padding: 2px 3px; cursor: pointer; text-decoration: underline; }
+.map-layer-retry[hidden] { display: none; }
+.map-reference-popup { min-width: 190px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.map-reference-popup h3 { margin: 0 0 6px; font-size: 14px; }
+.map-reference-links { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 8px; }
+@media (max-width: 600px) { .map-layers-control { width: 198px; } }
