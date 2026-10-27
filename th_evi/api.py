@@ -613,6 +613,8 @@ def _duplicate_reference_values(config: dict[str, Any], row: Any) -> dict[str, A
 
 def _clear_reference_caches() -> None:
     from .area_engine import clear_caches
+    from .place_search import clear_cache
+    clear_cache()
     clear_caches()
     spatial_module._has_published_database_release.cache_clear()
     spatial_module.load_pois_for_province.cache_clear()
@@ -1076,6 +1078,20 @@ def list_highways():
             "aadt": int(row.iloc[14]),
         })
     return {"segments": segments, "routes": aadt}
+
+
+@app.get("/api/place-search/config")
+def place_search_config():
+    # This opt-in key is intentionally public and must be restricted by domain.
+    key = os.getenv("TH_EVI_MAPTILER_PUBLIC_KEY", "").strip()
+    return {"external": {"provider": "maptiler", "public_key": key} if key else None}
+
+
+@app.get("/api/place-search")
+def place_search(q: str = Query(..., min_length=2, max_length=160),
+                 province: str = Query("", max_length=120), limit: int = Query(8, ge=1, le=10)):
+    from .place_search import search_places
+    return search_places(q.strip(), province, limit)
 
 
 @app.get("/api/pois")

@@ -1,0 +1,204 @@
+{
+  "site": "Shell Tha Pha",
+  "coordinates": [
+    17.650561,
+    99.249117
+  ],
+  "inputs": {
+    "energy_kwh_per_visit_assumed": 35,
+    "sale_thb_per_kwh_assumed": 7.9,
+    "electricity_thb_per_sold_kwh_assumed": 4,
+    "cpo_share_assumed": 0.08,
+    "annual_om_assumed": 36000,
+    "capex": "2300500"
+  },
+  "cases": [
+    {
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861"
+    }
+  ],
+  "projection": [
+    {
+      "operating_year": 1,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "47497.4000",
+      "cumulative_cash_after_capex": "-2253002.6000"
+    },
+    {
+      "operating_year": 2,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "94994.8000",
+      "cumulative_cash_after_capex": "-2205505.2000"
+    },
+    {
+      "operating_year": 3,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "142492.2000",
+      "cumulative_cash_after_capex": "-2158007.8000"
+    },
+    {
+      "operating_year": 4,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "189989.6000",
+      "cumulative_cash_after_capex": "-2110510.4000"
+    },
+    {
+      "operating_year": 5,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "237487.0000",
+      "cumulative_cash_after_capex": "-2063013.0000"
+    },
+    {
+      "operating_year": 6,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "284984.4000",
+      "cumulative_cash_after_capex": "-2015515.6000"
+    },
+    {
+      "operating_year": 7,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "332481.8000",
+      "cumulative_cash_after_capex": "-1968018.2000"
+    },
+    {
+      "operating_year": 8,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "379979.2000",
+      "cumulative_cash_after_capex": "-1920520.8000"
+    },
+    {
+      "operating_year": 9,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "427476.6000",
+      "cumulative_cash_after_capex": "-1873023.4000"
+    },
+    {
+      "operating_year": 10,
+      "cars_per_day": 2,
+      "kwh_per_year": "25550",
+      "revenue_year": "201845.00",
+      "revenue_month": "16820.41666666666666666666667",
+      "electricity_year": "102200",
+      "cpo_year": "16147.6000",
+      "om_year": "36000",
+      "operating_cash_year": "47497.4000",
+      "cumulative_cash_after_capex_year10": "-1825526.0000",
+      "simple_payback_years": "48.43423008417302841839763861",
+      "cumulative_operating_cash": "474974.0000",
+      "cumulative_cash_after_capex": "-1825526.0000"
+    }
+  ],
+  "demand_basis": "legacy_screening_used_as_explicit_planning_assumption_not_observed_site_sales",
+  "competitor_update_source": "Project coordinator supplied 2026-10-27",
+  "competitor_updates": {
+    "EleX PT Thoen": {
+      "cabinet_kw": 124,
+      "pin_available": false
+    },
+    "EleX PT Thoen 3": {
+      "cabinet_kw": 150
+    },
+    "Spark Bangchak Thoen Napha": {
+      "cabinet_kw": 240,
+      "cabinets": 2
+    }
+  },
+  "document_revision": "owner-facing single planning projection",
+  "screening_model": {
+    "gross_area_demand_sessions": 5.2,
+    "competitor_penalty_sessions": 3.2,
+    "net_sessions_per_day": 2.0,
+    "eligibility_status": "low_relevance",
+    "aadt_used": 13337
+  }
+}

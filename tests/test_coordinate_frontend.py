@@ -9,6 +9,7 @@ def test_coordinate_assets_are_served_locally_for_both_workspaces():
             assert response.status_code == 200
             assert 'id="coordinate-search"' in response.text
             assert '/static/map-coordinates.js' in response.text
+            assert '/static/place-search.js' in response.text
             assert '/static/map-coordinates.css' in response.text
         for asset, mime in [('map-coordinates.js', 'javascript'), ('map-coordinates.css', 'text/css')]:
             response = client.get('/static/' + asset)

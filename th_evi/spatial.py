@@ -265,6 +265,7 @@ ACCESS_SUPPORT_CATEGORIES = {
     "district_center",
     "event_space",
     "gas_station",
+    "highway_service_area",
     "hotel",
     "hotel_condo",
     "lifestyle",

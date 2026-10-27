@@ -42,6 +42,7 @@ POI_RULES = {
     "recreation": POIRule(8, 1.2, "service", "support"),
     "event_space": POIRule(6, 1.0, "service", "support"),
     "gas_station": POIRule(8, 1.2, "local", "support"),
+    "highway_service_area": POIRule(8, 1.2, "local", "corridor"),
     "restaurant_cafe": POIRule(6, 1.1, "local", "support"),
     "retail": POIRule(6, 1.0, "local", "support"),
     "local_market": POIRule(8, 1.0, "local", "support"),

@@ -84,7 +84,7 @@ async function locationIs(page, lat, lon) {
       await page.locator('#map-coordinate-input').press('Enter');
       await locationIs(page,18.829376,99.005497);
       await page.locator('#map-coordinate-input').fill('18.831,99.011');
-      await page.getByRole('button',{name:'ไปยังพิกัด',exact:true}).click();
+      await page.getByRole('button',{name:'ค้นหาหรือไปยังพิกัด',exact:true}).click();
       await locationIs(page,18.831,99.011);
 
       await paste(page,'99.005497, 18.829376');
@@ -141,7 +141,7 @@ async function locationIs(page, lat, lon) {
         assert.equal(await page.evaluate(() => coordinateSearch.getTarget()),null);
       } else {
         await page.locator('#lang-en').click();
-        await page.getByRole('button',{name:'Go to coordinates',exact:true}).waitFor();
+        await page.getByRole('button',{name:'Search or go to coordinates',exact:true}).waitFor();
       }
       assert.deepEqual(errors,[],`${workspace} JavaScript errors`);
       assert.deepEqual(mutations,[],'Map navigation must not create or save candidate records');

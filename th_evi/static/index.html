@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <link rel="stylesheet" href="/static/map-coordinates.css">
+<script src="/static/place-search.js"></script>
 <script src="/static/map-coordinates.js"></script>
 <link rel="stylesheet" href="/static/site-forecast.css">
 <script src="/static/site-forecast.js"></script>
@@ -2145,9 +2146,17 @@ function refreshLayerControlLabels() {
 THEVISiteForecast.mountSettings(document.getElementById('site-forecast-settings'));
 const coordinateSearch = MapCoordinates.mount({
   container: $("coordinate-search"), map, bounds: THAILAND_BOUNDS,
+  getProvince: apiProvinceValue,
   getHeatmap: () => heatmapMatchesSelection(latestHeatmapData, apiProvinceValue(), num("year"),
     $("scenario").value, $("heatmap_mode").value, Number($("heatmap_resolution").value)) ? latestHeatmapData : null,
-  onNavigate: async () => {
+  onNavigate: async point => {
+    if (point.province || point.source === 'maptiler') {
+      const normalized = String(point.province || '').replace(/จังหวัด|Province/gi, '').trim().toLowerCase();
+      const match = Object.entries(PROVINCE_API_VALUES).find(([th, en]) => [th.toLowerCase(), en.toLowerCase()].includes(normalized));
+      if (!match) throw new Error('provinceUnavailable');
+      PROVINCE_SELECT_IDS.forEach(id => { $(id).value = match[0]; syncProvinceSearchLabel(id); });
+      fillReferenceProvinceOptions(); loadReferenceLayers();
+    }
     if (!heatmapMatchesSelection(latestHeatmapData, apiProvinceValue(), num("year"),
       $("scenario").value, $("heatmap_mode").value, Number($("heatmap_resolution").value))) await loadHeatMap();
   },

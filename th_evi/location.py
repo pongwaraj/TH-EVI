@@ -127,6 +127,12 @@ ROUTE_BBOXES_BY_PROVINCE = {
 # These are not measured AADT segments; they prevent a nearby arterial's maximum
 # AADT from being projected onto a residential or riverside access road.
 LOCAL_ACCESS_AADT_BBOXES_BY_PROVINCE = {
+    "ลำปาง": [
+        # Shell Tha Pha: DOH 2568 Route 1 control 1102, km 617+097.
+        # Nearby corridor proxy, not a measured site entrance or direction.
+        # Keep local so Ko Kha's much higher city count is never borrowed.
+        ((17.645, 17.657, 99.244, 99.254), 13_337),
+    ],
     "เชียงใหม่": [
         # Mueang Kaeo east of Route 107 / Ring 3: riverside resorts, flower
         # gardens, and village roads rather than the Route 121 carriageway.

@@ -9,3 +9,7 @@ year_be,route,name,km,aadt,province,source,notes
 2566,11,Pang Ma O - Pa Kham,453+219,19116,Lampang,DOH aadt_2566.csv,"Chiang Mai-Lampang direction corridor."
 2566,1,Samakkhi - Ban Huat,720+367,17975,Lampang,DOH aadt_2566.csv,"Route 1 north/south flow."
 2566,11,Northern Junction - Khun Tan,469+099,17312,Lampang,DOH aadt_2566.csv,"Route 11 corridor toward Lamphun/Chiang Mai."
+2568,1,Don Chai - Sop Prap,617+097,13337,Lampang,https://datagov.mot.go.th/dataset/traf62,"Official aadt_2568.csv control 1102. Reviewed 2026-10-27. Nearby corridor proxy for Shell Tha Pha; not a frontage counter or charging customers. Includes buses and trucks; no directional split available. Do not substitute the Ko Kha city maximum."
+2568,1,Mae Chiang Rai Bon - Don Chai,589+255,12868,Lampang,https://datagov.mot.go.th/dataset/traf62,"Official aadt_2568.csv control 1101 south of Thoen. Separate counter; do not add to control 1102."
+2568,106,Hor Rop - Don Chai,66+062,2722,Lampang,https://datagov.mot.go.th/dataset/traf62,"Official aadt_2568.csv control 201. Context for Route 106 approach; not the Shell frontage."
+2568,1124,Tha Pha - Pang Kum,8+434,863,Lampang,https://datagov.mot.go.th/dataset/traf62,"Official aadt_2568.csv control 100. Rural side-road context; do not add to Highway 1 AADT."

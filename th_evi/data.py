@@ -5,6 +5,8 @@ from functools import lru_cache
 from pathlib import Path
 import warnings
 
+from .constants import canonical_province_name
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 PROVINCE_MAP = {
@@ -424,6 +426,40 @@ def _load_adm2_district_population() -> dict[str, int]:
     return result
 
 
+def _load_reviewed_dopa_district_population(province: str) -> pd.DataFrame:
+    """Aggregate reviewed registrar partitions, including separate municipalities."""
+    path = DATA_DIR / "dopa_district_components.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    mappings = pd.read_csv(path, dtype=str).fillna("")
+    canonical = canonical_province_name(province)
+    mappings = mappings[mappings["province"].map(canonical_province_name) == canonical]
+    if mappings.empty:
+        return pd.DataFrame()
+    source = load_evhub_dopa_population(province=canonical, area_type="district")
+    total = load_evhub_dopa_population(province=canonical, area_type="province")
+    if source.empty or len(total) != 1:
+        return pd.DataFrame()
+    populations = dict(zip(source["area_code"].astype(str), source["population"].astype(int)))
+    seen, records = set(), []
+    districts = set()
+    for row in mappings.to_dict("records"):
+        codes = row["area_codes"].split("|")
+        if (not row["district"] or row["district"] in districts or len(set(codes)) != len(codes)
+                or seen.intersection(codes) or any(code not in populations for code in codes)):
+            warnings.warn(f"Invalid reviewed DOPA district components for {province}", RuntimeWarning)
+            return pd.DataFrame()
+        seen.update(codes)
+        districts.add(row["district"])
+        records.append({"district": row["district"], "population": sum(populations[c] for c in codes)})
+    # A complete, disjoint partition must reconcile to the published province.
+    if (seen != set(populations) or len(source) != len(populations)
+            or sum(r["population"] for r in records) != int(total.iloc[0]["population"])):
+        warnings.warn(f"Reviewed DOPA districts do not balance for {province}", RuntimeWarning)
+        return pd.DataFrame()
+    return pd.DataFrame(records).sort_values("district").reset_index(drop=True)
+
+
 @lru_cache(maxsize=32)
 def load_district_population_for_province(province_en: str) -> pd.DataFrame:
     """Load district population for a province from ADM2 data.
@@ -431,6 +467,9 @@ def load_district_population_for_province(province_en: str) -> pd.DataFrame:
     Returns DataFrame with columns: district (English), population (int).
     Returns empty DataFrame if province not found or file missing.
     """
+    reviewed = _load_reviewed_dopa_district_population(province_en)
+    if not reviewed.empty:
+        return reviewed
     # Prefer the normalized DOPA 2568 extract when it is available for the
     # province. The older ADM2 file remains a fallback for provinces that have
     # not yet been imported into the current EV Hub data package.

@@ -262,7 +262,7 @@ PROVINCE_NEW_CAR_RATE = {
 PROVINCE_FLEET_SIZE = {
     "เชียงใหม่": 460_081,
     "Chiang Mai": 460_081,
-    "ลำปาง": 115_000,
+    "ลำปาง": 100_950,  # DLT 30 Sep 2026 Ror.1 passenger cars
     "อุดรธานี": 180_000,
     # DLT April 2569 รย.1 passenger-car fleet (not all vehicle classes).
     "ขอนแก่น": 268_283,
@@ -302,6 +302,8 @@ PROVINCE_FLEET_SIZE = {
 PROVINCE_BEV_FLEET_ANCHOR = {
     "เชียงใหม่": (2026, 17_002),  # DLT Ror.1, cumulative as of 30 Sep 2026
     "Chiang Mai": (2026, 17_002),
+    "ลำปาง": (2026, 1_725),  # DLT Ror.1, cumulative as of 30 Sep 2026
+    "Lampang": (2026, 1_725),
 }
 
 # --- National Average Daily Trips per Vehicle ---

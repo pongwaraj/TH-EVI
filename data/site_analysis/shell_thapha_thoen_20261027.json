@@ -1,0 +1,49 @@
+{
+  "site_name": "Shell Tha Pha Thoen",
+  "province": "Lampang",
+  "district": "Thoen",
+  "lat": 17.650561,
+  "lon": 99.249117,
+  "reviewed_at": "2026-10-27",
+  "scenario": "base",
+  "year": 2026,
+  "click_analysis": {
+    "gross_area_demand_sessions": 5.2,
+    "competitor_penalty_sessions": 3.2,
+    "net_sessions_per_day": 2.0,
+    "aadt_used": 13337,
+    "eligibility_status": "low_relevance"
+  },
+  "interpretation": "Legacy spatial screening indicator used as an explicit planning assumption only; not observed site sales or a validated station forecast.",
+  "station": {"cabinets": 1, "cabinet_kw": 180, "bays": 2},
+  "financial_assumptions": {
+    "capex_thb": 2300500,
+    "energy_kwh_per_charging_visit": 35,
+    "sale_thb_per_kwh": 7.9,
+    "electricity_thb_per_sold_kwh": 4,
+    "cpo_share": 0.08,
+    "annual_operating_and_maintenance_thb": 36000,
+    "rent_and_landowner_gp_thb": 0,
+    "years": 10,
+    "annual_demand_growth": 0
+  },
+  "project_coordinator_competitor_updates": [
+    {"station_id": "elex_pt_thoen_pending_pin", "cabinet_kw": 124, "pin_available": false},
+    {"station_id": "lampang_kml_df7d4acdcf4a", "cabinet_kw": 150},
+    {"station_id": "spark_bcp_thoen_napha_0641", "cabinet_kw": 240, "cabinets": 2}
+  ],
+  "competitor_power_source": "User-provided project coordinator information on 2026-10-27; not an independent operator-app verification.",
+  "distance_basis": "Straight-line reference coordinates; no road-network routing or median/U-turn validation.",
+  "current_data_files": [
+    "data/poi_lampang_city_seed.csv",
+    "data/competitors_lampang_seed.csv",
+    "data/competitors_lampang_detailed.csv",
+    "data/district_nodes_lampang.csv",
+    "data/aadt_lampang_seed.csv",
+    "data/aadt_2568.csv",
+    "data/evhub_dlt_fleet_2569_09.csv",
+    "data/dlt_ev_province_20260930.csv",
+    "data/evhub_dopa_population_2568.csv",
+    "data/dopa_district_components.csv"
+  ]
+}
