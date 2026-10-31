@@ -704,6 +704,10 @@ def _filter_and_dedupe_chiang_mai_competitors(rows: list[dict[str, Any]]) -> lis
     """
     alias_groups = [
         {
+            "ptt_ev_station_don_jan",
+            "chiang_mai_kml_09fc8e737fb2",
+        },
+        {
             "pea_volta_hub_chiang_mai",
             "pea_volta_nong_hoi_cmh",
             "pea_volta_hub_chiangmai_gmaps",
