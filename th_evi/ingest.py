@@ -241,6 +241,13 @@ def seed_reference_sources(session) -> dict[str, int]:
             "notes": "Cumulative vehicle registration fleet by province as of 30 September 2026; normalized DLT extract.",
         },
         {
+            "source_name": "DLT fuel31Oct26_W.xlsx",
+            "source_type": "official",
+            "source_url": "https://web.dlt.go.th/statistics/load_file_select_new_car.php?t=3&data_file=1340",
+            "confidence": "high",
+            "notes": "Cumulative vehicle registration fleet by province as of 31 October 2026; normalized DLT extract.",
+        },
+        {
             "source_name": "OpenStreetMap",
             "source_type": "map",
             "confidence": "medium_high",
@@ -274,15 +281,25 @@ def seed_reference_sources(session) -> dict[str, int]:
 
 def ingest_dlt_province_fleet(session, source_map: dict[str, int]) -> dict[str, int | str]:
     """Upsert the latest normalized DLT province fleet snapshot into the DB."""
-    csv_path = DATA_DIR / "evhub_dlt_fleet_2569_09.csv"
+    snapshots = (
+        ("2569-10", "evhub_dlt_fleet_2569_10.csv", "DLT fuel31Oct26_W.xlsx", "https://web.dlt.go.th/statistics/load_file_select_new_car.php?t=3&data_file=1340", "31 October 2026"),
+        ("2569-09", "evhub_dlt_fleet_2569_09.csv", "DLT fuel30Sep26_W.xlsx", "https://web.dlt.go.th/statistics/load_file_select_new_car.php?t=3&data_file=1302", "30 September 2026"),
+    )
+    selected = next((item for item in snapshots if (DATA_DIR / item[1]).exists()), None)
+    if selected is None:
+        raise FileNotFoundError("No supported DLT fleet snapshot found")
+    source_month, filename, source_name, source_url, date_label = selected
+    csv_path = DATA_DIR / filename
     if not csv_path.exists():
         raise FileNotFoundError(f"DLT fleet snapshot not found: {csv_path}")
 
-    source_id = source_map.get("DLT fuel30Sep26_W.xlsx")
+    source_id = source_map.get(source_name)
     processed = 0
     created = 0
     with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
         for row in csv.DictReader(handle):
+            if row["source_month"].strip() != source_month:
+                raise ValueError(f"DLT source month mismatch in {csv_path}")
             key = {
                 "province": row["province"].strip(),
                 "source_month": row["source_month"].strip(),
@@ -303,15 +320,15 @@ def ingest_dlt_province_fleet(session, source_map: dict[str, int]) -> dict[str, 
             record.source_project = row.get("source_project")
             record.source_file = row.get("source_file")
             record.source_id = source_id
-            record.source_url = "https://web.dlt.go.th/statistics/load_file_select_new_car.php?t=3&data_file=1302"
+            record.source_url = source_url
             record.source_scope = (
                 "Official cumulative vehicle registration by province; all_vehicle_law and "
                 "ror1_passenger_car are separate segments and must not be added together."
             )
-            record.notes = "Snapshot date: 30 September 2026. BEV/PHEV totals are registration stock, not charging demand."
+            record.notes = f"Snapshot date: {date_label}. BEV/PHEV totals are registration stock, not charging demand."
             processed += 1
 
-    return {"source_month": "2569-09", "processed_rows": processed, "new_rows": created}
+    return {"source_month": source_month, "processed_rows": processed, "new_rows": created}
 
 
 def ingest_district_population(session, source_map: dict[str, int]) -> int:

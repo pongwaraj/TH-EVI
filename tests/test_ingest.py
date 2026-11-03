@@ -271,6 +271,36 @@ def test_dlt_fleet_snapshot_import_is_upsertable(monkeypatch, tmp_path):
         assert session.query(DLTProvinceFleetSnapshot).count() == 1
 
 
+def test_dlt_ingest_prefers_latest_snapshot_without_touching_prior_month(monkeypatch, tmp_path):
+    monkeypatch.setattr(ingest, 'DATA_DIR', tmp_path)
+    columns = [
+        'source_project', 'source_file', 'source_month', 'source_year_be', 'province',
+        'vehicle_segment', 'total_vehicles', 'gasoline', 'diesel', 'bev',
+        'hev_gasoline', 'hev_diesel', 'phev_gasoline', 'phev_diesel', 'bev_share',
+    ]
+    base = dict(source_project='TH-EVI', source_year_be=2569, province='เชียงใหม่',
+                vehicle_segment='ror1_passenger_car', total_vehicles=20000, gasoline=10000,
+                diesel=5000, bev=500, hev_gasoline=200, hev_diesel=0,
+                phev_gasoline=80, phev_diesel=0, bev_share=.025)
+    _write_csv(tmp_path / 'evhub_dlt_fleet_2569_09.csv', columns,
+               [{**base, 'source_file': 'fuel30Sep26_W.xlsx', 'source_month': '2569-09'}])
+    Session = create_session_factory(f"sqlite:///{(tmp_path / 'dlt_latest.sqlite3').as_posix()}")
+    with Session() as session:
+        sources = ingest.seed_reference_sources(session)
+        assert ingest.ingest_dlt_province_fleet(session, sources)['source_month'] == '2569-09'
+        session.commit()
+    _write_csv(tmp_path / 'evhub_dlt_fleet_2569_10.csv', columns,
+               [{**base, 'source_file': 'fuel31Oct26_W.xlsx', 'source_month': '2569-10', 'bev': 600}])
+    with Session() as session:
+        stats = ingest.ingest_dlt_province_fleet(session, ingest.seed_reference_sources(session))
+        session.commit()
+        assert stats == {'source_month': '2569-10', 'processed_rows': 1, 'new_rows': 1}
+        rows = {row.source_month: row for row in session.query(DLTProvinceFleetSnapshot).all()}
+        assert rows['2569-09'].bev == 500
+        assert rows['2569-10'].bev == 600
+        assert rows['2569-10'].source_url.endswith('data_file=1340')
+
+
 def test_aadt_official_crosscheck_downgrades_mismatch(monkeypatch, tmp_path):
     monkeypatch.setattr(ingest, "DATA_DIR", tmp_path)
     monkeypatch.setattr(ingest, "SLUG_TO_NAME", {"test_province": "Test Province"})
