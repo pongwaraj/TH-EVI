@@ -97,6 +97,8 @@ PROVINCE_SLUGS = {
     "ศรีสะเกษ": "si_sa_ket",
     "Si Sa Ket": "si_sa_ket",
     "Sisaket": "si_sa_ket",
+    "จันทบุรี": "chanthaburi",
+    "Chanthaburi": "chanthaburi",
     "Mae Hong Son": "mae_hong_son",
     "\u0e41\u0e21\u0e48\u0e2e\u0e48\u0e2d\u0e07\u0e2a\u0e2d\u0e19": "mae_hong_son",
     "\u004d\u0061\u0065\u0020\u0048\u006f\u006e\u0067\u0020\u0053\u006f\u006e": "mae_hong_son",
@@ -128,6 +130,7 @@ SLUG_TO_CANONICAL_PROVINCE = {
     "phuket": "Phuket",
     "chon_buri": "Chon Buri",
     "si_sa_ket": "Si Sa Ket",
+    "chanthaburi": "Chanthaburi",
 }
 
 # The nationwide KML feed uses province names inconsistently. Keep a complete

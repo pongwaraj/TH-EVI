@@ -1,0 +1,2 @@
+node_id,district_name,name,node_type,lat,lon,radius_km,confidence_multiplier,notes
+chanthaburi_khlung_core,Khlung,ขลุง local commercial area,district_center,12.4551,102.2228,2.0,0.6,Reference to heritage district coordinate; preliminary local coverage only.

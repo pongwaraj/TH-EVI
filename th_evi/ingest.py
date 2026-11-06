@@ -56,6 +56,7 @@ PROVINCE_SLUGS = [
     "chai_nat",
     "uthai_thani",
     "si_sa_ket",
+    "chanthaburi",
 ]
 
 SLUG_TO_NAME = {
@@ -81,6 +82,7 @@ SLUG_TO_NAME = {
     "chai_nat": "Chai Nat",
     "uthai_thani": "Uthai Thani",
     "si_sa_ket": "Si Sa Ket",
+    "chanthaburi": "Chanthaburi",
 }
 
 
@@ -149,6 +151,7 @@ def _thai_province_name(english_name: str) -> str:
         "Nakhon Nayok": "นครนายก",
         "Chon Buri": "ชลบุรี",
         "Si Sa Ket": "ศรีสะเกษ",
+        "Chanthaburi": "จันทบุรี",
     }
     return mapping.get(english_name, english_name)
 
